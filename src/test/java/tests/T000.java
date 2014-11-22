@@ -24,8 +24,8 @@ import java.util.List;
 @ConfigurationBaratine(services = {LuceneService.class},
                        testTime = 0,
                        logLevel = "OFF",
-                       logs = {@Log(name = "com.caucho",
-                                    level = "SEVERE")})
+                       logs = {@Log(name = "com.caucho.lucene",
+                                    level = "FINER")})
 public class T000
 {
   @Inject @Lookup ServiceManager _serviceManager;

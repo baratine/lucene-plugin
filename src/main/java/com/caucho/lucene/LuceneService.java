@@ -1,5 +1,6 @@
 package com.caucho.lucene;
 
+import com.caucho.vfs.Vfs;
 import io.baratine.core.Service;
 import io.baratine.core.ServiceManager;
 import io.baratine.files.FileService;
@@ -19,11 +20,13 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.MMapDirectory;
 import org.apache.tika.metadata.Metadata;
 import org.apache.tika.parser.AutoDetectParser;
 
 import javax.inject.Inject;
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -40,7 +43,12 @@ public class LuceneService
 
   @Inject ServiceManager _manager;
 
-  RAMDirectory _directory = new RAMDirectory();
+  Directory _directory;
+
+  public LuceneService() throws IOException
+  {
+    _directory = createDirectory();
+  }
 
   public String[] search(String query) throws IOException, ParseException
   {
@@ -112,8 +120,17 @@ public class LuceneService
     return true;
   }
 
-  public void clear()
+  public void clear() throws IOException
   {
-    _directory = new RAMDirectory();
+    _directory.close();
+
+    Vfs.lookup("/tmp/bfs-lucene-index").removeAll();
+
+    _directory = createDirectory();
+  }
+
+  private Directory createDirectory() throws IOException
+  {
+    return MMapDirectory.open(new File("/tmp/bfs-lucene-index"));
   }
 }
