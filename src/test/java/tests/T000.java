@@ -23,7 +23,6 @@ import java.util.List;
 @RunWith(RunnerBaratine.class)
 @ConfigurationBaratine(services = {LuceneService.class},
                        testTime = 0,
-                       logNames = {"com.caucho:SEVERE", "com.caucho.lucene:FINEST"},
                        logLevel = "OFF",
                        logs = {@Log(name = "com.caucho",
                                     level = "SEVERE")})
