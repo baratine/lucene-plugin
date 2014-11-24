@@ -21,24 +21,12 @@ import java.util.List;
                        testTime = 0,
                        logs = {@Log(name = "com.caucho",
                                     level = "FINER")})
-public class T000 extends BaseTest
+public class T001 extends BaseTest
 {
   @Test(timeout = 2000)
-  public void testText() throws InterruptedException, IOException
+  public void testDelete() throws InterruptedException, IOException
   {
     test("test-00.txt");
-  }
-
-  @Test(timeout = 5000)
-  public void testPdf() throws InterruptedException, IOException
-  {
-    test("test-00.pdf");
-  }
-
-  @Test(timeout = 5000)
-  public void testWord() throws InterruptedException, IOException
-  {
-    test("test-00.docx");
   }
 
   @Before
@@ -53,6 +41,12 @@ public class T000 extends BaseTest
     List<String> result = uploadAndSearch(fileName, "Lorem");
     Assert.assertEquals(1, result.size());
     Assert.assertEquals(makeBfsPath(fileName), result.get(0));
+
+    delete(fileName);
+
+    result = search("Lorem");
+
+    Assert.assertEquals(0, result.size());
   }
 }
 

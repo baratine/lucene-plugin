@@ -8,12 +8,9 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.StoredField;
+import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.*;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.IndexSearcher;
@@ -21,9 +18,11 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.MMapDirectory;
+import org.apache.lucene.store.FSDirectory;
+import org.apache.tika.exception.TikaException;
 import org.apache.tika.metadata.Metadata;
 import org.apache.tika.parser.AutoDetectParser;
+import org.xml.sax.SAXException;
 
 import javax.inject.Inject;
 import java.io.File;
@@ -37,7 +36,7 @@ import java.util.logging.Logger;
 @Service("public:///lucene")
 public class LuceneService
 {
-  public static final String bfsPath = "bfs.path";
+  public static final String bfsId = "bfspath";
 
   public Logger _logger = Logger.getLogger(LuceneService.class.getName());
 
@@ -50,37 +49,53 @@ public class LuceneService
     _directory = createDirectory();
   }
 
-  public String[] search(String query) throws IOException, ParseException
+  public String[] search(String query) throws ParseException, IOException
   {
-    _logger.finer(String.format("lucene-plugin#search('%s')", query));
-
-    IndexReader reader = DirectoryReader.open(_directory);
-
-    IndexSearcher searcher = new IndexSearcher(reader);
-    Analyzer analyzer = new StandardAnalyzer();
-
-    QueryParser parser = new QueryParser("text", analyzer);
-
-    Query q = parser.parse(query);
-
-    int docsLimit = 10;
-
-    TopDocs docs = searcher.search(q, null, docsLimit);
+    if (_logger.isLoggable(Level.FINER))
+      _logger.finer(String.format("lucene-plugin#search('%s')", query));
 
     List<String> result = new ArrayList<>();
-    for (ScoreDoc doc : docs.scoreDocs) {
-      Document d = searcher.doc(doc.doc, Collections.singleton("bfs.path"));
 
-      result.add(d.get(bfsPath));
+    try {
+      IndexReader reader = DirectoryReader.open(_directory);
+
+      IndexSearcher searcher = new IndexSearcher(reader);
+      Analyzer analyzer = new StandardAnalyzer();
+
+      QueryParser parser = new QueryParser("text", analyzer);
+
+      Query q = parser.parse(query);
+
+      int docsLimit = 10;
+
+      TopDocs docs = searcher.search(q, null, docsLimit);
+
+      for (ScoreDoc doc : docs.scoreDocs) {
+        Document d = searcher.doc(doc.doc, Collections.singleton(bfsId));
+
+        result.add(d.get(bfsId));
+      }
+
+      if (_logger.isLoggable(Level.FINER))
+        _logger.finer(String.format(
+          "lucene-plugin#search('%1$s') complete with %2$d results",
+          query,
+          result.size()));
+
+      return result.toArray(new String[result.size()]);
+    } catch (IOException | ParseException e) {
+      _logger.log(Level.WARNING, e.getMessage(), e);
+
+      throw e;
     }
-
-    return result.toArray(new String[result.size()]);
   }
 
-  public boolean update(String path) throws IOException
+  public boolean update(final String path)
+    throws IOException, TikaException, SAXException
   {
     try {
-      _logger.finer(String.format("lucene-plugin#update('%s')", path));
+      if (_logger.isLoggable(Level.FINER))
+        _logger.finer(String.format("lucene-plugin#update('%s')", path));
 
       Analyzer analyzer = new StandardAnalyzer();
       IndexWriterConfig iwc = new IndexWriterConfig(analyzer.getVersion(),
@@ -92,7 +107,7 @@ public class LuceneService
 
       Document document = new Document();
 
-      Field bfsPath = new StoredField("bfs.path", path);
+      Field bfsPath = new StringField(bfsId, path, Field.Store.YES);
       document.add(bfsPath);
 
       FileService file = _manager.lookup(path).as(FileService.class);
@@ -111,26 +126,72 @@ public class LuceneService
 
       writer.addDocument(document);
 
+      writer.commit();
+
       writer.close();
 
-    } catch (Exception e) {
-      _logger.log(Level.WARNING, e.getMessage(), e);
-    }
+      if (_logger.isLoggable(Level.FINER))
+        _logger.finer(String.format("lucene-plugin#update('%s') complete",
+                                    path));
 
-    return true;
+      return true;
+    } catch (IOException | SAXException | TikaException e) {
+      _logger.log(Level.WARNING, e.getMessage(), e);
+
+      throw e;
+    }
+  }
+
+  public boolean delete(final String path) throws IOException
+  {
+    try {
+      if (_logger.isLoggable(Level.FINER))
+        _logger.finer(String.format("lucene-plugin#delete('%s')", path));
+
+      Analyzer analyzer = new StandardAnalyzer();
+      IndexWriterConfig iwc = new IndexWriterConfig(analyzer.getVersion(),
+                                                    analyzer);
+
+      iwc.setOpenMode(IndexWriterConfig.OpenMode.CREATE_OR_APPEND);
+
+      IndexWriter writer = new IndexWriter(_directory, iwc);
+
+      Term bfsPath = new Term(bfsId, path);
+      writer.deleteDocuments(bfsPath);
+
+      writer.commit();
+
+      writer.close();
+
+      if (_logger.isLoggable(Level.FINER))
+        _logger.finer(String.format("lucene-plugin#delete('%s') complete", path));
+
+      return true;
+    } catch (IOException e) {
+      _logger.log(Level.WARNING, e.getMessage(), e);
+
+      throw e;
+    }
   }
 
   public void clear() throws IOException
   {
+    if (_logger.isLoggable(Level.FINER))
+      _logger.finer(String.format("lucene-plugin#clear()"));
+
     _directory.close();
 
     Vfs.lookup("/tmp/bfs-lucene-index").removeAll();
 
     _directory = createDirectory();
+
+    if (_logger.isLoggable(Level.FINER))
+      _logger.finer(String.format("lucene-plugin#clear() complete"));
   }
 
   private Directory createDirectory() throws IOException
   {
-    return MMapDirectory.open(new File("/tmp/bfs-lucene-index"));
+    //return MMapDirectory.open(new File("/tmp/bfs-lucene-index"));
+    return FSDirectory.open(new File("/tmp/bfs-lucene-index"));
   }
 }
