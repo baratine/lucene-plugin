@@ -5,7 +5,6 @@ import com.caucho.junit.ConfigurationBaratine.Log;
 import com.caucho.junit.RunnerBaratine;
 import com.caucho.lucene.LuceneService;
 import com.caucho.lucene.LuceneServiceClient;
-import com.caucho.lucene.Monitor;
 import com.caucho.vfs.ReadStream;
 import com.caucho.vfs.Vfs;
 import io.baratine.core.Lookup;
@@ -16,8 +15,8 @@ import org.junit.runner.RunWith;
 import javax.inject.Inject;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 
 @RunWith(RunnerBaratine.class)
 @ConfigurationBaratine(services = {LuceneService.class},
@@ -32,19 +31,20 @@ public abstract class BaseTest
   @Inject @Lookup("/lucene")
   protected LuceneServiceClient _lucene;
 
-  final protected void delete(String fileName) throws InterruptedException
+  final protected boolean delete(String fileName)
+    throws InterruptedException, ExecutionException
   {
-    Monitor monitor = new Monitor();
+    CompletableFuture<Boolean> future = new CompletableFuture<>();
 
     _lucene.delete(makeBfsPath(fileName), r -> {
-      monitor.toComplete();
+      future.complete(true);
     });
 
-    monitor.waitForComplete();
+    return future.get();
   }
 
   final protected FileService upload(String fileName)
-    throws IOException, InterruptedException
+    throws IOException, InterruptedException, ExecutionException
   {
     FileService file =
       _serviceManager.lookup(makeBfsPath(fileName)).as(FileService.class);
@@ -55,43 +55,34 @@ public abstract class BaseTest
       in.writeToStream(out);
     }
 
-    final Monitor monitor = new Monitor();
+    CompletableFuture<Boolean> future = new CompletableFuture<>();
     _lucene.update(file.getStatus().getPath(), v -> {
-      monitor.toComplete();
+      future.complete(true);
     });
 
-    monitor.waitForComplete();
+    future.get();
 
     return file;
   }
 
-  final protected List<String> search(String query)
-    throws IOException, InterruptedException
+  final protected String[] search(String query)
+    throws IOException, InterruptedException, ExecutionException
   {
-    Monitor monitor = new Monitor();
+    CompletableFuture<String[]> future = new CompletableFuture<>();
 
-    List<String> documents = new ArrayList<>();
-
-    monitor.toWaiting();
     _lucene.search(query, docs -> {
-      for (String doc : docs) {
-        documents.add(doc);
-      }
-
-      monitor.toComplete();
+      future.complete(docs);
     });
 
-    monitor.waitForComplete();
-
-    return documents;
+    return future.get();
   }
 
-  final protected List<String> uploadAndSearch(String fileName, String query)
-    throws InterruptedException, IOException
+  final protected String[] uploadAndSearch(String fileName, String query)
+    throws InterruptedException, IOException, ExecutionException
   {
     upload(fileName);
 
-    List<String> result = search(query);
+    String[] result = search(query);
 
     return result;
   }
