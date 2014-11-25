@@ -1,16 +1,12 @@
 package tests;
 
-import com.caucho.junit.ConfigurationBaratine;
-import com.caucho.junit.ConfigurationBaratine.Log;
-import com.caucho.junit.RunnerBaratine;
-import com.caucho.lucene.LuceneService;
 import com.caucho.lucene.LuceneServiceClient;
+import com.caucho.lucene.RDoc;
 import com.caucho.vfs.ReadStream;
 import com.caucho.vfs.Vfs;
 import io.baratine.core.Lookup;
 import io.baratine.core.ServiceManager;
 import io.baratine.files.FileService;
-import org.junit.runner.RunWith;
 
 import javax.inject.Inject;
 import java.io.IOException;
@@ -18,11 +14,6 @@ import java.io.OutputStream;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
-@RunWith(RunnerBaratine.class)
-@ConfigurationBaratine(services = {LuceneService.class},
-                       testTime = 0,
-                       logs = {@Log(name = "com.caucho.lucene",
-                                    level = "FINER")})
 public abstract class BaseTest
 {
   @Inject @Lookup
@@ -55,20 +46,26 @@ public abstract class BaseTest
       in.writeToStream(out);
     }
 
-    CompletableFuture<Boolean> future = new CompletableFuture<>();
-    _lucene.update(file.getStatus().getPath(), v -> {
-      future.complete(true);
-    });
-
-    future.get();
+    update(file.getStatus().getPath());
 
     return file;
   }
 
-  final protected String[] search(String query)
+  final protected boolean update(String fileName)
+    throws ExecutionException, InterruptedException
+  {
+    CompletableFuture<Boolean> future = new CompletableFuture<>();
+    _lucene.update(fileName, v -> {
+      future.complete(true);
+    });
+
+    return future.get();
+  }
+
+  final protected RDoc[] search(String query)
     throws IOException, InterruptedException, ExecutionException
   {
-    CompletableFuture<String[]> future = new CompletableFuture<>();
+    CompletableFuture<RDoc[]> future = new CompletableFuture<>();
 
     _lucene.search(query, docs -> {
       future.complete(docs);
@@ -77,12 +74,35 @@ public abstract class BaseTest
     return future.get();
   }
 
-  final protected String[] uploadAndSearch(String fileName, String query)
+  final protected String[] search(String query, int offSet, int limit)
+    throws IOException, InterruptedException, ExecutionException
+  {
+    CompletableFuture<String[]> future = new CompletableFuture<>();
+
+    _lucene.searchInc(query, offSet, limit, docs -> {
+      future.complete(docs);
+    });
+
+    return future.get();
+  }
+
+  final protected void clear() throws ExecutionException, InterruptedException
+  {
+    CompletableFuture<Void> future = new CompletableFuture<>();
+
+    _lucene.clear(f -> {
+      future.complete(null);
+    });
+
+    future.get();
+  }
+
+  final protected RDoc[] uploadAndSearch(String fileName, String query)
     throws InterruptedException, IOException, ExecutionException
   {
     upload(fileName);
 
-    String[] result = search(query);
+    RDoc[] result = search(query);
 
     return result;
   }

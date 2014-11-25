@@ -49,10 +49,58 @@ public class LuceneService
     _directory = createDirectory();
   }
 
-  public String[] search(String query) throws ParseException, IOException
+  public RDoc[] search(String query) throws ParseException, IOException
   {
     if (_logger.isLoggable(Level.FINER))
       _logger.finer(String.format("lucene-plugin#search('%s')", query));
+
+    List<RDoc> result = new ArrayList<>();
+
+    try {
+      IndexReader reader = DirectoryReader.open(_directory);
+
+      IndexSearcher searcher = new IndexSearcher(reader);
+      Analyzer analyzer = new StandardAnalyzer();
+
+      QueryParser parser = new QueryParser("text", analyzer);
+
+      Query q = parser.parse(query);
+
+      int docsLimit = Integer.MAX_VALUE;
+
+      TopDocs docs = searcher.search(q, null, docsLimit);
+
+      for (ScoreDoc doc : docs.scoreDocs) {
+        Document d = searcher.doc(doc.doc, Collections.singleton(bfsId));
+
+        RDoc rDoc = new RDoc(doc.doc, doc.score, d.get(bfsId));
+
+        result.add(rDoc);
+      }
+
+      if (_logger.isLoggable(Level.FINER))
+        _logger.finer(String.format(
+          "lucene-plugin#search('%1$s') complete with %2$d results",
+          query,
+          result.size()));
+
+      return result.toArray(new RDoc[result.size()]);
+    } catch (IOException | ParseException e) {
+      _logger.log(Level.WARNING, e.getMessage(), e);
+
+      throw e;
+    }
+  }
+
+  public String[] searchInc(String query,
+                            int offset,
+                            int limit) throws IOException, ParseException
+  {
+    if (_logger.isLoggable(Level.FINER))
+      _logger.finer(String.format("lucene-plugin#search('%1$s', %2$d, %3$d )",
+                                  query,
+                                  offset,
+                                  limit));
 
     List<String> result = new ArrayList<>();
 
@@ -66,9 +114,7 @@ public class LuceneService
 
       Query q = parser.parse(query);
 
-      int docsLimit = 10;
-
-      TopDocs docs = searcher.search(q, null, docsLimit);
+      TopDocs docs = searcher.search(q, null, limit);
 
       for (ScoreDoc doc : docs.scoreDocs) {
         Document d = searcher.doc(doc.doc, Collections.singleton(bfsId));
@@ -78,8 +124,10 @@ public class LuceneService
 
       if (_logger.isLoggable(Level.FINER))
         _logger.finer(String.format(
-          "lucene-plugin#search('%1$s') complete with %2$d results",
+          "lucene-plugin#search('%1$s', %2$d, %3$d with %4$d results)",
           query,
+          offset,
+          limit,
           result.size()));
 
       return result.toArray(new String[result.size()]);
@@ -164,7 +212,8 @@ public class LuceneService
       writer.close();
 
       if (_logger.isLoggable(Level.FINER))
-        _logger.finer(String.format("lucene-plugin#delete('%s') complete", path));
+        _logger.finer(String.format("lucene-plugin#delete('%s') complete",
+                                    path));
 
       return true;
     } catch (IOException e) {

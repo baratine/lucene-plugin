@@ -18,7 +18,6 @@ import org.apache.lucene.store.RAMDirectory;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
-import org.junit.Test;
 
 import java.io.IOException;
 import java.util.Collections;
@@ -27,7 +26,6 @@ import java.util.List;
 @Ignore
 public class Tz00
 {
-
   Directory _dir;
 
   @Before

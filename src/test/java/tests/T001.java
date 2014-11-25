@@ -4,6 +4,7 @@ import com.caucho.junit.ConfigurationBaratine;
 import com.caucho.junit.ConfigurationBaratine.Log;
 import com.caucho.junit.RunnerBaratine;
 import com.caucho.lucene.LuceneService;
+import com.caucho.lucene.RDoc;
 import junit.framework.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -12,6 +13,9 @@ import org.junit.runner.RunWith;
 import java.io.IOException;
 import java.util.concurrent.ExecutionException;
 
+/**
+ * title: test delete
+ */
 @RunWith(RunnerBaratine.class)
 @ConfigurationBaratine(services = {LuceneService.class},
                        testTime = 0,
@@ -36,9 +40,9 @@ public class T001 extends BaseTest
   private void test(String fileName)
     throws InterruptedException, IOException, ExecutionException
   {
-    String[] result = uploadAndSearch(fileName, "Lorem");
+    RDoc[] result = uploadAndSearch(fileName, "Lorem");
     Assert.assertEquals(1, result.length);
-    Assert.assertEquals(makeBfsPath(fileName), result[0]);
+    Assert.assertEquals(makeBfsPath(fileName), result[0].getBfsPath());
 
     delete(fileName);
 
