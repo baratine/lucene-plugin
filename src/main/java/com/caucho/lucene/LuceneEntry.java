@@ -1,21 +1,26 @@
 package com.caucho.lucene;
 
-public class RDoc
+public class LuceneEntry
 {
   private int _id;
   private float _score;
   private String _bfsPath;
 
-  public RDoc()
+  public LuceneEntry()
   {
   }
 
-  public RDoc(int id, float score)
+  public LuceneEntry(int id)
+  {
+    this(0, Float.MAX_VALUE);
+  }
+
+  public LuceneEntry(int id, float score)
   {
     this(id, score, null);
   }
 
-  public RDoc(int id, float score, String bfsPath)
+  public LuceneEntry(int id, float score, String bfsPath)
   {
     _id = id;
     _score = score;
@@ -50,5 +55,10 @@ public class RDoc
   public void setBfsPath(String bfsPath)
   {
     _bfsPath = bfsPath;
+  }
+
+  @Override public String toString()
+  {
+    return "LuceneEntry[" + _id + ", " + _score + ", '" + _bfsPath + '\'' + ']';
   }
 }

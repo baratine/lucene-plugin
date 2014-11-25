@@ -3,8 +3,8 @@ package tests;
 import com.caucho.junit.ConfigurationBaratine;
 import com.caucho.junit.ConfigurationBaratine.Log;
 import com.caucho.junit.RunnerBaratine;
+import com.caucho.lucene.LuceneEntry;
 import com.caucho.lucene.LuceneService;
-import com.caucho.lucene.RDoc;
 import junit.framework.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -40,7 +40,7 @@ public class T001 extends BaseTest
   private void test(String fileName)
     throws InterruptedException, IOException, ExecutionException
   {
-    RDoc[] result = uploadAndSearch(fileName, "Lorem");
+    LuceneEntry[] result = uploadAndSearch(fileName, "Lorem");
     Assert.assertEquals(1, result.length);
     Assert.assertEquals(makeBfsPath(fileName), result[0].getBfsPath());
 

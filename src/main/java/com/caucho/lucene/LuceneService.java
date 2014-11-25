@@ -49,12 +49,12 @@ public class LuceneService
     _directory = createDirectory();
   }
 
-  public RDoc[] search(String query) throws ParseException, IOException
+  public LuceneEntry[] search(String query) throws ParseException, IOException
   {
     if (_logger.isLoggable(Level.FINER))
       _logger.finer(String.format("lucene-plugin#search('%s')", query));
 
-    List<RDoc> result = new ArrayList<>();
+    List<LuceneEntry> result = new ArrayList<>();
 
     try {
       IndexReader reader = DirectoryReader.open(_directory);
@@ -73,7 +73,7 @@ public class LuceneService
       for (ScoreDoc doc : docs.scoreDocs) {
         Document d = searcher.doc(doc.doc, Collections.singleton(bfsId));
 
-        RDoc rDoc = new RDoc(doc.doc, doc.score, d.get(bfsId));
+        LuceneEntry rDoc = new LuceneEntry(doc.doc, doc.score, d.get(bfsId));
 
         result.add(rDoc);
       }
@@ -84,7 +84,7 @@ public class LuceneService
           query,
           result.size()));
 
-      return result.toArray(new RDoc[result.size()]);
+      return result.toArray(new LuceneEntry[result.size()]);
     } catch (IOException | ParseException e) {
       _logger.log(Level.WARNING, e.getMessage(), e);
 
@@ -92,17 +92,17 @@ public class LuceneService
     }
   }
 
-  public RDoc[] searchInc(String query,
-                          RDoc after,
-                          int limit) throws IOException, ParseException
+  public LuceneEntry[] searchAfter(String query,
+                                   LuceneEntry afterEntry,
+                                   int limit) throws IOException, ParseException
   {
     if (_logger.isLoggable(Level.FINER))
       _logger.finer(String.format("lucene-plugin#search('%1$s', %2$s, %3$d )",
                                   query,
-                                  after,
+                                  afterEntry,
                                   limit));
 
-    List<RDoc> result = new ArrayList<>();
+    List<LuceneEntry> result = new ArrayList<>();
 
     try {
       IndexReader reader = DirectoryReader.open(_directory);
@@ -114,12 +114,14 @@ public class LuceneService
 
       Query q = parser.parse(query);
 
-      TopDocs docs = searcher.search(q, null, limit);
+      ScoreDoc after = new ScoreDoc(afterEntry.getId(), afterEntry.getScore());
+
+      TopDocs docs = searcher.searchAfter(after, q, limit);
 
       for (ScoreDoc doc : docs.scoreDocs) {
         Document d = searcher.doc(doc.doc, Collections.singleton(bfsId));
 
-        RDoc rdoc = new RDoc(doc.doc, doc.score, d.get(bfsId));
+        LuceneEntry rdoc = new LuceneEntry(doc.doc, doc.score, d.get(bfsId));
 
         result.add(rdoc);
       }
@@ -128,11 +130,11 @@ public class LuceneService
         _logger.finer(String.format(
           "lucene-plugin#search('%1$s', %2$s, %3$d with %4$d results)",
           query,
-          after,
+          afterEntry,
           limit,
           result.size()));
 
-      return result.toArray(new RDoc[result.size()]);
+      return result.toArray(new LuceneEntry[result.size()]);
     } catch (IOException | ParseException e) {
       _logger.log(Level.WARNING, e.getMessage(), e);
 

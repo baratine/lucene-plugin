@@ -3,8 +3,8 @@ package tests;
 import com.caucho.junit.ConfigurationBaratine;
 import com.caucho.junit.ConfigurationBaratine.Log;
 import com.caucho.junit.RunnerBaratine;
+import com.caucho.lucene.LuceneEntry;
 import com.caucho.lucene.LuceneService;
-import com.caucho.lucene.RDoc;
 import io.baratine.files.FileService;
 import junit.framework.Assert;
 import org.junit.Before;
@@ -43,8 +43,6 @@ public class T002 extends BaseTest
 
       update(fileName);
     }
-
-    Thread.sleep(100);
   }
 
   private String makeFileName(int k)
@@ -53,11 +51,32 @@ public class T002 extends BaseTest
   }
 
   @Test
-  public void test()
+  public void testAll()
     throws InterruptedException, IOException, ExecutionException
   {
-    RDoc[] results = search("hit", new RDoc(0, 0), 9);
+    LuceneEntry[] results = search("hit", new LuceneEntry(0), 100);
     Assert.assertEquals(10, results.length);
+  }
+
+  @Test
+  public void testNext()
+    throws InterruptedException, IOException, ExecutionException
+  {
+    LuceneEntry[] results = search("hit", new LuceneEntry(0), 100);
+    Assert.assertEquals(10, results.length);
+
+    results = search("hit", results[3], 3);
+    Assert.assertEquals(3, results.length);
+
+    Assert.assertEquals(4, results[0].getId());
+    Assert.assertEquals(5, results[1].getId());
+    Assert.assertEquals(6, results[2].getId());
+
+    results = search("hit", results[2], 3);
+    Assert.assertEquals(3, results.length);
+
+    results = search("hit", results[2], 3);
+    Assert.assertEquals(0, results.length);
   }
 }
 

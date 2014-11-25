@@ -18,16 +18,18 @@ public interface LuceneServiceClient
    * @param query  query that is passed to lucene QueryParser
    * @param result files
    */
-  public void search(String query, Result<RDoc[]> result);
+  public void search(String query, Result<LuceneEntry[]> result);
 
   /**
-   *
    * @param query  query that is passed to lucene QueryParser
    * @param after
    * @param limit
    * @param result
    */
-  public void searchInc(String query, RDoc after, int limit, Result<RDoc[]> result);
+  public void searchAfter(String query,
+                          LuceneEntry after,
+                          int limit,
+                          Result<LuceneEntry[]> result);
 
   /**
    * Deletes document from an index

@@ -1,7 +1,7 @@
 package tests;
 
+import com.caucho.lucene.LuceneEntry;
 import com.caucho.lucene.LuceneServiceClient;
-import com.caucho.lucene.RDoc;
 import com.caucho.vfs.ReadStream;
 import com.caucho.vfs.Vfs;
 import io.baratine.core.Lookup;
@@ -62,10 +62,10 @@ public abstract class BaseTest
     return future.get();
   }
 
-  final protected RDoc[] search(String query)
+  final protected LuceneEntry[] search(String query)
     throws IOException, InterruptedException, ExecutionException
   {
-    CompletableFuture<RDoc[]> future = new CompletableFuture<>();
+    CompletableFuture<LuceneEntry[]> future = new CompletableFuture<>();
 
     _lucene.search(query, docs -> {
       future.complete(docs);
@@ -74,12 +74,12 @@ public abstract class BaseTest
     return future.get();
   }
 
-  final protected RDoc[] search(String query, RDoc after, int limit)
+  final protected LuceneEntry[] search(String query, LuceneEntry after, int limit)
     throws IOException, InterruptedException, ExecutionException
   {
-    CompletableFuture<RDoc[]> future = new CompletableFuture<>();
+    CompletableFuture<LuceneEntry[]> future = new CompletableFuture<>();
 
-    _lucene.searchInc(query, after, limit, docs -> {
+    _lucene.searchAfter(query, after, limit, docs -> {
       future.complete(docs);
     });
 
@@ -97,12 +97,12 @@ public abstract class BaseTest
     future.get();
   }
 
-  final protected RDoc[] uploadAndSearch(String fileName, String query)
+  final protected LuceneEntry[] uploadAndSearch(String fileName, String query)
     throws InterruptedException, IOException, ExecutionException
   {
     upload(fileName);
 
-    RDoc[] result = search(query);
+    LuceneEntry[] result = search(query);
 
     return result;
   }
