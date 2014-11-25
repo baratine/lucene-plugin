@@ -23,11 +23,11 @@ public interface LuceneServiceClient
   /**
    *
    * @param query  query that is passed to lucene QueryParser
-   * @param offset
+   * @param after
    * @param limit
    * @param result
    */
-  public void searchInc(String query, int offset, int limit, Result<String[]> result);
+  public void searchInc(String query, RDoc after, int limit, Result<RDoc[]> result);
 
   /**
    * Deletes document from an index

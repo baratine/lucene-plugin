@@ -92,17 +92,17 @@ public class LuceneService
     }
   }
 
-  public String[] searchInc(String query,
-                            int offset,
-                            int limit) throws IOException, ParseException
+  public RDoc[] searchInc(String query,
+                          RDoc after,
+                          int limit) throws IOException, ParseException
   {
     if (_logger.isLoggable(Level.FINER))
-      _logger.finer(String.format("lucene-plugin#search('%1$s', %2$d, %3$d )",
+      _logger.finer(String.format("lucene-plugin#search('%1$s', %2$s, %3$d )",
                                   query,
-                                  offset,
+                                  after,
                                   limit));
 
-    List<String> result = new ArrayList<>();
+    List<RDoc> result = new ArrayList<>();
 
     try {
       IndexReader reader = DirectoryReader.open(_directory);
@@ -119,18 +119,20 @@ public class LuceneService
       for (ScoreDoc doc : docs.scoreDocs) {
         Document d = searcher.doc(doc.doc, Collections.singleton(bfsId));
 
-        result.add(d.get(bfsId));
+        RDoc rdoc = new RDoc(doc.doc, doc.score, d.get(bfsId));
+
+        result.add(rdoc);
       }
 
       if (_logger.isLoggable(Level.FINER))
         _logger.finer(String.format(
-          "lucene-plugin#search('%1$s', %2$d, %3$d with %4$d results)",
+          "lucene-plugin#search('%1$s', %2$s, %3$d with %4$d results)",
           query,
-          offset,
+          after,
           limit,
           result.size()));
 
-      return result.toArray(new String[result.size()]);
+      return result.toArray(new RDoc[result.size()]);
     } catch (IOException | ParseException e) {
       _logger.log(Level.WARNING, e.getMessage(), e);
 

@@ -74,12 +74,12 @@ public abstract class BaseTest
     return future.get();
   }
 
-  final protected String[] search(String query, int offSet, int limit)
+  final protected RDoc[] search(String query, RDoc after, int limit)
     throws IOException, InterruptedException, ExecutionException
   {
-    CompletableFuture<String[]> future = new CompletableFuture<>();
+    CompletableFuture<RDoc[]> future = new CompletableFuture<>();
 
-    _lucene.searchInc(query, offSet, limit, docs -> {
+    _lucene.searchInc(query, after, limit, docs -> {
       future.complete(docs);
     });
 
