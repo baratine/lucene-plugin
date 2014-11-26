@@ -267,19 +267,19 @@ public class LuceneService
   }
 
   @OnDestroy
-  public void destroy() throws IOException
+  public void destroy() throws Exception
   {
     clear();
   }
 
-  public void clear() throws IOException
+  public void clear() throws Exception
   {
     if (_logger.isLoggable(Level.FINER))
       _logger.finer(String.format("lucene-plugin#clear()"));
 
     _searcher = null;
 
-    Exception exception;
+    Exception exception = null;
 
     try {
       if (_reader != null) {
@@ -325,6 +325,9 @@ public class LuceneService
 
     if (_logger.isLoggable(Level.FINER))
       _logger.finer(String.format("lucene-plugin#clear() complete"));
+
+    if (exception != null)
+      throw exception;
   }
 
   private Directory createDirectory() throws IOException
