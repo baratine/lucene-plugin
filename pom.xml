@@ -12,6 +12,13 @@
     <baratine-home>/Users/alex/projects/caucho/5.0/baratine</baratine-home>
   </properties>
 
+  <repositories>
+    <repository>
+      <id>Caucho</id>
+      <url>http://caucho.com/m2</url>
+    </repository>
+  </repositories>
+
   <dependencies>
     <!-- lucene -->
     <dependency>
@@ -45,8 +52,8 @@
       <scope>test</scope>
     </dependency>
 
-    <!-- baratine -->
-    <dependency>
+    <!-- baratine local-->
+    <!--dependency>
       <groupId>io.baratine</groupId>
       <artifactId>baratine-api</artifactId>
       <version>0.8.6</version>
@@ -80,6 +87,19 @@
       <version>0.8.6</version>
       <scope>system</scope>
       <systemPath>${baratine-home}/lib/hessian.jar</systemPath>
+    </dependency-->
+
+    <!-- baratine at caucho.com -->
+    <dependency>
+      <groupId>io.baratine</groupId>
+      <artifactId>baratine-api</artifactId>
+      <version>[0.8.6,)</version>
+    </dependency>
+
+    <dependency>
+      <groupId>io.baratine</groupId>
+      <artifactId>baratine</artifactId>
+      <version>[0.8.6,)</version>
     </dependency>
   </dependencies>
 
