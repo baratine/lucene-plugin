@@ -1,6 +1,7 @@
 package com.caucho.lucene;
 
 import com.caucho.vfs.Vfs;
+import io.baratine.core.OnCheckpoint;
 import io.baratine.core.Service;
 import io.baratine.core.ServiceManager;
 import io.baratine.files.FileService;
@@ -42,7 +43,11 @@ public class LuceneService
 
   @Inject ServiceManager _manager;
 
-  Directory _directory;
+  private Directory _directory;
+  private IndexWriter _writer;
+  private DirectoryReader _reader;
+  private IndexSearcher _searcher;
+  private QueryParser _queryParser;
 
   public LuceneService() throws IOException
   {
@@ -57,14 +62,9 @@ public class LuceneService
     List<LuceneEntry> result = new ArrayList<>();
 
     try {
-      IndexReader reader = DirectoryReader.open(_directory);
+      IndexSearcher searcher = getIndexSearcher();
 
-      IndexSearcher searcher = new IndexSearcher(reader);
-      Analyzer analyzer = new StandardAnalyzer();
-
-      QueryParser parser = new QueryParser("text", analyzer);
-
-      Query q = parser.parse(query);
+      Query q = getQueryParser().parse(query);
 
       int docsLimit = Integer.MAX_VALUE;
 
@@ -108,11 +108,8 @@ public class LuceneService
       IndexReader reader = DirectoryReader.open(_directory);
 
       IndexSearcher searcher = new IndexSearcher(reader);
-      Analyzer analyzer = new StandardAnalyzer();
 
-      QueryParser parser = new QueryParser("text", analyzer);
-
-      Query q = parser.parse(query);
+      Query q = getQueryParser().parse(query);
 
       ScoreDoc after = new ScoreDoc(afterEntry.getId(), afterEntry.getScore());
 
@@ -149,13 +146,7 @@ public class LuceneService
       if (_logger.isLoggable(Level.FINER))
         _logger.finer(String.format("lucene-plugin#update('%s')", path));
 
-      Analyzer analyzer = new StandardAnalyzer();
-      IndexWriterConfig iwc = new IndexWriterConfig(analyzer.getVersion(),
-                                                    analyzer);
-
-      iwc.setOpenMode(IndexWriterConfig.OpenMode.CREATE_OR_APPEND);
-
-      IndexWriter writer = new IndexWriter(_directory, iwc);
+      _writer = getIndexWriter();
 
       Document document = new Document();
 
@@ -176,11 +167,9 @@ public class LuceneService
         }
       }
 
-      writer.addDocument(document);
+      _writer.addDocument(document);
 
-      writer.commit();
-
-      writer.close();
+      _writer.commit();
 
       if (_logger.isLoggable(Level.FINER))
         _logger.finer(String.format("lucene-plugin#update('%s') complete",
@@ -194,26 +183,75 @@ public class LuceneService
     }
   }
 
+  private IndexWriter getIndexWriter() throws IOException
+  {
+    if (_writer != null)
+      return _writer;
+
+    Analyzer analyzer = new StandardAnalyzer();
+    IndexWriterConfig iwc = new IndexWriterConfig(analyzer.getVersion(),
+                                                  analyzer);
+
+    iwc.setOpenMode(IndexWriterConfig.OpenMode.CREATE_OR_APPEND);
+
+    _writer = new IndexWriter(_directory, iwc);
+
+    return _writer;
+  }
+
+  private IndexSearcher getIndexSearcher() throws IOException
+  {
+    DirectoryReader newReader;
+    IndexWriter writer = getIndexWriter();
+
+    if (_reader != null)
+      newReader = DirectoryReader.openIfChanged(_reader, writer, true);
+    else
+      newReader = DirectoryReader.open(writer, true);
+
+    IndexSearcher newSearcher = _searcher;
+
+    if (newReader != _reader) {
+      newSearcher = new IndexSearcher(newReader);
+    }
+
+    _reader = newReader;
+    _searcher = newSearcher;
+
+    return _searcher;
+  }
+
+  private QueryParser getQueryParser()
+  {
+    if (_queryParser != null)
+      return _queryParser;
+
+    Analyzer analyzer = new StandardAnalyzer();
+
+    _queryParser = new QueryParser("text", analyzer);
+
+    return _queryParser;
+  }
+
+  @OnCheckpoint
+  protected void checkpoint() throws IOException
+  {
+    if (_writer != null)
+      _writer.commit();
+  }
+
   public boolean delete(final String path) throws IOException
   {
     try {
       if (_logger.isLoggable(Level.FINER))
         _logger.finer(String.format("lucene-plugin#delete('%s')", path));
 
-      Analyzer analyzer = new StandardAnalyzer();
-      IndexWriterConfig iwc = new IndexWriterConfig(analyzer.getVersion(),
-                                                    analyzer);
-
-      iwc.setOpenMode(IndexWriterConfig.OpenMode.CREATE_OR_APPEND);
-
-      IndexWriter writer = new IndexWriter(_directory, iwc);
+      IndexWriter writer = getIndexWriter();
 
       Term bfsPath = new Term(bfsId, path);
       writer.deleteDocuments(bfsPath);
 
       writer.commit();
-
-      writer.close();
 
       if (_logger.isLoggable(Level.FINER))
         _logger.finer(String.format("lucene-plugin#delete('%s') complete",
@@ -232,7 +270,47 @@ public class LuceneService
     if (_logger.isLoggable(Level.FINER))
       _logger.finer(String.format("lucene-plugin#clear()"));
 
-    _directory.close();
+    _searcher = null;
+
+    Exception exception;
+
+    try {
+      if (_reader != null) {
+        _reader.close();
+      }
+    } catch (Exception e) {
+      _logger.log(Level.WARNING, e.getMessage(), e);
+
+      exception = e;
+    } finally {
+      _reader = null;
+    }
+
+    try {
+      if (_writer != null) {
+        _writer.commit();
+        _writer.close();
+      }
+    } catch (IOException e) {
+      _logger.log(Level.WARNING, e.getMessage(), e);
+
+      exception = e;
+    } finally {
+      _writer = null;
+    }
+
+    try {
+      _directory.close();
+    } catch (IOException e) {
+      _logger.log(Level.WARNING, e.getMessage(), e);
+      exception = e;
+    } finally {
+      _directory = null;
+    }
+
+    _reader = null;
+    _writer = null;
+    _searcher = null;
 
     Vfs.lookup("/tmp/bfs-lucene-index").removeAll();
 
