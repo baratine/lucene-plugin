@@ -2,6 +2,7 @@ package com.caucho.lucene;
 
 import com.caucho.vfs.Vfs;
 import io.baratine.core.OnCheckpoint;
+import io.baratine.core.OnDestroy;
 import io.baratine.core.Service;
 import io.baratine.core.ServiceManager;
 import io.baratine.files.FileService;
@@ -263,6 +264,12 @@ public class LuceneService
 
       throw e;
     }
+  }
+
+  @OnDestroy
+  public void destroy() throws IOException
+  {
+    clear();
   }
 
   public void clear() throws IOException
