@@ -29,6 +29,7 @@ import org.xml.sax.SAXException;
 import javax.inject.Inject;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -143,6 +144,7 @@ public class LuceneService
   public boolean update(final String path)
     throws IOException, TikaException, SAXException
   {
+    InputStream in = null;
     try {
       if (_logger.isLoggable(Level.FINER))
         _logger.finer(String.format("lucene-plugin#update('%s')", path));
@@ -160,7 +162,7 @@ public class LuceneService
       Metadata metadata = new Metadata();
       LuceneContentHandler handler = new LuceneContentHandler(document);
 
-      parser.parse(file.openRead(), handler, metadata);
+      parser.parse(in = file.openRead(), handler, metadata);
 
       for (String name : metadata.names()) {
         for (String value : metadata.getValues(name)) {
@@ -181,6 +183,9 @@ public class LuceneService
       _logger.log(Level.WARNING, e.getMessage(), e);
 
       throw e;
+    } finally {
+      if (in != null)
+        in.close();
     }
   }
 
