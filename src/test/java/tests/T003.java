@@ -25,10 +25,9 @@ import java.util.concurrent.ExecutionException;
 public class T003 extends BaseTest
 {
   @Before
-  public void setUp()
+  public void setUp() throws ExecutionException, InterruptedException
   {
-    _lucene.clear(v -> {
-    });
+    clear();
   }
 
   @Test

@@ -39,11 +39,13 @@ import java.util.logging.Logger;
 @Service("public:///lucene")
 public class LuceneService
 {
-  public static final String bfsId = "bfspath";
+  private static final String bfsId = "bfspath";
 
-  public Logger _logger = Logger.getLogger(LuceneService.class.getName());
+  private static Logger _log
+    = Logger.getLogger(LuceneService.class.getName());
 
-  @Inject ServiceManager _manager;
+  @Inject
+  private ServiceManager _manager;
 
   private Directory _directory;
   private IndexWriter _writer;
@@ -58,8 +60,8 @@ public class LuceneService
 
   public LuceneEntry[] search(String query) throws ParseException, IOException
   {
-    if (_logger.isLoggable(Level.FINER))
-      _logger.finer(String.format("lucene-plugin#search('%s')", query));
+    if (_log.isLoggable(Level.FINER))
+      _log.finer(String.format("lucene-plugin#search('%s')", query));
 
     List<LuceneEntry> result = new ArrayList<>();
 
@@ -80,15 +82,15 @@ public class LuceneService
         result.add(rDoc);
       }
 
-      if (_logger.isLoggable(Level.FINER))
-        _logger.finer(String.format(
+      if (_log.isLoggable(Level.FINER))
+        _log.finer(String.format(
           "lucene-plugin#search('%1$s') complete with %2$d results",
           query,
           result.size()));
 
       return result.toArray(new LuceneEntry[result.size()]);
     } catch (IOException | ParseException e) {
-      _logger.log(Level.WARNING, e.getMessage(), e);
+      _log.log(Level.WARNING, e.getMessage(), e);
 
       throw e;
     }
@@ -98,11 +100,11 @@ public class LuceneService
                                    LuceneEntry afterEntry,
                                    int limit) throws IOException, ParseException
   {
-    if (_logger.isLoggable(Level.FINER))
-      _logger.finer(String.format("lucene-plugin#search('%1$s', %2$s, %3$d )",
-                                  query,
-                                  afterEntry,
-                                  limit));
+    if (_log.isLoggable(Level.FINER))
+      _log.finer(String.format("lucene-plugin#search('%1$s', %2$s, %3$d )",
+                               query,
+                               afterEntry,
+                               limit));
 
     List<LuceneEntry> result = new ArrayList<>();
 
@@ -125,8 +127,8 @@ public class LuceneService
         result.add(rdoc);
       }
 
-      if (_logger.isLoggable(Level.FINER))
-        _logger.finer(String.format(
+      if (_log.isLoggable(Level.FINER))
+        _log.finer(String.format(
           "lucene-plugin#search('%1$s', %2$s, %3$d with %4$d results)",
           query,
           afterEntry,
@@ -135,7 +137,7 @@ public class LuceneService
 
       return result.toArray(new LuceneEntry[result.size()]);
     } catch (IOException | ParseException e) {
-      _logger.log(Level.WARNING, e.getMessage(), e);
+      _log.log(Level.WARNING, e.getMessage(), e);
 
       throw e;
     }
@@ -146,8 +148,8 @@ public class LuceneService
   {
     InputStream in = null;
     try {
-      if (_logger.isLoggable(Level.FINER))
-        _logger.finer(String.format("lucene-plugin#update('%s')", path));
+      if (_log.isLoggable(Level.FINER))
+        _log.finer(String.format("lucene-plugin#update('%s')", path));
 
       _writer = getIndexWriter();
 
@@ -174,13 +176,13 @@ public class LuceneService
 
       _writer.commit();
 
-      if (_logger.isLoggable(Level.FINER))
-        _logger.finer(String.format("lucene-plugin#update('%s') complete",
-                                    path));
+      if (_log.isLoggable(Level.FINER))
+        _log.finer(String.format("lucene-plugin#update('%s') complete",
+                                 path));
 
       return true;
     } catch (IOException | SAXException | TikaException e) {
-      _logger.log(Level.WARNING, e.getMessage(), e);
+      _log.log(Level.WARNING, e.getMessage(), e);
 
       throw e;
     } finally {
@@ -249,8 +251,8 @@ public class LuceneService
   public boolean delete(final String path) throws IOException
   {
     try {
-      if (_logger.isLoggable(Level.FINER))
-        _logger.finer(String.format("lucene-plugin#delete('%s')", path));
+      if (_log.isLoggable(Level.FINER))
+        _log.finer(String.format("lucene-plugin#delete('%s')", path));
 
       IndexWriter writer = getIndexWriter();
 
@@ -259,13 +261,13 @@ public class LuceneService
 
       writer.commit();
 
-      if (_logger.isLoggable(Level.FINER))
-        _logger.finer(String.format("lucene-plugin#delete('%s') complete",
-                                    path));
+      if (_log.isLoggable(Level.FINER))
+        _log.finer(String.format("lucene-plugin#delete('%s') complete",
+                                 path));
 
       return true;
     } catch (IOException e) {
-      _logger.log(Level.WARNING, e.getMessage(), e);
+      _log.log(Level.WARNING, e.getMessage(), e);
 
       throw e;
     }
@@ -279,8 +281,8 @@ public class LuceneService
 
   public void clear() throws Exception
   {
-    if (_logger.isLoggable(Level.FINER))
-      _logger.finer(String.format("lucene-plugin#clear()"));
+    if (_log.isLoggable(Level.FINER))
+      _log.finer(String.format("lucene-plugin#clear()"));
 
     _searcher = null;
 
@@ -291,7 +293,7 @@ public class LuceneService
         _reader.close();
       }
     } catch (Exception e) {
-      _logger.log(Level.WARNING, e.getMessage(), e);
+      _log.log(Level.WARNING, e.getMessage(), e);
 
       exception = e;
     } finally {
@@ -304,7 +306,7 @@ public class LuceneService
         _writer.close();
       }
     } catch (IOException e) {
-      _logger.log(Level.WARNING, e.getMessage(), e);
+      _log.log(Level.WARNING, e.getMessage(), e);
 
       exception = e;
     } finally {
@@ -314,7 +316,7 @@ public class LuceneService
     try {
       _directory.close();
     } catch (IOException e) {
-      _logger.log(Level.WARNING, e.getMessage(), e);
+      _log.log(Level.WARNING, e.getMessage(), e);
       exception = e;
     } finally {
       _directory = null;
@@ -328,8 +330,8 @@ public class LuceneService
 
     _directory = createDirectory();
 
-    if (_logger.isLoggable(Level.FINER))
-      _logger.finer(String.format("lucene-plugin#clear() complete"));
+    if (_log.isLoggable(Level.FINER))
+      _log.finer(String.format("lucene-plugin#clear() complete"));
 
     if (exception != null)
       throw exception;

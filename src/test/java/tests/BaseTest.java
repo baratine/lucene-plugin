@@ -5,31 +5,34 @@ import com.caucho.lucene.LuceneServiceClient;
 import com.caucho.vfs.ReadStream;
 import com.caucho.vfs.Vfs;
 import io.baratine.core.Lookup;
+import io.baratine.core.ResultFuture;
 import io.baratine.core.ServiceManager;
 import io.baratine.files.FileService;
 
 import javax.inject.Inject;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
 public abstract class BaseTest
 {
   @Inject @Lookup
-  protected ServiceManager _serviceManager;
+  private ServiceManager _serviceManager;
 
   @Inject @Lookup("/lucene")
-  protected LuceneServiceClient _lucene;
+  private LuceneServiceClient _lucene;
+
+  protected FileService lookup(String path)
+  {
+    return _serviceManager.lookup(path).as(FileService.class);
+  }
 
   final protected boolean delete(String fileName)
     throws InterruptedException, ExecutionException
   {
-    CompletableFuture<Boolean> future = new CompletableFuture<>();
+    ResultFuture<Boolean> future = new ResultFuture<>();
 
-    _lucene.delete(makeBfsPath(fileName), r -> {
-      future.complete(true);
-    });
+    _lucene.delete(makeBfsPath(fileName), future);
 
     return future.get();
   }
@@ -54,10 +57,8 @@ public abstract class BaseTest
   final protected boolean update(String fileName)
     throws ExecutionException, InterruptedException
   {
-    CompletableFuture<Boolean> future = new CompletableFuture<>();
-    _lucene.update(fileName, v -> {
-      future.complete(true);
-    });
+    ResultFuture<Boolean> future = new ResultFuture<>();
+    _lucene.update(fileName, future);
 
     return future.get();
   }
@@ -65,34 +66,30 @@ public abstract class BaseTest
   final protected LuceneEntry[] search(String query)
     throws IOException, InterruptedException, ExecutionException
   {
-    CompletableFuture<LuceneEntry[]> future = new CompletableFuture<>();
+    ResultFuture<LuceneEntry[]> future = new ResultFuture<>();
 
-    _lucene.search(query, docs -> {
-      future.complete(docs);
-    });
+    _lucene.search(query, future);
 
     return future.get();
   }
 
-  final protected LuceneEntry[] search(String query, LuceneEntry after, int limit)
+  final protected LuceneEntry[] search(String query,
+                                       LuceneEntry after,
+                                       int limit)
     throws IOException, InterruptedException, ExecutionException
   {
-    CompletableFuture<LuceneEntry[]> future = new CompletableFuture<>();
+    ResultFuture<LuceneEntry[]> future = new ResultFuture<>();
 
-    _lucene.searchAfter(query, after, limit, docs -> {
-      future.complete(docs);
-    });
+    _lucene.searchAfter(query, after, limit, future);
 
     return future.get();
   }
 
   final protected void clear() throws ExecutionException, InterruptedException
   {
-    CompletableFuture<Void> future = new CompletableFuture<>();
+    ResultFuture<Void> future = new ResultFuture<>();
 
-    _lucene.clear(f -> {
-      future.complete(null);
-    });
+    _lucene.clear(future);
 
     future.get();
   }

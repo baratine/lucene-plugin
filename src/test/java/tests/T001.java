@@ -31,10 +31,9 @@ public class T001 extends BaseTest
   }
 
   @Before
-  public void setUp()
+  public void setUp() throws ExecutionException, InterruptedException
   {
-    _lucene.clear(v -> {
-    });
+    clear();
   }
 
   private void test(String fileName)

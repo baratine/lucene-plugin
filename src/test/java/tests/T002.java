@@ -33,7 +33,7 @@ public class T002 extends BaseTest
 
     for (int i = 0; i < 11; i++) {
       String fileName = makeFileName(i);
-      FileService file = _serviceManager.lookup(fileName).as(FileService.class);
+      FileService file = lookup(fileName);
       try (OutputStream out = file.openWrite()) {
         if (i < 10)
           out.write("hit".getBytes());
