@@ -6,7 +6,7 @@
 
   <groupId>io.baratine</groupId>
   <artifactId>lucene-plugin</artifactId>
-  <version>1.0-SNAPSHOT</version>
+  <version>0.8.6</version>
 
   <properties>
     <baratine-home>/Users/alex/projects/caucho/5.0/baratine</baratine-home>
@@ -18,6 +18,16 @@
       <url>http://caucho.com/m2</url>
     </repository>
   </repositories>
+
+  <distributionManagement>
+    <repository>
+      <uniqueVersion>false</uniqueVersion>
+      <id>local</id>
+      <name>Local Repository</name>
+      <url>file:///tmp/maven2</url>
+      <layout>default</layout>
+    </repository>
+  </distributionManagement>
 
   <dependencies>
     <!-- lucene -->

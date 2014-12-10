@@ -8,6 +8,7 @@ import io.baratine.core.Lookup;
 import io.baratine.core.ResultFuture;
 import io.baratine.core.ServiceManager;
 import io.baratine.files.FileService;
+import io.baratine.files.Status;
 
 import javax.inject.Inject;
 import java.io.IOException;
