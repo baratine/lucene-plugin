@@ -58,6 +58,13 @@ public class LuceneService
     _directory = createDirectory();
   }
 
+  public LuceneService(String address, ServiceManager manager)
+    throws IOException
+  {
+    _manager = manager;
+    _directory = createDirectory();
+  }
+
   public LuceneEntry[] search(String query) throws ParseException, IOException
   {
     if (_log.isLoggable(Level.FINER))
