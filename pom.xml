@@ -6,10 +6,10 @@
 
   <groupId>io.baratine</groupId>
   <artifactId>bfs-lucene-plugin</artifactId>
-  <version>0.8.6</version>
+  <version>0.8.8</version>
 
   <properties>
-    <baratine-home>/Users/alex/projects/caucho/5.0/baratine</baratine-home>
+    <baratine-home>/Users/alex/baratine</baratine-home>
   </properties>
 
   <repositories>
@@ -63,7 +63,7 @@
     </dependency>
 
     <!-- baratine local-->
-    <!--dependency>
+    <dependency>
       <groupId>io.baratine</groupId>
       <artifactId>baratine-api</artifactId>
       <version>0.8.6</version>
@@ -97,20 +97,20 @@
       <version>0.8.6</version>
       <scope>system</scope>
       <systemPath>${baratine-home}/lib/hessian.jar</systemPath>
-    </dependency-->
+    </dependency>
 
     <!-- baratine at caucho.com -->
-    <dependency>
+    <!--dependency>
       <groupId>io.baratine</groupId>
       <artifactId>baratine-api</artifactId>
-      <version>[0.8.6,)</version>
+      <version>[0.8.7,)</version>
     </dependency>
 
     <dependency>
       <groupId>io.baratine</groupId>
       <artifactId>baratine</artifactId>
-      <version>[0.8.6,)</version>
-    </dependency>
+      <version>[0.8.7,)</version>
+    </dependency-->
   </dependencies>
 
   <build>

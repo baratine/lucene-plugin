@@ -11,7 +11,13 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.ExecutionException;
+import java.util.stream.Stream;
 
 /**
  * title: test update index
@@ -19,9 +25,9 @@ import java.util.concurrent.ExecutionException;
 
 @RunWith(RunnerBaratine.class)
 @ConfigurationBaratine(services = {LuceneService.class},
-                       testTime = 0,
-                       logs = {@Log(name = "com.caucho",
-                                    level = "FINER")})
+  testTime = 0,
+  logs = {@Log(name = "com.caucho",
+    level = "FINER")})
 public class T003 extends BaseTest
 {
   @Before
@@ -34,16 +40,26 @@ public class T003 extends BaseTest
   public void test()
     throws InterruptedException, IOException, ExecutionException
   {
-    String[] files = new String[]{"test-00.txt", "test-00.pdf", "test-00.docx"};
+    List<String> files = Arrays.asList("test-00.txt",
+                                       "test-00.pdf",
+                                       "test-00.docx");
 
-    for (int i = 0; i < files.length; i++) {
-      String file = files[i];
+    for (int i = 0; i < files.size(); i++) {
+      String file = files.get(i);
 
       LuceneEntry[] result = uploadAndSearch(file, "Lorem");
 
+      Arrays.sort(result,
+                  (a, b) -> files.indexOf(Stream.of(a.getBfsPath()
+                                                     .split("/"))
+                                                .reduce((c, d) -> d).get()) -
+                            files.indexOf(Stream.of(b.getBfsPath()
+                                                     .split("/"))
+                                                .reduce((c, d) -> d).get()));
+
       Assert.assertEquals(i + 1, result.length);
       for (int j = 0; j < result.length; j++) {
-        Assert.assertEquals(makeBfsPath(files[j]), result[j].getBfsPath());
+        Assert.assertEquals(makeBfsPath(files.get(j)), result[j].getBfsPath());
       }
     }
   }

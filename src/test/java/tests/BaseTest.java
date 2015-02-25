@@ -7,8 +7,7 @@ import com.caucho.vfs.Vfs;
 import io.baratine.core.Lookup;
 import io.baratine.core.ResultFuture;
 import io.baratine.core.ServiceManager;
-import io.baratine.files.FileService;
-import io.baratine.files.Status;
+import io.baratine.files.BfsFile;
 
 import javax.inject.Inject;
 import java.io.IOException;
@@ -17,15 +16,15 @@ import java.util.concurrent.ExecutionException;
 
 public abstract class BaseTest
 {
-  @Inject @Lookup
+  @Inject
   private ServiceManager _serviceManager;
 
   @Inject @Lookup("/lucene")
   private LuceneServiceClient _lucene;
 
-  protected FileService lookup(String path)
+  protected BfsFile lookup(String path)
   {
-    return _serviceManager.lookup(path).as(FileService.class);
+    return _serviceManager.lookup(path).as(BfsFile.class);
   }
 
   final protected boolean delete(String fileName)
@@ -38,11 +37,11 @@ public abstract class BaseTest
     return future.get();
   }
 
-  final protected FileService upload(String fileName)
+  final protected BfsFile upload(String fileName)
     throws IOException, InterruptedException, ExecutionException
   {
-    FileService file =
-      _serviceManager.lookup(makeBfsPath(fileName)).as(FileService.class);
+    BfsFile file =
+      _serviceManager.lookup(makeBfsPath(fileName)).as(BfsFile.class);
 
     String localFile = "src/test/resources/" + fileName;
     try (OutputStream out = file.openWrite();

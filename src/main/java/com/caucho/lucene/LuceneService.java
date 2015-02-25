@@ -1,18 +1,24 @@
 package com.caucho.lucene;
 
 import com.caucho.vfs.Vfs;
-import io.baratine.core.OnCheckpoint;
+import io.baratine.core.Journal;
+import io.baratine.core.Modify;
 import io.baratine.core.OnDestroy;
+import io.baratine.core.OnSave;
 import io.baratine.core.Service;
 import io.baratine.core.ServiceManager;
-import io.baratine.files.FileService;
+import io.baratine.files.BfsFile;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.*;
+import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.IndexSearcher;
@@ -27,9 +33,10 @@ import org.apache.tika.parser.AutoDetectParser;
 import org.xml.sax.SAXException;
 
 import javax.inject.Inject;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.FileSystems;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -37,6 +44,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 @Service("public:///lucene")
+@Journal
 public class LuceneService
 {
   private static final String bfsId = "bfspath";
@@ -150,6 +158,7 @@ public class LuceneService
     }
   }
 
+  @Modify
   public boolean update(final String path)
     throws IOException, TikaException, SAXException
   {
@@ -165,7 +174,7 @@ public class LuceneService
       Field bfsPath = new StringField(bfsId, path, Field.Store.YES);
       document.add(bfsPath);
 
-      FileService file = _manager.lookup(path).as(FileService.class);
+      BfsFile file = _manager.lookup(path).as(BfsFile.class);
 
       AutoDetectParser parser = new AutoDetectParser();
       Metadata metadata = new Metadata();
@@ -204,8 +213,7 @@ public class LuceneService
       return _writer;
 
     Analyzer analyzer = new StandardAnalyzer();
-    IndexWriterConfig iwc = new IndexWriterConfig(analyzer.getVersion(),
-                                                  analyzer);
+    IndexWriterConfig iwc = new IndexWriterConfig(analyzer);
 
     iwc.setOpenMode(IndexWriterConfig.OpenMode.CREATE_OR_APPEND);
 
@@ -248,13 +256,14 @@ public class LuceneService
     return _queryParser;
   }
 
-  @OnCheckpoint
+  @OnSave
   protected void checkpoint() throws IOException
   {
     if (_writer != null)
       _writer.commit();
   }
 
+  @Modify
   public boolean delete(final String path) throws IOException
   {
     try {
@@ -309,7 +318,7 @@ public class LuceneService
 
     try {
       if (_writer != null) {
-        _writer.commit();
+        _writer.rollback();
         _writer.close();
       }
     } catch (IOException e) {
@@ -333,11 +342,12 @@ public class LuceneService
     _writer = null;
     _searcher = null;
 
-    Vfs.lookup("/tmp/bfs-lucene-index").removeAll();
+    if (!Vfs.lookup(getPath().toFile().getAbsolutePath()).removeAll())
+      throw new IOException();
 
     _directory = createDirectory();
 
-    if (_log.isLoggable(Level.FINER))
+    if (_log.isLoggable(Level.FINER) && exception != null)
       _log.finer(String.format("lucene-plugin#clear() complete"));
 
     if (exception != null)
@@ -346,7 +356,11 @@ public class LuceneService
 
   private Directory createDirectory() throws IOException
   {
-    //return MMapDirectory.open(new File("/tmp/bfs-lucene-index"));
-    return FSDirectory.open(new File("/tmp/bfs-lucene-index"));
+    return FSDirectory.open(getPath());
+  }
+
+  private Path getPath()
+  {
+    return FileSystems.getDefault().getPath("/tmp", "bfs-lucene-index");
   }
 }

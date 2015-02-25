@@ -5,7 +5,7 @@ import com.caucho.junit.ConfigurationBaratine.Log;
 import com.caucho.junit.RunnerBaratine;
 import com.caucho.lucene.LuceneEntry;
 import com.caucho.lucene.LuceneService;
-import io.baratine.files.FileService;
+import io.baratine.files.BfsFile;
 import junit.framework.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -33,7 +33,7 @@ public class T002 extends BaseTest
 
     for (int i = 0; i < 11; i++) {
       String fileName = makeFileName(i);
-      FileService file = lookup(fileName);
+      BfsFile file = lookup(fileName);
       try (OutputStream out = file.openWrite()) {
         if (i < 10)
           out.write("hit".getBytes());
