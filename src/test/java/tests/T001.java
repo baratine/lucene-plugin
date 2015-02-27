@@ -4,7 +4,6 @@ import com.caucho.junit.ConfigurationBaratine;
 import com.caucho.junit.ConfigurationBaratine.Log;
 import com.caucho.junit.RunnerBaratine;
 import com.caucho.lucene.LuceneEntry;
-import com.caucho.lucene.LuceneService;
 import junit.framework.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -17,8 +16,7 @@ import java.util.concurrent.ExecutionException;
  * title: test delete
  */
 @RunWith(RunnerBaratine.class)
-@ConfigurationBaratine(services = {LuceneService.class},
-                       testTime = 0,
+@ConfigurationBaratine(testTime = 0,
                        logs = {@Log(name = "com.caucho",
                                     level = "FINER")})
 public class T001 extends BaseTest
@@ -28,12 +26,6 @@ public class T001 extends BaseTest
     throws InterruptedException, IOException, ExecutionException
   {
     test("test-00.txt");
-  }
-
-  @Before
-  public void setUp() throws ExecutionException, InterruptedException
-  {
-    clear();
   }
 
   private void test(String fileName)

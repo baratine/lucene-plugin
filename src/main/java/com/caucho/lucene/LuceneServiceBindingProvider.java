@@ -15,12 +15,10 @@ public class LuceneServiceBindingProvider extends ServiceBindingProvider
   @Override
   public void init(ServiceManager manager)
   {
-/*
-    try {
-      manager.service(new LuceneService()).bind("lucene:");
-    } catch (IOException e) {
-      log.log(Level.WARNING, e.getMessage(), e);
-    }
-*/
+    LuceneScheme scheme = new LuceneScheme(manager);
+
+    log.finer("binding scheme " + scheme);
+
+    manager.service(scheme).bind("lucene:");
   }
 }

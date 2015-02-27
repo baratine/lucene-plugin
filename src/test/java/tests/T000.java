@@ -18,8 +18,7 @@ import java.util.concurrent.ExecutionException;
  */
 
 @RunWith(RunnerBaratine.class)
-@ConfigurationBaratine(services = {LuceneService.class},
-                       testTime = 0,
+@ConfigurationBaratine(testTime = 0,
                        logs = {@Log(name = "com.caucho",
                                     level = "FINER")})
 public class T000 extends BaseTest
@@ -43,12 +42,6 @@ public class T000 extends BaseTest
     throws InterruptedException, IOException, ExecutionException
   {
     test("test-00.docx");
-  }
-
-  @Before
-  public void setUp() throws ExecutionException, InterruptedException
-  {
-    clear();
   }
 
   private void test(String fileName)

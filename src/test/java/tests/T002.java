@@ -4,7 +4,6 @@ import com.caucho.junit.ConfigurationBaratine;
 import com.caucho.junit.ConfigurationBaratine.Log;
 import com.caucho.junit.RunnerBaratine;
 import com.caucho.lucene.LuceneEntry;
-import com.caucho.lucene.LuceneService;
 import io.baratine.files.BfsFile;
 import junit.framework.Assert;
 import org.junit.Before;
@@ -19,18 +18,15 @@ import java.util.concurrent.ExecutionException;
  * test: paging
  */
 @RunWith(RunnerBaratine.class)
-@ConfigurationBaratine(services = {LuceneService.class},
-                       testTime = 0,
-                       logs = {@Log(name = "com.caucho",
-                                    level = "FINER")})
+@ConfigurationBaratine(testTime = 0,
+  logs = {@Log(name = "com.caucho",
+    level = "FINER")})
 public class T002 extends BaseTest
 {
   @Before
   public void setUp()
     throws IOException, ExecutionException, InterruptedException
   {
-    clear();
-
     for (int i = 0; i < 11; i++) {
       String fileName = makeFileName(i);
       BfsFile file = lookup(fileName);

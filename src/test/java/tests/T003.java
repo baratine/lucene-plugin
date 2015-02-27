@@ -4,18 +4,14 @@ import com.caucho.junit.ConfigurationBaratine;
 import com.caucho.junit.ConfigurationBaratine.Log;
 import com.caucho.junit.RunnerBaratine;
 import com.caucho.lucene.LuceneEntry;
-import com.caucho.lucene.LuceneService;
 import junit.framework.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Stream;
 
@@ -24,18 +20,9 @@ import java.util.stream.Stream;
  */
 
 @RunWith(RunnerBaratine.class)
-@ConfigurationBaratine(services = {LuceneService.class},
-  testTime = 0,
-  logs = {@Log(name = "com.caucho",
-    level = "FINER")})
+@ConfigurationBaratine(testTime = 0, logs = {@Log(name = "com.caucho", level = "FINER")})
 public class T003 extends BaseTest
 {
-  @Before
-  public void setUp() throws ExecutionException, InterruptedException
-  {
-    clear();
-  }
-
   @Test
   public void test()
     throws InterruptedException, IOException, ExecutionException

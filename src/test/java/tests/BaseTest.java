@@ -8,6 +8,8 @@ import io.baratine.core.Lookup;
 import io.baratine.core.ResultFuture;
 import io.baratine.core.ServiceManager;
 import io.baratine.files.BfsFile;
+import org.junit.After;
+import org.junit.Before;
 
 import javax.inject.Inject;
 import java.io.IOException;
@@ -19,7 +21,7 @@ public abstract class BaseTest
   @Inject
   private ServiceManager _serviceManager;
 
-  @Inject @Lookup("/lucene")
+  @Inject @Lookup("lucene:///bfs")
   private LuceneServiceClient _lucene;
 
   protected BfsFile lookup(String path)
@@ -107,6 +109,18 @@ public abstract class BaseTest
   final protected String makeBfsPath(String file)
   {
     return "bfs:///tmp/" + file;
+  }
+
+  @Before
+  public final void baseBefore() throws ExecutionException, InterruptedException
+  {
+    clear();
+  }
+
+  @After
+  public final void baseAfter() throws ExecutionException, InterruptedException
+  {
+    clear();
   }
 }
 
