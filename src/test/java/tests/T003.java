@@ -5,7 +5,6 @@ import com.caucho.junit.ConfigurationBaratine.Log;
 import com.caucho.junit.RunnerBaratine;
 import com.caucho.lucene.LuceneEntry;
 import junit.framework.Assert;
-import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -16,7 +15,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.stream.Stream;
 
 /**
- * title: test update index
+ * title: test updateBfs index
  */
 
 @RunWith(RunnerBaratine.class)
@@ -37,16 +36,17 @@ public class T003 extends BaseTest
       LuceneEntry[] result = uploadAndSearch(file, "Lorem");
 
       Arrays.sort(result,
-                  (a, b) -> files.indexOf(Stream.of(a.getBfsPath()
+                  (a, b) -> files.indexOf(Stream.of(a.getExternalId()
                                                      .split("/"))
                                                 .reduce((c, d) -> d).get()) -
-                            files.indexOf(Stream.of(b.getBfsPath()
+                            files.indexOf(Stream.of(b.getExternalId()
                                                      .split("/"))
                                                 .reduce((c, d) -> d).get()));
 
       Assert.assertEquals(i + 1, result.length);
       for (int j = 0; j < result.length; j++) {
-        Assert.assertEquals(makeBfsPath(files.get(j)), result[j].getBfsPath());
+        Assert.assertEquals(makeBfsPath(files.get(j)),
+                            result[j].getExternalId());
       }
     }
   }

@@ -32,14 +32,15 @@ import org.apache.tika.metadata.Metadata;
 import org.apache.tika.parser.AutoDetectParser;
 import org.xml.sax.SAXException;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystems;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Date;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -74,6 +75,10 @@ public class LuceneService
     if (log.isLoggable(Level.FINER))
       log.finer(String.format("lucene-plugin#search('%s')", query));
 
+    IndexWriter writer = getIndexWriter();
+    if (writer.hasUncommittedChanges())
+      writer.commit();
+
     List<LuceneEntry> result = new ArrayList<>();
 
     try {
@@ -88,9 +93,9 @@ public class LuceneService
       for (ScoreDoc doc : docs.scoreDocs) {
         Document d = searcher.doc(doc.doc, Collections.singleton(_address));
 
-        LuceneEntry rDoc = new LuceneEntry(doc.doc, doc.score, d.get(_address));
+        LuceneEntry entry = new LuceneEntry(doc.doc, doc.score, d.get(_address));
 
-        result.add(rDoc);
+        result.add(entry);
       }
 
       if (log.isLoggable(Level.FINER))
@@ -117,6 +122,11 @@ public class LuceneService
                               afterEntry,
                               limit));
 
+    IndexWriter writer = getIndexWriter();
+
+    if (writer.hasUncommittedChanges())
+      writer.commit();
+
     List<LuceneEntry> result = new ArrayList<>();
 
     try {
@@ -133,9 +143,9 @@ public class LuceneService
       for (ScoreDoc doc : docs.scoreDocs) {
         Document d = searcher.doc(doc.doc, Collections.singleton(_address));
 
-        LuceneEntry rdoc = new LuceneEntry(doc.doc, doc.score, d.get(_address));
+        LuceneEntry entry = new LuceneEntry(doc.doc, doc.score, d.get(_address));
 
-        result.add(rdoc);
+        result.add(entry);
       }
 
       if (log.isLoggable(Level.FINER))
@@ -155,20 +165,20 @@ public class LuceneService
   }
 
   @Modify
-  public boolean update(final String path)
+  public boolean updateBfs(final String path)
     throws IOException, TikaException, SAXException
   {
     InputStream in = null;
     try {
       if (log.isLoggable(Level.FINER))
-        log.finer(String.format("lucene-plugin#update('%s')", path));
+        log.finer(String.format("lucene-plugin#updateBfs('%s')", path));
 
-      _writer = getIndexWriter();
+      IndexWriter writer = getIndexWriter();
 
       Document document = new Document();
 
-      Field bfsPath = new StringField(_address, path, Field.Store.YES);
-      document.add(bfsPath);
+      Field externalId = new StringField(_address, path, Field.Store.YES);
+      document.add(externalId);
 
       BfsFile file = _manager.lookup(path).as(BfsFile.class);
 
@@ -183,14 +193,57 @@ public class LuceneService
           document.add(new TextField(name, value, Field.Store.NO));
         }
       }
+      Term externalIdTerm = new Term(_address, path);
 
-      _writer.addDocument(document);
-
-      _writer.commit();
+      _writer.updateDocument(externalIdTerm, document);
 
       if (log.isLoggable(Level.FINER))
-        log.finer(String.format("lucene-plugin#update('%s') complete",
+        log.finer(String.format("lucene-plugin#updateBfs('%s') complete",
                                 path));
+
+      return true;
+    } catch (IOException | SAXException | TikaException e) {
+      log.log(Level.WARNING, e.getMessage(), e);
+
+      throw e;
+    } finally {
+      if (in != null)
+        in.close();
+    }
+  }
+
+  @Modify
+  public boolean update(String id, String data)
+    throws TikaException, SAXException, IOException
+  {
+    InputStream in = null;
+    try {
+      if (log.isLoggable(Level.FINER))
+        log.finer(String.format("lucene-plugin#update('%s')", id));
+
+      IndexWriter writer = getIndexWriter();
+
+      Document document = new Document();
+
+      Field externalId = new StringField(_address, id, Field.Store.YES);
+      document.add(externalId);
+
+      AutoDetectParser parser = new AutoDetectParser();
+      Metadata metadata = new Metadata();
+      LuceneContentHandler handler = new LuceneContentHandler(document);
+
+      parser.parse(
+        in = new ByteArrayInputStream(data.getBytes(StandardCharsets.UTF_8)),
+        handler,
+        metadata);
+
+      Term externalIdTerm = new Term(_address, id);
+
+      writer.updateDocument(externalIdTerm, document);
+
+      if (log.isLoggable(Level.FINER))
+        log.finer(String.format("lucene-plugin#updateBfs('%s') complete",
+                                id));
 
       return true;
     } catch (IOException | SAXException | TikaException e) {
@@ -268,22 +321,22 @@ public class LuceneService
   }
 
   @Modify
-  public boolean delete(final String path) throws IOException
+  public boolean delete(final String id) throws IOException
   {
     try {
       if (log.isLoggable(Level.FINER))
-        log.finer(String.format("lucene-plugin#delete('%s')", path));
+        log.finer(String.format("lucene-plugin#delete('%s')", id));
 
       IndexWriter writer = getIndexWriter();
 
-      Term bfsPath = new Term(_address, path);
-      writer.deleteDocuments(bfsPath);
+      Term idTerm = new Term(_address, id);
+      writer.deleteDocuments(idTerm);
 
-      writer.commit();
+      //writer.commit();
 
       if (log.isLoggable(Level.FINER))
         log.finer(String.format("lucene-plugin#delete('%s') complete",
-                                path));
+                                id));
 
       return true;
     } catch (IOException e) {
@@ -297,8 +350,6 @@ public class LuceneService
   public void destroy() throws Exception
   {
     log.info("destroying " + this);
-
-    new File(("/tmp/xxx" + new Date()).replace(":", "-")).createNewFile();
 
     clear();
   }

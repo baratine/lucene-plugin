@@ -4,7 +4,7 @@ public class LuceneEntry
 {
   private int _id;
   private float _score;
-  private String _bfsPath;
+  private String _externalId;
 
   public LuceneEntry()
   {
@@ -20,11 +20,11 @@ public class LuceneEntry
     this(id, score, null);
   }
 
-  public LuceneEntry(int id, float score, String bfsPath)
+  public LuceneEntry(int id, float score, String externalId)
   {
     _id = id;
     _score = score;
-    _bfsPath = bfsPath;
+    _externalId = externalId;
   }
 
   public int getId()
@@ -47,18 +47,25 @@ public class LuceneEntry
     _score = score;
   }
 
-  public String getBfsPath()
+  public String getExternalId()
   {
-    return _bfsPath;
+    return _externalId;
   }
 
-  public void setBfsPath(String bfsPath)
+  public void setExternalId(String externalId)
   {
-    _bfsPath = bfsPath;
+    _externalId = externalId;
   }
 
   @Override public String toString()
   {
-    return "LuceneEntry[" + _id + ", " + _score + ", '" + _bfsPath + '\'' + ']';
+    return "LuceneEntry["
+           + _id
+           + ", "
+           + _score
+           + ", '"
+           + _externalId
+           + '\''
+           + ']';
   }
 }

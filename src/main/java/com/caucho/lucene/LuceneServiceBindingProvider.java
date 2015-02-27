@@ -1,13 +1,11 @@
 package com.caucho.lucene;
 
 import io.baratine.core.ServiceManager;
-import io.baratine.spi.ServiceBindingProvider;
+import io.baratine.spi.ServiceProvider;
 
-import java.io.IOException;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class LuceneServiceBindingProvider extends ServiceBindingProvider
+public class LuceneServiceBindingProvider implements ServiceProvider
 {
   private final static Logger log
     = Logger.getLogger(LuceneServiceBindingProvider.class.getName());

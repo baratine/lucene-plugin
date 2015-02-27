@@ -60,7 +60,16 @@ public abstract class BaseTest
     throws ExecutionException, InterruptedException
   {
     ResultFuture<Boolean> future = new ResultFuture<>();
-    _lucene.update(fileName, future);
+    _lucene.updateBfs(fileName, future);
+
+    return future.get();
+  }
+
+  final protected boolean update(String id, String data)
+  {
+    ResultFuture<Boolean> future = new ResultFuture<>();
+
+    _lucene.update(id, data, future);
 
     return future.get();
   }
@@ -100,6 +109,18 @@ public abstract class BaseTest
     throws InterruptedException, IOException, ExecutionException
   {
     upload(fileName);
+
+    LuceneEntry[] result = search(query);
+
+    return result;
+  }
+
+  final protected LuceneEntry[] updateAndSearch(String id,
+                                                String data,
+                                                String query)
+    throws InterruptedException, IOException, ExecutionException
+  {
+    update(id, data);
 
     LuceneEntry[] result = search(query);
 

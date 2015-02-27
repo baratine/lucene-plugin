@@ -45,6 +45,8 @@ public class LuceneScheme
   public void destroy()
   {
     log.finer("destroying " + this);
+
+    _map.values().forEach(l -> {try {l.destroy();} catch (Exception e) {}});
   }
 
   @Override

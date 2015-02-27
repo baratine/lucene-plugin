@@ -10,7 +10,16 @@ public interface LuceneServiceClient
    * @param path   BFS path e.g. bfs:///tmp/test.txt
    * @param result
    */
-  public void update(String path, Result<Boolean> result);
+  public void updateBfs(String path, Result<Boolean> result);
+
+  /**
+   * Updates lucene index for data specified in <code>data</code> parameter.
+   *
+   * @param id     - id that will be associated with the data
+   * @param data   - text
+   * @param result
+   */
+  public void update(String id, String data, Result<Boolean> result);
 
   /**
    * Queries
@@ -35,7 +44,7 @@ public interface LuceneServiceClient
    * Deletes document from an index
    *
    * @param path BFS path
-   * @see #update
+   * @see #updateBfs
    */
   public void delete(String path, Result<Boolean> result);
 
