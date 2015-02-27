@@ -1,4 +1,4 @@
-bfs-lucene-plugin
+lucene-plugin
 =================
 
 Lucene plugin for indexing and searching files stored in Baratine distributed filesystem
