@@ -1,6 +1,7 @@
 package com.caucho.lucene;
 
 import com.caucho.vfs.Vfs;
+import io.baratine.core.Journal;
 import io.baratine.core.Modify;
 import io.baratine.core.OnDestroy;
 import io.baratine.core.OnSave;
@@ -44,6 +45,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 @Service
+@Journal
 public class LuceneService
 {
   private static Logger log
