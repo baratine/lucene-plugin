@@ -13,10 +13,12 @@ public class LuceneServiceBindingProvider implements ServiceProvider
   @Override
   public void init(ServiceManager manager)
   {
+/*
     LuceneScheme scheme = new LuceneScheme(manager);
 
     log.finer("binding scheme " + scheme);
 
     manager.service(scheme).bind("lucene:");
+*/
   }
 }

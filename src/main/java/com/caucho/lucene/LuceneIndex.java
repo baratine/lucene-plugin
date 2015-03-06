@@ -2,7 +2,7 @@ package com.caucho.lucene;
 
 import io.baratine.core.Result;
 
-public interface LuceneServiceClient
+public interface LuceneIndex
 {
   /**
    * Updates lucene index for item at bfsPath
@@ -10,7 +10,8 @@ public interface LuceneServiceClient
    * @param path   BFS path e.g. bfs:///tmp/test.txt
    * @param result
    */
-  public void updateBfs(String path, Result<Boolean> result);
+  public void indexFile(String path, Result<Boolean> result)
+    throws LuceneException;
 
   /**
    * Updates lucene index for data specified in <code>data</code> parameter.
@@ -19,7 +20,8 @@ public interface LuceneServiceClient
    * @param data   - text
    * @param result
    */
-  public void update(String id, String data, Result<Boolean> result);
+  public void indexString(String id, String data, Result<Boolean> result)
+    throws LuceneException;
 
   /**
    * Queries
@@ -27,7 +29,8 @@ public interface LuceneServiceClient
    * @param query  query that is passed to lucene QueryParser
    * @param result files
    */
-  public void search(String query, Result<LuceneEntry[]> result);
+  public void search(String query, int limit, Result<LuceneEntry[]> result)
+    throws LuceneException;
 
   /**
    * @param query  query that is passed to lucene QueryParser
@@ -38,20 +41,22 @@ public interface LuceneServiceClient
   public void searchAfter(String query,
                           LuceneEntry after,
                           int limit,
-                          Result<LuceneEntry[]> result);
+                          Result<LuceneEntry[]> result) throws LuceneException;
 
   /**
    * Deletes document from an index
    *
-   * @param path BFS path
-   * @see #updateBfs
+   * @param id BFS path or id of a string
+   * @see #indexFile
+   * @see #indexString
    */
-  public void delete(String path, Result<Boolean> result);
+  public void delete(String id, Result<Boolean> result)
+    throws LuceneException;
 
   /**
    * Delete all indexes
    *
    * @param result
    */
-  public void clear(Result<Void> result);
+  public void clear(Result<Void> result) throws LuceneException;
 }

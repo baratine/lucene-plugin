@@ -1,5 +1,6 @@
 package com.caucho.lucene;
 
+import io.baratine.core.Journal;
 import io.baratine.core.OnDestroy;
 import io.baratine.core.OnLookup;
 import io.baratine.core.Service;
@@ -10,13 +11,14 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Logger;
 
-@Service
+@Service("public:///lucene")
+@Journal
 public class LuceneScheme
 {
   private static Logger log
     = Logger.getLogger(LuceneScheme.class.getName());
 
-  private Map<String,LuceneService> _map = new HashMap<>();
+  private Map<String,LuceneIndexImpl> _map = new HashMap<>();
 
   private ServiceManager _manager;
 
@@ -28,12 +30,12 @@ public class LuceneScheme
   @OnLookup
   public Object lookup(final String path) throws IOException
   {
-    LuceneService lucene = _map.get(path);
+    LuceneIndexImpl lucene = _map.get(path);
 
     if (lucene == null) {
       String address = path.substring(path.lastIndexOf("///") + 3);
 
-      lucene = new LuceneService(address, _manager);
+      lucene = new LuceneIndexImpl(address, _manager);
 
       _map.put(path, lucene);
     }
