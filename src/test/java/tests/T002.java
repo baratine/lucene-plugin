@@ -4,7 +4,8 @@ import com.caucho.junit.ConfigurationBaratine;
 import com.caucho.junit.ConfigurationBaratine.Log;
 import com.caucho.junit.RunnerBaratine;
 import com.caucho.lucene.LuceneEntry;
-import io.baratine.files.BfsFile;
+import com.caucho.lucene.LuceneScheme;
+import io.baratine.files.BfsFileSync;
 import junit.framework.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -19,8 +20,8 @@ import java.util.concurrent.ExecutionException;
  */
 @RunWith(RunnerBaratine.class)
 @ConfigurationBaratine(testTime = 0,
-  logs = {@Log(name = "com.caucho",
-    level = "FINER")})
+  services = {LuceneScheme.class},
+  logs = {@Log(name = "com.caucho", level = "FINER")})
 public class T002 extends BaseTest
 {
   @Before
@@ -29,7 +30,7 @@ public class T002 extends BaseTest
   {
     for (int i = 0; i < 11; i++) {
       String fileName = makeFileName(i);
-      BfsFile file = lookup(fileName);
+      BfsFileSync file = lookup(fileName);
       try (OutputStream out = file.openWrite()) {
         if (i < 10)
           out.write("hit".getBytes());

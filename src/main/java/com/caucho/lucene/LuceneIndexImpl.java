@@ -16,7 +16,6 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
@@ -87,23 +86,6 @@ public class LuceneIndexImpl implements LuceneIndex
     file.openRead(result.from(i -> indexStream(i, id, key)));
   }
 
-  @Override
-  @Modify
-  public void indexString(String id, String data, Result<Boolean> result)
-  {
-    if (log.isLoggable(Level.FINER))
-      log.finer(String.format("indexString('%s')", id));
-
-    Field idField = new StringField(_address, id, Field.Store.YES);
-
-    Term key = new Term(_address, id);
-
-    InputStream in
-      = new ByteArrayInputStream(data.getBytes(StandardCharsets.UTF_8));
-
-    result.complete(indexStream(in, idField, key));
-  }
-
   public boolean indexStream(InputStream in, Field id, Term key)
   {
     try {
@@ -144,6 +126,58 @@ public class LuceneIndexImpl implements LuceneIndex
 
       throw le;
     }
+  }
+
+  private IndexWriter getIndexWriter() throws IOException
+  {
+    if (_writer != null)
+      return _writer;
+
+    Analyzer analyzer = new StandardAnalyzer();
+    IndexWriterConfig iwc = new IndexWriterConfig(analyzer);
+
+    iwc.setOpenMode(IndexWriterConfig.OpenMode.CREATE_OR_APPEND);
+
+    _writer = new IndexWriter(getDirectory(), iwc);
+
+    return _writer;
+  }
+
+  private Directory getDirectory() throws IOException
+  {
+    if (_directory == null)
+      _directory = createDirectory();
+
+    return _directory;
+  }
+
+  private Directory createDirectory() throws IOException
+  {
+    return FSDirectory.open(getPath());
+  }
+
+  private Path getPath()
+  {
+    return FileSystems.getDefault().getPath("/tmp",
+                                            "bfs-lucene-index",
+                                            _address);
+  }
+
+  @Override
+  @Modify
+  public void indexString(String id, String data, Result<Boolean> result)
+  {
+    if (log.isLoggable(Level.FINER))
+      log.finer(String.format("indexString('%s')", id));
+
+    Field idField = new StringField(_address, id, Field.Store.YES);
+
+    Term key = new Term(_address, id);
+
+    InputStream in
+      = new ByteArrayInputStream(data.getBytes(StandardCharsets.UTF_8));
+
+    result.complete(indexStream(in, idField, key));
   }
 
   @Override
@@ -248,6 +282,56 @@ public class LuceneIndexImpl implements LuceneIndex
     }
   }
 
+  private IndexSearcher getIndexSearcher() throws IOException
+  {
+    DirectoryReader newReader = null;
+    IndexWriter writer = getIndexWriter();
+
+    if (_reader != null)
+      newReader = DirectoryReader.openIfChanged(_reader, writer, true);
+
+    if (newReader == null)
+      newReader = DirectoryReader.open(writer, true);
+
+    IndexSearcher newSearcher = _searcher;
+
+    if (newReader != _reader) {
+      newSearcher = new IndexSearcher(newReader);
+    }
+
+    _reader = newReader;
+    _searcher = newSearcher;
+
+    return _searcher;
+  }
+
+  private QueryParser getQueryParser()
+  {
+    if (_queryParser != null)
+      return _queryParser;
+
+    Analyzer analyzer = new StandardAnalyzer();
+
+    _queryParser = new QueryParser("text", analyzer);
+
+    return _queryParser;
+  }
+
+  @OnSave
+  protected void checkpoint() throws IOException
+  {
+    if (_writer != null)
+      _writer.commit();
+  }
+
+  @OnDestroy
+  public void destroy() throws Exception
+  {
+    log.info("destroying " + this);
+
+    clear(Result.empty());
+  }
+
   public void clear(Result<Void> result)
   {
     if (log.isLoggable(Level.FINER))
@@ -300,7 +384,7 @@ public class LuceneIndexImpl implements LuceneIndex
     File path = getPath().toFile();
 
     try {
-      if (path.exists() && (! Vfs.lookup(path.getAbsolutePath()).removeAll()))
+      if (path.exists() && (!Vfs.lookup(path.getAbsolutePath()).removeAll()))
         result.fail(new IOException());
     } catch (IOException e) {
       log.log(Level.WARNING, e.getMessage(), e);
@@ -314,90 +398,6 @@ public class LuceneIndexImpl implements LuceneIndex
     if (exception != null) {
       throw new LuceneException(exception);
     }
-  }
-
-  private IndexWriter getIndexWriter() throws IOException
-  {
-    if (_writer != null)
-      return _writer;
-
-    Analyzer analyzer = new StandardAnalyzer();
-    IndexWriterConfig iwc = new IndexWriterConfig(analyzer);
-
-    iwc.setOpenMode(IndexWriterConfig.OpenMode.CREATE_OR_APPEND);
-
-    _writer = new IndexWriter(getDirectory(), iwc);
-
-    return _writer;
-  }
-
-  private Directory getDirectory() throws IOException
-  {
-    if (_directory == null)
-      _directory = createDirectory();
-
-    return _directory;
-  }
-
-  private IndexSearcher getIndexSearcher() throws IOException
-  {
-    DirectoryReader newReader;
-    IndexWriter writer = getIndexWriter();
-
-    if (_reader != null)
-      newReader = DirectoryReader.openIfChanged(_reader, writer, true);
-    else
-      newReader = DirectoryReader.open(writer, true);
-
-    IndexSearcher newSearcher = _searcher;
-
-    if (newReader != _reader) {
-      newSearcher = new IndexSearcher(newReader);
-    }
-
-    _reader = newReader;
-    _searcher = newSearcher;
-
-    return _searcher;
-  }
-
-  private QueryParser getQueryParser()
-  {
-    if (_queryParser != null)
-      return _queryParser;
-
-    Analyzer analyzer = new StandardAnalyzer();
-
-    _queryParser = new QueryParser("text", analyzer);
-
-    return _queryParser;
-  }
-
-  @OnSave
-  protected void checkpoint() throws IOException
-  {
-    if (_writer != null)
-      _writer.commit();
-  }
-
-  @OnDestroy
-  public void destroy() throws Exception
-  {
-    log.info("destroying " + this);
-
-    clear(Result.empty());
-  }
-
-  private Directory createDirectory() throws IOException
-  {
-    return FSDirectory.open(getPath());
-  }
-
-  private Path getPath()
-  {
-    return FileSystems.getDefault().getPath("/tmp",
-                                            "bfs-lucene-index",
-                                            _address);
   }
 
   @Override

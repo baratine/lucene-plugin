@@ -24,7 +24,7 @@ public interface LuceneIndex
     throws LuceneException;
 
   /**
-   * Queries
+   * Queries                                             `
    *
    * @param query  query that is passed to lucene QueryParser
    * @param result files
