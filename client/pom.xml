@@ -1,0 +1,182 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>io.baratine</groupId>
+    <artifactId>lucene-plugin-parent</artifactId>
+     <version>0.8.8</version>
+  </parent>
+
+  <artifactId>lucene-plugin-client</artifactId>
+  <packaging>jar</packaging>
+  <version>0.8.8</version>
+
+  <properties>
+    <baratine-home>/Users/alex/baratine</baratine-home>
+  </properties>
+
+  <repositories>
+    <repository>
+      <id>Caucho</id>
+      <url>http://caucho.com/m2</url>
+    </repository>
+  </repositories>
+
+  <distributionManagement>
+    <repository>
+      <uniqueVersion>false</uniqueVersion>
+      <id>local</id>
+      <name>Local Repository</name>
+      <url>file:///tmp/maven2</url>
+      <layout>default</layout>
+    </repository>
+  </distributionManagement>
+
+  <dependencies>
+    <!-- lucene -->
+    <dependency>
+      <groupId>org.apache.lucene</groupId>
+      <artifactId>lucene-core</artifactId>
+      <version>[4.10,)</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.lucene</groupId>
+      <artifactId>lucene-analyzers-common</artifactId>
+      <version>[4.10,)</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.lucene</groupId>
+      <artifactId>lucene-queryparser</artifactId>
+      <version>[4.10,)</version>
+    </dependency>
+
+    <!-- Tika -->
+    <dependency>
+      <groupId>org.apache.tika</groupId>
+      <artifactId>tika-parsers</artifactId>
+      <version>[1.6,)</version>
+    </dependency>
+
+    <!-- junit -->
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <version>4.8.1</version>
+      <scope>test</scope>
+    </dependency>
+
+    <!-- baratine local-->
+    <dependency>
+      <groupId>io.baratine</groupId>
+      <artifactId>baratine-api</artifactId>
+      <version>0.8.6</version>
+      <scope>system</scope>
+      <systemPath>${baratine-home}/lib/baratine-api.jar</systemPath>
+    </dependency>
+    <dependency>
+      <groupId>io.baratine</groupId>
+      <artifactId>baratine</artifactId>
+      <version>0.8.6</version>
+      <scope>system</scope>
+      <systemPath>${baratine-home}/lib/baratine.jar</systemPath>
+    </dependency>
+    <dependency>
+      <groupId>io.baratine</groupId>
+      <artifactId>baratine-junit</artifactId>
+      <version>0.8.6</version>
+      <scope>system</scope>
+      <systemPath>${baratine-home}/lib/baratine-junit.jar</systemPath>
+    </dependency>
+    <dependency>
+      <groupId>io.baratine</groupId>
+      <artifactId>baratine-jee</artifactId>
+      <version>0.8.6</version>
+      <scope>system</scope>
+      <systemPath>${baratine-home}/lib/javaee-7.jar</systemPath>
+    </dependency>
+    <dependency>
+      <groupId>io.baratine</groupId>
+      <artifactId>baratine-hessian</artifactId>
+      <version>0.8.6</version>
+      <scope>system</scope>
+      <systemPath>${baratine-home}/lib/hessian.jar</systemPath>
+    </dependency>
+
+    <!-- baratine at caucho.com -->
+    <!--dependency>
+      <groupId>io.baratine</groupId>
+      <artifactId>baratine-api</artifactId>
+      <version>[0.8.7,)</version>
+    </dependency>
+
+    <dependency>
+      <groupId>io.baratine</groupId>
+      <artifactId>baratine</artifactId>
+      <version>[0.8.7,)</version>
+    </dependency-->
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>2.3.2</version>
+        <configuration>
+          <source>1.8</source>
+          <target>1.8</target>
+        </configuration>
+        <executions>
+          <execution>
+            <id>default-testCompile</id>
+            <phase>test-compile</phase>
+            <goals>
+              <goal>testCompile</goal>
+            </goals>
+          </execution>
+          <execution>
+            <id>default-compile</id>
+            <phase>compile</phase>
+            <goals>
+              <goal>compile</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <artifactId>maven-assembly-plugin</artifactId>
+        <configuration>
+          <archive>
+            <manifest>
+            </manifest>
+          </archive>
+          <descriptorRefs>
+            <descriptorRef>jar-with-dependencies</descriptorRef>
+          </descriptorRefs>
+        </configuration>
+      </plugin>
+      <plugin>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <version>2.10</version>
+        <configuration>
+          <includes>
+            <include>**/T*.java</include>
+            <include>**/Test*.java</include>
+          </includes>
+        </configuration>
+        <executions>
+          <execution>
+            <id>default-test</id>
+            <phase>test</phase>
+            <goals>
+              <goal>test</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+
+</project>
