@@ -174,8 +174,6 @@ public class LuceneIndexImpl implements LuceneIndex
 
     Term key = new Term(_address, id);
 
-    System.out.println("LuceneIndexImpl.indexText ---");
-
     ByteArrayInputStream stream
       = new ByteArrayInputStream(text.getBytes(StandardCharsets.UTF_8));
 
