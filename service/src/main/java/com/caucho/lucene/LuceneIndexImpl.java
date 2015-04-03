@@ -165,19 +165,21 @@ public class LuceneIndexImpl implements LuceneIndex
 
   @Override
   @Modify
-  public void indexString(String id, String data, Result<Boolean> result)
+  public void indexText(String id, String text, Result<Boolean> result)
   {
     if (log.isLoggable(Level.FINER))
-      log.finer(String.format("indexString('%s')", id));
+      log.finer(String.format("indexText('%s')", id));
 
     Field idField = new StringField(_address, id, Field.Store.YES);
 
     Term key = new Term(_address, id);
 
-    InputStream in
-      = new ByteArrayInputStream(data.getBytes(StandardCharsets.UTF_8));
+    System.out.println("LuceneIndexImpl.indexText ---");
 
-    result.complete(indexStream(in, idField, key));
+    ByteArrayInputStream stream
+      = new ByteArrayInputStream(text.getBytes(StandardCharsets.UTF_8));
+
+    result.complete(indexStream(stream, idField, key));
   }
 
   @Override
@@ -329,7 +331,7 @@ public class LuceneIndexImpl implements LuceneIndex
   {
     log.info("destroying " + this);
 
-    clear(Result.empty());
+    clear(Result.ignore());
   }
 
   public void clear(Result<Void> result)

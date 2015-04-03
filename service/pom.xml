@@ -6,12 +6,12 @@
 
   <parent>
     <groupId>io.baratine</groupId>
-    <artifactId>lucene-plugin-parent</artifactId>
-     <version>0.8.8</version>
+    <artifactId>lucene-plugin</artifactId>
+    <version>0.8.8</version>
   </parent>
 
   <artifactId>lucene-plugin-service</artifactId>
-  <packaging>jar</packaging>
+  <packaging>baratine</packaging>
   <version>0.8.8</version>
 
   <properties>
@@ -34,6 +34,64 @@
       <layout>default</layout>
     </repository>
   </distributionManagement>
+
+  <profiles>
+    <profile>
+      <id>local</id>
+      <dependencies>
+        <dependency>
+          <groupId>io.baratine</groupId>
+          <artifactId>baratine-api</artifactId>
+          <version>SNAPSHOT</version>
+          <scope>system</scope>
+          <systemPath>${baratine-home}/lib/baratine-api.jar</systemPath>
+        </dependency>
+        <dependency>
+          <groupId>io.baratine</groupId>
+          <artifactId>baratine</artifactId>
+          <version>SNAPSHOT</version>
+          <scope>system</scope>
+          <systemPath>${baratine-home}/lib/baratine.jar</systemPath>
+        </dependency>
+        <dependency>
+          <groupId>io.baratine</groupId>
+          <artifactId>baratine-junit</artifactId>
+          <version>SNAPSHOT</version>
+          <scope>system</scope>
+          <systemPath>${baratine-home}/lib/baratine-junit.jar</systemPath>
+        </dependency>
+        <dependency>
+          <groupId>io.baratine</groupId>
+          <artifactId>baratine-jee</artifactId>
+          <version>SNAPSHOT</version>
+          <scope>system</scope>
+          <systemPath>${baratine-home}/lib/javaee-7.jar</systemPath>
+        </dependency>
+        <dependency>
+          <groupId>io.baratine</groupId>
+          <artifactId>baratine-hessian</artifactId>
+          <version>SNAPSHOT</version>
+          <scope>system</scope>
+          <systemPath>${baratine-home}/lib/hessian.jar</systemPath>
+        </dependency>
+      </dependencies>
+    </profile>
+    <profile>
+      <id>release</id>
+      <dependencies>
+        <dependency>
+          <groupId>io.baratine</groupId>
+          <artifactId>baratine-api</artifactId>
+          <version>[0.8,)</version>
+        </dependency>
+        <dependency>
+          <groupId>io.baratine</groupId>
+          <artifactId>baratine</artifactId>
+          <version>[0.8,)</version>
+        </dependency>
+      </dependencies>
+    </profile>
+  </profiles>
 
   <dependencies>
     <dependency>
@@ -73,56 +131,6 @@
       <version>4.8.1</version>
       <scope>test</scope>
     </dependency>
-
-    <!-- baratine local-->
-    <dependency>
-      <groupId>io.baratine</groupId>
-      <artifactId>baratine-api</artifactId>
-      <version>0.8.6</version>
-      <scope>system</scope>
-      <systemPath>${baratine-home}/lib/baratine-api.jar</systemPath>
-    </dependency>
-    <dependency>
-      <groupId>io.baratine</groupId>
-      <artifactId>baratine</artifactId>
-      <version>0.8.6</version>
-      <scope>system</scope>
-      <systemPath>${baratine-home}/lib/baratine.jar</systemPath>
-    </dependency>
-    <dependency>
-      <groupId>io.baratine</groupId>
-      <artifactId>baratine-junit</artifactId>
-      <version>0.8.6</version>
-      <scope>system</scope>
-      <systemPath>${baratine-home}/lib/baratine-junit.jar</systemPath>
-    </dependency>
-    <dependency>
-      <groupId>io.baratine</groupId>
-      <artifactId>baratine-jee</artifactId>
-      <version>0.8.6</version>
-      <scope>system</scope>
-      <systemPath>${baratine-home}/lib/javaee-7.jar</systemPath>
-    </dependency>
-    <dependency>
-      <groupId>io.baratine</groupId>
-      <artifactId>baratine-hessian</artifactId>
-      <version>0.8.6</version>
-      <scope>system</scope>
-      <systemPath>${baratine-home}/lib/hessian.jar</systemPath>
-    </dependency>
-
-    <!-- baratine at caucho.com -->
-    <!--dependency>
-      <groupId>io.baratine</groupId>
-      <artifactId>baratine-api</artifactId>
-      <version>[0.8.7,)</version>
-    </dependency>
-
-    <dependency>
-      <groupId>io.baratine</groupId>
-      <artifactId>baratine</artifactId>
-      <version>[0.8.7,)</version>
-    </dependency-->
   </dependencies>
 
   <build>
@@ -152,18 +160,6 @@
         </executions>
       </plugin>
       <plugin>
-        <artifactId>maven-assembly-plugin</artifactId>
-        <configuration>
-          <archive>
-            <manifest>
-            </manifest>
-          </archive>
-          <descriptorRefs>
-            <descriptorRef>jar-with-dependencies</descriptorRef>
-          </descriptorRefs>
-        </configuration>
-      </plugin>
-      <plugin>
         <artifactId>maven-surefire-plugin</artifactId>
         <version>2.10</version>
         <configuration>
@@ -181,6 +177,12 @@
             </goals>
           </execution>
         </executions>
+      </plugin>
+      <plugin>
+        <groupId>io.baratine</groupId>
+        <artifactId>baratine-plugin</artifactId>
+        <version>1.0-SNAPSHOT</version>
+        <extensions>true</extensions>
       </plugin>
     </plugins>
   </build>

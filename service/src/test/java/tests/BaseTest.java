@@ -12,8 +12,11 @@ import org.junit.After;
 import org.junit.Before;
 
 import javax.inject.Inject;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 
 public abstract class BaseTest
 {
@@ -96,9 +99,9 @@ public abstract class BaseTest
     return result;
   }
 
-  final protected boolean update(String id, String data)
+  final protected boolean update(String id, String text)
   {
-    return _lucene.indexString(id, data);
+    return _lucene.indexText(id, text);
   }
 
   @Before
