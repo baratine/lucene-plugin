@@ -5,53 +5,75 @@ import com.caucho.junit.ConfigurationBaratine.Log;
 import com.caucho.junit.RunnerBaratine;
 import com.caucho.lucene.LuceneEntry;
 import com.caucho.lucene.LuceneScheme;
+import io.baratine.files.BfsFileSync;
 import junit.framework.Assert;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.List;
+import java.io.OutputStream;
 import java.util.concurrent.ExecutionException;
-import java.util.stream.Stream;
 
 /**
- * title: test indexFile index
+ * test: paging
  */
-
 @RunWith(RunnerBaratine.class)
-@ConfigurationBaratine(services = {LuceneScheme.class},
-  logs = {@Log(name = "com.caucho", level = "FINER")},
-  testTime = 0)
+@ConfigurationBaratine(testTime = 0,
+  services = {LuceneScheme.class},
+  logs = {@Log(name = "com.caucho", level = "FINER")})
 public class T003 extends BaseTest
 {
+  @Before
+  public void setUp()
+    throws IOException, ExecutionException, InterruptedException
+  {
+    for (int i = 0; i < 11; i++) {
+      String fileName = makeFileName(i);
+      BfsFileSync file = lookup(fileName);
+      try (OutputStream out = file.openWrite()) {
+        if (i < 10)
+          out.write("hit".getBytes());
+        else
+          out.write("miss".getBytes());
+      }
+
+      update(fileName);
+    }
+  }
+
+  private String makeFileName(int k)
+  {
+    return String.format("bfs:///tmp/test-%d", k);
+  }
+
   @Test
-  public void test()
+  public void testAll()
     throws InterruptedException, IOException, ExecutionException
   {
-    List<String> files = Arrays.asList("test-00.txt",
-                                       "test-00.pdf",
-                                       "test-00.docx");
+    LuceneEntry[] results = search("hit", new LuceneEntry(0), 100);
+    Assert.assertEquals(10, results.length);
+  }
 
-    for (int i = 0; i < files.size(); i++) {
-      String file = files.get(i);
+  @Test
+  public void testNext()
+    throws InterruptedException, IOException, ExecutionException
+  {
+    LuceneEntry[] results = search("hit", new LuceneEntry(0), 100);
+    Assert.assertEquals(10, results.length);
 
-      LuceneEntry[] result = uploadAndSearch(file, "Lorem");
+    results = search("hit", results[3], 3);
+    Assert.assertEquals(3, results.length);
 
-      Arrays.sort(result,
-                  (a, b) -> files.indexOf(Stream.of(a.getExternalId()
-                                                     .split("/"))
-                                                .reduce((c, d) -> d).get()) -
-                            files.indexOf(Stream.of(b.getExternalId()
-                                                     .split("/"))
-                                                .reduce((c, d) -> d).get()));
+    Assert.assertEquals(4, results[0].getId());
+    Assert.assertEquals(5, results[1].getId());
+    Assert.assertEquals(6, results[2].getId());
 
-      Assert.assertEquals(i + 1, result.length);
-      for (int j = 0; j < result.length; j++) {
-        Assert.assertEquals(makeBfsPath(files.get(j)),
-                            result[j].getExternalId());
-      }
-    }
+    results = search("hit", results[2], 3);
+    Assert.assertEquals(3, results.length);
+
+    results = search("hit", results[2], 3);
+    Assert.assertEquals(0, results.length);
   }
 }
 

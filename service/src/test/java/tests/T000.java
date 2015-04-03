@@ -13,7 +13,7 @@ import java.io.IOException;
 import java.util.concurrent.ExecutionException;
 
 /**
- * title: test pdf, ms-word, txt
+ * title: test pdf, ms-word, txt, xml, json with first word
  */
 
 @RunWith(RunnerBaratine.class)
@@ -29,12 +29,18 @@ public class T000 extends BaseTest
     test("test-00.txt");
   }
 
-  private void test(String fileName)
+  @Test(timeout = 2000)
+  public void testXml()
     throws InterruptedException, IOException, ExecutionException
   {
-    LuceneEntry[] result = uploadAndSearch(fileName, "Lorem");
-    Assert.assertEquals(1, result.length);
-    Assert.assertEquals(makeBfsPath(fileName), result[0].getExternalId());
+    test("test-00.xml");
+  }
+
+  @Test(timeout = 2000)
+  public void testJson()
+    throws InterruptedException, IOException, ExecutionException
+  {
+    test("test-00.json");
   }
 
   @Test(timeout = 5000)
@@ -49,6 +55,14 @@ public class T000 extends BaseTest
     throws InterruptedException, IOException, ExecutionException
   {
     test("test-00.docx");
+  }
+
+  private void test(String fileName)
+    throws InterruptedException, IOException, ExecutionException
+  {
+    LuceneEntry[] result = uploadAndSearch(fileName, "Lorem");
+    Assert.assertEquals(1, result.length);
+    Assert.assertEquals(makeBfsPath(fileName), result[0].getExternalId());
   }
 }
 
