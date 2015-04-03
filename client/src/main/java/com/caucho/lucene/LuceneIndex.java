@@ -2,8 +2,6 @@ package com.caucho.lucene;
 
 import io.baratine.core.Result;
 
-import java.io.InputStream;
-
 public interface LuceneIndex
 {
   /**
