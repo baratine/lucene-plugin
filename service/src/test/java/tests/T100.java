@@ -27,11 +27,6 @@ public class T100 extends BaseTest
 
     LuceneEntry[] result = search("lamb");
 
-    for (LuceneEntry luceneEntry : result) {
-
-      System.out.println("T100.test " + luceneEntry);
-    }
-
     Assert.assertEquals(1, result.length);
     Assert.assertEquals("1", result[0].getExternalId());
   }
