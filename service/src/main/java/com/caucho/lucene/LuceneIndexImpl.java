@@ -18,8 +18,8 @@ import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
@@ -42,6 +42,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -181,6 +182,65 @@ public class LuceneIndexImpl implements LuceneIndex
   }
 
   @Override
+  @Modify
+  public void indexMap(String id,
+                       Map<String,Object> map,
+                       Result<Boolean> result) throws LuceneException
+  {
+    if (map.isEmpty()) {
+      result.complete(true);
+
+      log.fine(String.format("indexMap('%s') empty map", id));
+
+      return;
+    }
+
+    if (log.isLoggable(Level.FINER))
+      log.finer(String.format("indexMap('%s')", id));
+
+    Field idField = new StringField(_address, id, Field.Store.YES);
+
+    Term key = new Term(_address, id);
+
+    try {
+      IndexWriter writer = getIndexWriter();
+
+      Document document = new Document();
+
+      document.add(idField);
+
+      for (Map.Entry<String,Object> entry : map.entrySet()) {
+        document.add(makeIndexableField(entry.getKey(), entry.getValue()));
+      }
+
+      writer.updateDocument(key, document);
+
+      if (log.isLoggable(Level.FINER))
+        log.finer(String.format("indexing ('%s') complete", id));
+
+      result.complete(true);
+    } catch (IOException e) {
+      log.log(Level.WARNING, String.format("indexing ('%s') failed", id), e);
+      throw new LuceneException(e);
+    }
+  }
+
+  private IndexableField makeIndexableField(String name, Object obj)
+  {
+    IndexableField field = null;
+
+    if (name == null) {
+    }
+    else if (obj == null) {
+    }
+    else {
+      field = new TextField(name, String.valueOf(obj), Field.Store.NO);
+    }
+
+    return field;
+  }
+
+  @Override
   public void search(String query, int limit, Result<LuceneEntry[]> result)
   {
     if (log.isLoggable(Level.FINER))
@@ -197,7 +257,7 @@ public class LuceneIndexImpl implements LuceneIndex
   {
     if (log.isLoggable(Level.FINER))
       log.finer(
-        String.format("search('%1$s', %2$s, %3$d )",
+        String.format("search('%1$s', %2$s, %3$d)",
                       query,
                       afterEntry,
                       limit));
@@ -247,14 +307,10 @@ public class LuceneIndexImpl implements LuceneIndex
         = temp.toArray(new LuceneEntry[temp.size()]);
 
       result.complete(entries);
-    } catch (IOException e) {
-      log.log(Level.WARNING, e.getMessage(), e);
+    } catch (Throwable t) {
+      log.log(Level.WARNING, t.getMessage(), t);
 
-      throw new LuceneException(e);
-    } catch (ParseException e) {
-      log.log(Level.WARNING, e.getMessage(), e);
-
-      throw LuceneException.create(e);
+      throw LuceneException.create(t);
     }
   }
 

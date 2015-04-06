@@ -12,11 +12,9 @@ import org.junit.After;
 import org.junit.Before;
 
 import javax.inject.Inject;
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
-import java.nio.charset.StandardCharsets;
+import java.util.Map;
 
 public abstract class BaseTest
 {
@@ -102,6 +100,11 @@ public abstract class BaseTest
   final protected boolean update(String id, String text)
   {
     return _lucene.indexText(id, text);
+  }
+
+  final protected boolean update(String id, Map<String,Object> map)
+  {
+    return _lucene.indexMap(id, map);
   }
 
   @Before

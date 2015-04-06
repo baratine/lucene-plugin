@@ -8,7 +8,9 @@ import org.xml.sax.helpers.DefaultHandler;
 
 public class LuceneContentHandler extends DefaultHandler
 {
-  Document _document;
+  private Document _document;
+
+  private String _fieldName = "text";
 
   public LuceneContentHandler(Document document)
   {
@@ -19,7 +21,7 @@ public class LuceneContentHandler extends DefaultHandler
   public void characters(char[] ch, int start, int length)
     throws SAXException
   {
-    _document.add(new TextField("text", new String(ch, start, length),
+    _document.add(new TextField(_fieldName, new String(ch, start, length),
                                 Field.Store.NO));
   }
 }
