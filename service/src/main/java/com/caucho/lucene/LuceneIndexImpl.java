@@ -8,6 +8,7 @@ import io.baratine.core.OnSave;
 import io.baratine.core.Result;
 import io.baratine.core.Service;
 import io.baratine.core.ServiceManager;
+import io.baratine.core.Services;
 import io.baratine.files.BfsFile;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
@@ -43,6 +44,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -62,11 +64,11 @@ public class LuceneIndexImpl implements LuceneIndex
   private QueryParser _queryParser;
   private String _address;
 
-  public LuceneIndexImpl(String address, ServiceManager manager)
+  public LuceneIndexImpl(String address)
     throws IOException
   {
     _address = address;
-    _manager = manager;
+    _manager = Services.getCurrentManager();
 
     log.finer("creating new " + this);
   }
@@ -243,6 +245,8 @@ public class LuceneIndexImpl implements LuceneIndex
   @Override
   public void search(String query, int limit, Result<LuceneEntry[]> result)
   {
+    Objects.requireNonNull(query);
+
     if (log.isLoggable(Level.FINER))
       log.finer(String.format("search('%s')", query));
 

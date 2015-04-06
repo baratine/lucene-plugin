@@ -4,7 +4,6 @@ import io.baratine.core.Journal;
 import io.baratine.core.OnDestroy;
 import io.baratine.core.OnLookup;
 import io.baratine.core.Service;
-import io.baratine.core.ServiceManager;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -20,11 +19,8 @@ public class LuceneScheme
 
   private Map<String,LuceneIndexImpl> _map = new HashMap<>();
 
-  private ServiceManager _manager;
-
-  public LuceneScheme(ServiceManager manager)
+  public LuceneScheme()
   {
-    _manager = manager;
   }
 
   @OnLookup
@@ -35,7 +31,7 @@ public class LuceneScheme
     if (lucene == null) {
       String address = path.substring(path.lastIndexOf("///") + 3);
 
-      lucene = new LuceneIndexImpl(address, _manager);
+      lucene = new LuceneIndexImpl(address);
 
       _map.put(path, lucene);
     }
@@ -54,6 +50,6 @@ public class LuceneScheme
   @Override
   public String toString()
   {
-    return this.getClass().getSimpleName() + '[' + _manager + ']';
+    return this.getClass().getSimpleName() + "[]";
   }
 }
