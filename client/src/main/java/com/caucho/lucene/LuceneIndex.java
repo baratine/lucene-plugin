@@ -2,6 +2,8 @@ package com.caucho.lucene;
 
 import io.baratine.core.Result;
 
+import java.util.Map;
+
 public interface LuceneIndex
 {
   /**
@@ -17,10 +19,24 @@ public interface LuceneIndex
    * Updates lucene index for data specified in <code>stream</code> parameter.
    *
    * @param id     - id that will be associated with the data
-   * @param text - text
+   * @param text   - text
    * @param result
    */
   public void indexText(String id, String text, Result<Boolean> result)
+    throws LuceneException;
+
+  /**
+   * Updates lucene index for data specified in a <code>map</code> parameter.
+   * Each key in the map becomes a searchable field
+   *
+   * @param id
+   * @param map
+   * @param result
+   * @throws LuceneException
+   */
+  public void indexMap(String id,
+                       Map<String,Object> map,
+                       Result<Boolean> result)
     throws LuceneException;
 
   /**
