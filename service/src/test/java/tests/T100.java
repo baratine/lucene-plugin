@@ -11,6 +11,9 @@ import org.junit.runner.RunWith;
 import java.io.IOException;
 import java.util.concurrent.ExecutionException;
 
+/**
+ * title: tests text
+ */
 @RunWith(RunnerBaratine.class)
 @ConfigurationBaratine(services = {LuceneScheme.class},
   logs = {@ConfigurationBaratine.Log(name = "com.caucho", level = "FINER")},

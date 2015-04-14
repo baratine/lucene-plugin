@@ -13,6 +13,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
+/**
+ * title: tests map indexing
+ */
 @RunWith(RunnerBaratine.class)
 @ConfigurationBaratine(services = {LuceneScheme.class},
   logs = {@ConfigurationBaratine.Log(name = "com.caucho", level = "FINER")},
