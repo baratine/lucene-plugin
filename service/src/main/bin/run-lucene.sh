@@ -19,7 +19,7 @@ rm -rf $BARATINE_DATA_DIR
 
 cd ..
 
-mvn -Dmaven.test.skip=true -P local clean package
+mvn -Dmaven.test.skip=true -P release clean package
 
 cd service
 
