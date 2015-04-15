@@ -12,4 +12,3 @@ To run the plugin:
 4. change to lucene-plugin/service directory and execute src/main/bin/run-lucene.sh
 5. open lucene-plugin/client/src/web/index.html in latest FireFox or Safari
 
-
