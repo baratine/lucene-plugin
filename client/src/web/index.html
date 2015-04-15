@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <script src="baratine-js.js"></script>
+
+  <script type="text/javascript">
+
+    var baratine = new Jamp.WebSocketChannel("ws://localhost:8085/s/lucene");
+
+    function index_text(collection, extId, value)
+    {
+      baratine.send("/lucene/foo", "indexText", [collection, extId, value]);
+
+      document.forms['text'].elements.namedItem('textExtId').value = "";
+      document.forms['text'].elements.namedItem('textValue').value = "";
+
+      return false;
+    }
+
+    function search_text(collection, query)
+    {
+      var promise = baratine.query("/lucene/foo",
+                                   "search",
+              [collection, query, 255]);
+
+      promise.then(function result(results)
+                   {
+                     var ids = new Array();
+                     for (var i = 0; i < results.length; i++) {
+                       var result = results[i];
+
+                       ids.push(result._externalId);
+                     }
+
+                     document.forms['text'].elements.namedItem('textExtId').value
+                             = ids.join();
+                   }, function error(error)
+                   {
+                     console.log(error);
+                   });
+
+      return false;
+    }
+  </script>
+</head>
+<body>
+<div style="border-style: solid; border-width: 1px;">
+  <p>Plain Text Indexing and Search</p>
+  <ul>
+    <li>to index: supply value for 'Collection', 'Item Ext Id', 'Value to index or query' and press Index</li>
+    <li>to search: supply value for 'Collection', '...Query' and press Search: expect Item Ext Id to fill in if found</li>
+  </ul>
+
+  <form id="text" name="text" accept-charset="utf-8" onsubmit="return false;">
+    <table>
+      <tr>
+        <td><label for="textCollection">Collection:</label></td>
+        <td><input id="textCollection" name="textCollection" type="text"
+                ></td>
+      </tr>
+      <tr>
+        <td><label for="textExtId">Item Ext Id:</label></td>
+        <td><input id="textExtId" name="textExtId" type="text"
+                   placeholder="Item External Id"></td>
+      </tr>
+      <tr>
+        <td><label for="textValue">Value to index or query</label></td>
+        <td><input id="textValue" name="textValue" type="text"
+                   placeholder="Text to index"></td>
+      </tr>
+
+      <tr>
+        <td><input id="textIndex" type="submit" value="Index ..."
+                   onclick="index_text(textCollection.value, textExtId.value, textValue.value)">
+
+        <td><input id="textSearch" type="submit" value="Search ..."
+                   onclick="search_text(textCollection.value, textValue.value)">
+        </td>
+      </tr>
+
+    </table>
+  </form>
+</div>
+<hr>
+</body>
+</html>

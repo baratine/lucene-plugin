@@ -14,7 +14,7 @@ public class LuceneSessionImpl implements LuceneSession
 {
   private String _id;
 
-  @Inject @Lookup("pod://lucene/lucene")
+  @Inject @Lookup("pod://lucene/lucene-manager")
   private ServiceRef _luceneManager;
 
   private Map<String,LuceneIndex> _luceneIndexMap = new HashMap<>();

@@ -11,7 +11,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Logger;
 
-@Service("pod://lucene/lucene")
+@Service("pod://lucene/lucene-manager")
 @Journal
 @Startup
 public class LuceneManagerImpl
