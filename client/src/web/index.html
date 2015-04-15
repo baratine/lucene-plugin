@@ -24,9 +24,9 @@
     {
       map = {};
 
-      for(var i = 0; i < 3; i++) {
-        var term = elements.namedItem("mapName"+i).value;
-        var value = elements.namedItem("mapValue"+i).value;
+      for (var i = 0; i < 3; i++) {
+        var term = elements.namedItem("mapName" + i).value;
+        var value = elements.namedItem("mapValue" + i).value;
         map[term] = value;
       }
 
@@ -77,8 +77,8 @@
   </script>
 </head>
 <body>
+<h2>Plain Text Indexing and Search</h2>
 <div style="border-style: solid; border-width: 1px;">
-  <p>Plain Text Indexing and Search</p>
   <ul>
     <li>to index: supply value for 'Collection', 'Item Ext Id', 'Value to index
       or query' and press Index
@@ -102,7 +102,7 @@
       </tr>
       <tr>
         <td><label for="textValue">Value to index or query</label></td>
-        <td><input id="textValue" name="textValue" type="text"
+        <td><input id="textValue" name="textValue" type="text" size="80"
                    placeholder="Text to index"></td>
       </tr>
 
@@ -118,9 +118,17 @@
     </table>
   </form>
 </div>
-<hr>
+
+<h2>Document Indexing and Search</h2>
 <div style="border-style: solid; border-width: 1px;">
-  <p>Document Indexing and Search</p>
+
+  <ul>
+    <li>to index: supply value for 'Collection', 'Item Ext Id', map terms and values, and, press Index
+    </li>
+    <li>to search: supply value for 'Collection', '...Query' and press Search:
+      expect Item Ext Id to fill in if found
+    </li>
+  </ul>
 
   <form id="map" name="map" accept-charset="utf-8" onsubmit="return false;">
     <table>
@@ -136,14 +144,15 @@
       </tr>
 
       <tr>
-        <td><label for="mapValue">Map</label></td>
-        <td>
+        <td style="border-style: solid; border-right-style: none; border-width: 1px;">
+          <label for="mapValue">Map</label></td>
+        <td style="border-style: solid; border-left-style: none;border-width: 1px;">
           <table>
             <tr>
               <td><input id="mapName0" name="mapName0" type="text"
                          value="firstName"
                          placeholder="e.g. firstName"></td>
-              <td><input id="mapValue0" name="mapValue0" type="text"
+              <td><input id="mapValue0" name="mapValue0" type="text" size="80"
                          value="Harry"
                          placeholder="Harry"></td>
             </tr>
@@ -151,7 +160,7 @@
               <td><input id="mapName1" name="mapName1" type="text"
                          value="lastName"
                          placeholder="e.g. lastName"></td>
-              <td><input id="mapValue1" name="mapValue1" type="text"
+              <td><input id="mapValue1" name="mapValue1" type="text" size="80"
                          value="Potter"
                          placeholder="Potter"></td>
             </tr>
@@ -159,7 +168,7 @@
               <td><input id="mapName2" name="mapName2" type="text"
                          value="role"
                          placeholder="Role"></td>
-              <td><input id="mapValue2" name="mapValue2" type="text"
+              <td><input id="mapValue2" name="mapValue2" type="text" size="80"
                          value="Harry Potter is a young wizard"
                          placeholder="Potter"></td>
             </tr>
