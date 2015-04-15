@@ -1,12 +1,10 @@
 package com.caucho.lucene;
 
 import com.caucho.vfs.Vfs;
-import io.baratine.core.Journal;
 import io.baratine.core.Modify;
 import io.baratine.core.OnDestroy;
 import io.baratine.core.OnSave;
 import io.baratine.core.Result;
-import io.baratine.core.Service;
 import io.baratine.core.ServiceManager;
 import io.baratine.core.Services;
 import io.baratine.files.BfsFile;
@@ -48,8 +46,6 @@ import java.util.Objects;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-@Service
-@Journal
 public class LuceneIndexImpl implements LuceneIndex
 {
   private static Logger log

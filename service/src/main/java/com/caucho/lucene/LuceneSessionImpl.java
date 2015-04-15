@@ -15,7 +15,7 @@ public class LuceneSessionImpl implements LuceneSession
   private String _id;
 
   @Inject @Lookup("pod://lucene/lucene")
-  ServiceRef _luceneManager;
+  private ServiceRef _luceneManager;
 
   private Map<String,LuceneIndex> _luceneIndexMap = new HashMap<>();
 
@@ -48,10 +48,11 @@ public class LuceneSessionImpl implements LuceneSession
     getLuceneIndex(collection).indexText(id, text, result);
   }
 
-  @Override public void indexMap(String collection,
-                                 String id,
-                                 Map<String,Object> map,
-                                 Result<Boolean> result) throws LuceneException
+  @Override
+  public void indexMap(String collection,
+                       String id,
+                       Map<String,Object> map,
+                       Result<Boolean> result) throws LuceneException
   {
     getLuceneIndex(collection).indexMap(id, map, result);
   }
