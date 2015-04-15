@@ -1,0 +1,8 @@
+server_port = 8085;
+
+cluster {
+  server port=$server_port;
+  logger finest;
+  logger finer "examples";
+  #logger off "com.caucho.amp.proxy";
+}
