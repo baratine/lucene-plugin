@@ -9,9 +9,11 @@ import javax.inject.Inject;
 import java.util.HashMap;
 import java.util.Map;
 
-@SessionService("session://lucene/lucene")
+@SessionService("session://lucene/lucene/{_id}")
 public class LuceneSessionImpl implements LuceneSession
 {
+  private String _id;
+
   @Inject @Lookup("pod://lucene/lucene")
   ServiceRef _luceneManager;
 
