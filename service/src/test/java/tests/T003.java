@@ -4,7 +4,7 @@ import com.caucho.junit.ConfigurationBaratine;
 import com.caucho.junit.ConfigurationBaratine.Log;
 import com.caucho.junit.RunnerBaratine;
 import com.caucho.lucene.LuceneEntry;
-import com.caucho.lucene.LuceneScheme;
+import com.caucho.lucene.LuceneManagerImpl;
 import io.baratine.files.BfsFileSync;
 import junit.framework.Assert;
 import org.junit.Before;
@@ -20,7 +20,7 @@ import java.util.concurrent.ExecutionException;
  */
 @RunWith(RunnerBaratine.class)
 @ConfigurationBaratine(testTime = 0,
-  services = {LuceneScheme.class},
+  services = {LuceneManagerImpl.class},
   logs = {@Log(name = "com.caucho", level = "FINER")})
 public class T003 extends BaseTest
 {

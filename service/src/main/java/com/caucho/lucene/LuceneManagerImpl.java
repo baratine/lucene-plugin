@@ -4,6 +4,7 @@ import io.baratine.core.Journal;
 import io.baratine.core.OnDestroy;
 import io.baratine.core.OnLookup;
 import io.baratine.core.Service;
+import io.baratine.core.Startup;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -12,15 +13,23 @@ import java.util.logging.Logger;
 
 @Service("pod://lucene/lucene")
 @Journal
-public class LuceneScheme
+@Startup
+public class LuceneManagerImpl
 {
   private static Logger log
-    = Logger.getLogger(LuceneScheme.class.getName());
+    = Logger.getLogger(LuceneManagerImpl.class.getName());
 
   private Map<String,LuceneIndexImpl> _map = new HashMap<>();
 
-  public LuceneScheme()
+  private String _indexDirectory = "/tmp";
+
+  public LuceneManagerImpl()
   {
+  }
+
+  public void setIndexDirectory(String indexDirectory)
+  {
+    _indexDirectory = indexDirectory;
   }
 
   @OnLookup
@@ -31,7 +40,7 @@ public class LuceneScheme
     if (lucene == null) {
       String address = path.substring(path.lastIndexOf("///") + 3);
 
-      lucene = new LuceneIndexImpl(address);
+      lucene = new LuceneIndexImpl(address, _indexDirectory);
 
       _map.put(path, lucene);
     }

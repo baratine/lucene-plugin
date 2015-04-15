@@ -64,11 +64,14 @@ public class LuceneIndexImpl implements LuceneIndex
   private QueryParser _queryParser;
   private String _address;
 
-  public LuceneIndexImpl(String address)
+  private String _indexDirectory;
+
+  public LuceneIndexImpl(String address, String indexDirectory)
     throws IOException
   {
     _address = address;
     _manager = Services.getCurrentManager();
+    _indexDirectory = indexDirectory;
 
     log.finer("creating new " + this);
   }
@@ -161,7 +164,7 @@ public class LuceneIndexImpl implements LuceneIndex
 
   private Path getPath()
   {
-    return FileSystems.getDefault().getPath("/tmp",
+    return FileSystems.getDefault().getPath(_indexDirectory,
                                             "bfs-lucene-index",
                                             _address);
   }
