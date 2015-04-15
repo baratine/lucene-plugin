@@ -10,7 +10,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Logger;
 
-@Service("public:///lucene")
+@Service("pod://lucene/lucene")
 @Journal
 public class LuceneScheme
 {
