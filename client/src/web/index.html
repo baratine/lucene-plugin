@@ -1,15 +1,18 @@
 <!DOCTYPE html>
 <html>
 <head>
+  <meta charset="UTF-8">
+
   <script src="baratine-js.js"></script>
+  <script src="lucene-client.js"></script>
 
   <script type="text/javascript">
 
-    var baratine = new Jamp.WebSocketChannel("ws://localhost:8085/s/lucene");
+    var lucene = new LuceneClient("ws://localhost:8085/s/lucene")
 
     function index_text(collection, extId, value)
     {
-      baratine.send("/lucene/foo", "indexText", [collection, extId, value]);
+      lucene.indexText(collection, extId, value);
 
       document.forms['text'].elements.namedItem('textExtId').value = "";
       document.forms['text'].elements.namedItem('textValue').value = "";
@@ -17,27 +20,57 @@
       return false;
     }
 
+    function index_map(collection, extId, elements)
+    {
+      map = {};
+
+      for(var i = 0; i < 3; i++) {
+        var term = elements.namedItem("mapName"+i).value;
+        var value = elements.namedItem("mapValue"+i).value;
+        map[term] = value;
+      }
+
+      lucene.indexMap(collection, extId, map);
+
+      document.forms['map'].elements.namedItem('mapExtId').value = "";
+
+      return false;
+    }
+
     function search_text(collection, query)
     {
-      var promise = baratine.query("/lucene/foo",
-                                   "search",
-              [collection, query, 255]);
+      document.forms['text'].elements.namedItem('textExtId').value
+              = "";
 
-      promise.then(function result(results)
-                   {
-                     var ids = new Array();
-                     for (var i = 0; i < results.length; i++) {
-                       var result = results[i];
+      lucene.search(collection, query, 255, function (ids)
+      {
+        var result = "Not Found";
 
-                       ids.push(result._externalId);
-                     }
+        if (ids.length > 0)
+          result = ids.join();
 
-                     document.forms['text'].elements.namedItem('textExtId').value
-                             = ids.join();
-                   }, function error(error)
-                   {
-                     console.log(error);
-                   });
+        document.forms['text'].elements.namedItem('textExtId').value
+                = result;
+      });
+
+      return false;
+    }
+
+    function search_map(collection, query)
+    {
+      document.forms['map'].elements.namedItem('mapExtId').value
+              = "";
+
+      lucene.search(collection, query, 255, function (ids)
+      {
+        var result = "Not Found";
+
+        if (ids.length > 0)
+          result = ids.join();
+
+        document.forms['map'].elements.namedItem('mapExtId').value
+                = result;
+      });
 
       return false;
     }
@@ -47,8 +80,12 @@
 <div style="border-style: solid; border-width: 1px;">
   <p>Plain Text Indexing and Search</p>
   <ul>
-    <li>to index: supply value for 'Collection', 'Item Ext Id', 'Value to index or query' and press Index</li>
-    <li>to search: supply value for 'Collection', '...Query' and press Search: expect Item Ext Id to fill in if found</li>
+    <li>to index: supply value for 'Collection', 'Item Ext Id', 'Value to index
+      or query' and press Index
+    </li>
+    <li>to search: supply value for 'Collection', '...Query' and press Search:
+      expect Item Ext Id to fill in if found
+    </li>
   </ul>
 
   <form id="text" name="text" accept-charset="utf-8" onsubmit="return false;">
@@ -56,7 +93,7 @@
       <tr>
         <td><label for="textCollection">Collection:</label></td>
         <td><input id="textCollection" name="textCollection" type="text"
-                ></td>
+                   value="text-collection" placeholder="collection name"></td>
       </tr>
       <tr>
         <td><label for="textExtId">Item Ext Id:</label></td>
@@ -82,5 +119,73 @@
   </form>
 </div>
 <hr>
+<div style="border-style: solid; border-width: 1px;">
+  <p>Document Indexing and Search</p>
+
+  <form id="map" name="map" accept-charset="utf-8" onsubmit="return false;">
+    <table>
+      <tr>
+        <td><label for="mapCollection">Collection:</label></td>
+        <td><input id="mapCollection" name="mapCollection" type="map"
+                   value="map-collection" placeholder="collection name"></td>
+      </tr>
+      <tr>
+        <td><label for="mapExtId">Item Ext Id:</label></td>
+        <td><input id="mapExtId" name="mapExtId" type="map"
+                   placeholder="Item External Id"></td>
+      </tr>
+
+      <tr>
+        <td><label for="mapValue">Map</label></td>
+        <td>
+          <table>
+            <tr>
+              <td><input id="mapName0" name="mapName0" type="text"
+                         value="firstName"
+                         placeholder="e.g. firstName"></td>
+              <td><input id="mapValue0" name="mapValue0" type="text"
+                         value="Harry"
+                         placeholder="Harry"></td>
+            </tr>
+            <tr>
+              <td><input id="mapName1" name="mapName1" type="text"
+                         value="lastName"
+                         placeholder="e.g. lastName"></td>
+              <td><input id="mapValue1" name="mapValue1" type="text"
+                         value="Potter"
+                         placeholder="Potter"></td>
+            </tr>
+            <tr>
+              <td><input id="mapName2" name="mapName2" type="text"
+                         value="role"
+                         placeholder="Role"></td>
+              <td><input id="mapValue2" name="mapValue2" type="text"
+                         value="Harry Potter is a young wizard"
+                         placeholder="Potter"></td>
+            </tr>
+
+          </table>
+        </td>
+      </tr>
+
+      <tr>
+        <td><label for="mapValue">Query</label></td>
+        <td><input id="mapValue" name="mapValue" type="map"
+                   value="role:wizard"
+                   placeholder="role:wizard"></td>
+      </tr>
+
+      <tr>
+        <td><input id="mapIndex" type="submit" value="Index ..."
+                   onclick="index_map(mapCollection.value, mapExtId.value, map.elements)">
+
+        <td><input id="mapSearch" type="submit" value="Search ..."
+                   onclick="search_map(mapCollection.value, mapValue.value)">
+        </td>
+      </tr>
+
+    </table>
+  </form>
+</div>
 </body>
 </html>

@@ -197,7 +197,7 @@ public class LuceneIndexImpl implements LuceneIndex
     }
 
     if (log.isLoggable(Level.FINER))
-      log.finer(String.format("indexMap('%s')", id));
+      log.finer(String.format("indexMap('%1$s') %2$s", id, map));
 
     Field idField = new StringField(_address, id, Field.Store.YES);
 
