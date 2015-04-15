@@ -6,6 +6,7 @@ Lucene plugin for indexing and searching files stored in Baratine distributed fi
 To run the plugin:
 
 1. install maven baratine plugins https://github.com/baratine/maven-collection-baratine
+  1. git clone git@github.com:baratine/maven-collection-baratine.git
 2. install baratine http://baratine.io 
 3. export BARATINE_HOME
 4. change to lucene-plugin/service directory and execute src/main/bin/run-lucene.sh
