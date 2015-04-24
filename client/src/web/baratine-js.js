@@ -1,5 +1,115 @@
 var Jamp = {};
 
+Jamp.BaratineClient = function (url)
+{
+  this.client = new Jamp.Client(url);
+
+  this.onSession;
+
+  var _this = this;
+
+  this.client.onOpen = function() {
+    if (_this.onSession !== undefined)
+      _this.onSession();
+  };
+
+  return this;
+};
+
+Jamp.BaratineClient.prototype.send = function (service, method, args, headers)
+{
+  this.client.send(service, method, args, headers);
+};
+
+Jamp.BaratineClient.prototype.query = function (service,
+                                                method,
+                                                args,
+                                                callback,
+                                                headers)
+{
+  this.client.query(service, method, args, callback, headers);
+};
+
+Jamp.BaratineClient.prototype.lookup = function (path)
+{
+  var target = new Jamp.BaratineClientProxy(this, path);
+
+  try {
+    if (Proxy !== undefined)
+      try {
+        target = Proxy.create(handlerMaker(target));
+      } catch (err) {
+        console.log(err);
+      }
+  } catch (err) {
+  }
+
+  return target;
+};
+
+Jamp.BaratineClient.prototype.createListener = function ()
+{
+  return new Jamp.ServiceListener();
+};
+
+Jamp.BaratineClient.prototype.close = function () {
+  this.client.close();
+};
+
+Jamp.BaratineClient.prototype.toString = function ()
+{
+  return "BaratineClient[" + this.client + "]";
+};
+
+Jamp.BaratineClientProxy = function (client, path)
+{
+  this.client = client;
+  this.path = path;
+
+  return this;
+};
+
+Jamp.BaratineClientProxy.prototype.$send = function (method, args, headers)
+{
+  this.client.send(this.path, method, args, headers);
+};
+
+Jamp.BaratineClientProxy.prototype.$query = function (method,
+                                                      args,
+                                                      callback,
+                                                      headers)
+{
+  this.client.query(this.path, method, args, callback, headers);
+};
+
+Jamp.BaratineClientProxy.prototype.$lookup = function (path)
+{
+  var target = new Jamp.BaratineClientProxy(this.client, this.path + path);
+
+  try {
+    if (Proxy !== undefined)
+      try {
+        target = Proxy.create(handlerMaker(target));
+      } catch (err) {
+        console.log(err);
+      }
+  } catch (err) {
+  }
+
+  return target;
+};
+
+Jamp.BaratineClientProxy.prototype.toString = function ()
+{
+  return "Jamp.BaratineClientProxy[" + this.path + "]";
+};
+
+Jamp.ServiceListener = function ()
+{
+  this.___isListener = true;
+
+  return this;
+};
 Jamp.unserialize = function (json)
 {
   var array = JSON.parse(json);
@@ -17,12 +127,12 @@ Jamp.unserializeArray = function (array)
       throw new Error("incomplete message for JAMP type: " + type);
     }
 
-    var headerMap = array[1];
+    var headers = array[1];
     var fromAddress = array[2];
     var queryId = array[3];
     var result = array[4];
 
-    var msg = new Jamp.ReplyMessage(headerMap, fromAddress, queryId, result);
+    var msg = new Jamp.ReplyMessage(headers, fromAddress, queryId, result);
 
     return msg;
 
@@ -31,7 +141,7 @@ Jamp.unserializeArray = function (array)
       throw new Error("incomplete message for JAMP type: " + type);
     }
 
-    var headerMap = array[1];
+    var headers = array[1];
     var toAddress = array[2];
     var queryId = array[3];
     var result = array[4];
@@ -46,7 +156,7 @@ Jamp.unserializeArray = function (array)
       result = resultArray;
     }
 
-    var msg = new Jamp.ErrorMessage(headerMap, toAddress, queryId, result);
+    var msg = new Jamp.ErrorMessage(headers, toAddress, queryId, result);
 
     return msg;
 
@@ -55,7 +165,7 @@ Jamp.unserializeArray = function (array)
       throw new Error("incomplete message for JAMP type: " + type);
     }
 
-    var headerMap = array[1];
+    var headers = array[1];
     var fromAddress = array[2];
     var queryId = array[3];
     var toAddress = array[4];
@@ -71,7 +181,7 @@ Jamp.unserializeArray = function (array)
       }
     }
 
-    var msg = new Jamp.QueryMessage(headerMap,
+    var msg = new Jamp.QueryMessage(headers,
                                     fromAddress,
                                     queryId,
                                     toAddress,
@@ -85,7 +195,7 @@ Jamp.unserializeArray = function (array)
       throw new Error("incomplete message for JAMP type: " + type);
     }
 
-    var headerMap = array[1];
+    var headers = array[1];
     var toAddress = array[2];
     var methodName = array[3];
 
@@ -99,7 +209,7 @@ Jamp.unserializeArray = function (array)
       }
     }
 
-    var msg = new Jamp.SendMessage(headerMap,
+    var msg = new Jamp.SendMessage(headers,
                                    toAddress,
                                    methodName,
                                    parameters);
@@ -111,383 +221,483 @@ Jamp.unserializeArray = function (array)
   }
 };
 
-Jamp.Message = function (headerMap)
+Jamp.Message = function (headers)
 {
-  if (headerMap == null) {
-    headerMap = {};
+  if (headers == null) {
+    headers = {};
   }
 
-  this.headerMap = headerMap;
+  this.headers = headers;
 
-  this.serialize = function ()
-  {
-    var array = new Array();
-
-    this.serializeImpl(array);
-
-    var json = JSON.stringify(array);
-
-    return json;
-  };
-
-  this.serializeImpl;
 };
 
-Jamp.SendMessage = function (headerMap, toAddress, methodName, parameters)
+Jamp.Message.prototype.serialize = function ()
 {
-  Jamp.Message.call(this, headerMap);
+  var array = new Array();
 
-  this.toAddress = toAddress;
-  this.methodName = methodName;
+  this.serializeImpl(array);
+
+  var json = JSON.stringify(array);
+
+  return json;
+};
+
+Jamp.Message.prototype.serializeImpl;
+
+Jamp.SendMessage = function (headers, address, method, parameters)
+{
+  Jamp.Message.call(this, headers);
+
+  this.address = address;
+  this.method = method;
 
   this.parameters = parameters;
-
-  this.serializeImpl = function (array)
-  {
-    array.push("send");
-    array.push(this.headerMap);
-    array.push(this.toAddress);
-    array.push(this.methodName);
-
-    if (this.parameters != null) {
-      for (var i = 0; i < parameters.length; i++) {
-        array.push(this.parameters[i]);
-      }
-    }
-  };
 };
 
-Jamp.QueryMessage = function (headerMap,
+Jamp.SendMessage.prototype = Object.create(Jamp.Message.prototype);
+
+Jamp.SendMessage.prototype.serializeImpl = function (array)
+{
+  array.push("send");
+  array.push(this.headers);
+  array.push(this.address);
+  array.push(this.method);
+
+  if (this.parameters != null) {
+    for (var i = 0; i < this.parameters.length; i++) {
+      array.push(this.parameters[i]);
+    }
+  }
+};
+
+Jamp.QueryMessage = function (headers,
                               fromAddress,
                               queryId,
-                              toAddress,
-                              methodName,
+                              address,
+                              method,
                               args)
 {
-  Jamp.Message.call(this, headerMap);
+  Jamp.Message.call(this, headers);
 
   this.fromAddress = fromAddress
   this.queryId = queryId;
 
-  this.toAddress = toAddress;
-  this.methodName = methodName;
+  this.address = address;
+  this.method = method;
 
-  this.args = args;
+  this.args;
+
+  this.listenerAddresses;
+  this.listeners;
+
+  if (args !== undefined) {
+    this.args = new Array();
+
+    for (var i = 0; i < args.length; i++) {
+      var arg = args[i];
+      if (arg["___isListener"]) {
+        this.args.push(this.addListener(arg, queryId));
+      } else {
+        this.args.push(arg);
+      }
+    }
+  }
 
   if (fromAddress == null) {
     this.fromAddress = "me";
   }
-
-  this.serializeImpl = function (array)
-  {
-    array.push("query");
-    array.push(this.headerMap);
-    array.push(this.fromAddress);
-    array.push(this.queryId);
-    array.push(this.toAddress);
-    array.push(this.methodName);
-
-    if (this.args != null) {
-      for (var i = 0; i < args.length; i++) {
-        array.push(this.args[i]);
-      }
-    }
-  };
 };
 
-Jamp.SubscribeMessage = function (headerMap,
-                                  serviceName,
-                                  methodName,
-                                  args,
-                                  callbackAddress)
+Jamp.QueryMessage.prototype = Object.create(Jamp.Message.prototype);
+
+Jamp.QueryMessage.prototype.serializeImpl = function (array)
 {
-  Jamp.Message.call(this, headerMap);
+  array.push("query");
+  array.push(this.headers);
+  array.push(this.fromAddress);
+  array.push(this.queryId);
+  array.push(this.address);
+  array.push(this.method);
 
-  this.toAddress = serviceName;
-  this.methodName = methodName;
-
-  this.args = args;
-  this.callbackAddress = callbackAddress;
-
-  this.serializeImpl = function (array)
-  {
-    array.push("send");
-    array.push(this.headerMap);
-    array.push(this.toAddress);
-    array.push(this.methodName);
-    array.push(this.callbackAddress);
-
-    if (this.args != null) {
-      for (var i = 0; i < args.length; i++) {
-        array.push(this.args[i]);
-      }
+  if (this.args !== undefined) {
+    for (var i = 0; i < this.args.length; i++) {
+      array.push(this.args[i]);
     }
-  };
+  }
 };
 
-Jamp.ReplyMessage = function (headerMap, fromAddress, queryId, result)
+Jamp.QueryMessage.prototype.addListener = function (listener, queryId)
 {
-  Jamp.Message.call(this, headerMap);
+  if (this.listeners === undefined) {
+    this.listeners = new Array();
+    this.listenerAddresses = new Array();
+  }
+
+  this.listeners.push(listener);
+
+  var callbackAddress = "/callback-" + queryId;
+  this.listenerAddresses.push(callbackAddress);
+
+  return callbackAddress;
+};
+
+Jamp.ReplyMessage = function (headers, fromAddress, queryId, result)
+{
+  Jamp.Message.call(this, headers);
 
   this.fromAddress = fromAddress;
   this.queryId = queryId;
 
   this.result = result;
-
-  this.serializeImpl = function (array)
-  {
-    array.push("reply");
-    array.push(this.headerMap);
-    array.push(this.fromAddress);
-    array.push(this.queryId);
-    array.push(this.result);
-  };
 };
 
-Jamp.ErrorMessage = function (headerMap, toAddress, queryId, result)
-{
-  Jamp.Message.call(this, headerMap);
+Jamp.ReplyMessage.prototype = Object.create(Jamp.Message.prototype);
 
-  this.toAddress = toAddress;
+Jamp.ReplyMessage.prototype.serializeImpl = function (array)
+{
+  array.push("reply");
+  array.push(this.headers);
+  array.push(this.fromAddress);
+  array.push(this.queryId);
+  array.push(this.result);
+};
+
+Jamp.ErrorMessage = function (headers, toAddress, queryId, result)
+{
+  Jamp.Message.call(this, headers);
+
+  this.address = toAddress;
   this.queryId = queryId;
 
   this.result = result;
+};
 
-  this.serializeImpl = function (array)
-  {
-    array.push("error");
-    array.push(this.headerMap);
-    array.push(this.toAddress);
-    array.push(this.queryId);
-    array.push(this.result);
+Jamp.ErrorMessage.prototype = Object.create(Jamp.Message.prototype);
+
+Jamp.ErrorMessage.prototype.serializeImpl = function (array)
+{
+  array.push("error");
+  array.push(this.headers);
+  array.push(this.address);
+  array.push(this.queryId);
+  array.push(this.result);
+};
+
+function handlerMaker(obj)
+{
+  return {
+    getOwnPropertyDescriptor: function (name)
+    {
+      var desc = Object.getOwnPropertyDescriptor(obj, name);
+      if (desc !== undefined) {
+        desc.configurable = true;
+      }
+      return desc;
+    },
+    getPropertyDescriptor: function (name)
+    {
+      var desc = Object.getPropertyDescriptor(obj, name);
+
+      if (desc !== undefined) {
+        desc.configurable = true;
+      }
+      return desc;
+    },
+    getOwnPropertyNames: function ()
+    {
+      return Object.getOwnPropertyNames(obj);
+    },
+    getPropertyNames: function ()
+    {
+      return Object.getPropertyNames(obj);
+    },
+    defineProperty: function (name, desc)
+    {
+      Object.defineProperty(obj, name, desc);
+    },
+    delete: function (name)
+    {
+      return delete obj[name];
+    },
+    fix: function ()
+    {
+      if (Object.isFrozen(obj)) {
+        var result = {};
+        Object.getOwnPropertyNames(obj).forEach(function (name)
+                                                {
+                                                  result[name]
+                                                    = Object.getOwnPropertyDescriptor(obj,
+                                                                                      name);
+                                                });
+        return result;
+      }
+      return undefined;
+    },
+
+    has: function (name)
+    {
+      return name in obj;
+    },
+    hasOwn: function (name)
+    {
+      return ({}).hasOwnProperty.call(obj, name);
+    },
+    get: function (receiver, name)
+    {
+      try {
+        if (obj[name] !== undefined)
+          return obj[name];
+      } catch (err) {
+        console.log("get (" + name + "): " + err);
+      }
+
+      return function ()
+      {
+        var args = new Array();
+
+        var method = name;
+        var callback;
+        var headers;
+
+        for (var i = 0; i < arguments.length; i++) {
+          var arg = arguments[i];
+          if ((typeof arg) === "function" && callback === undefined) {
+            callback = arg;
+          }
+          else if ((typeof arg) === "function") {
+            throw "function expected at " + arg;
+          }
+          else if (callback !== undefined) {
+            headers = arg;
+
+            break;
+          }
+          else {
+            args.push(arg);
+          }
+        }
+
+        if (callback === undefined) {
+          callback = function(data) {
+            console.log(data);
+          };
+        };
+
+        receiver.$query(method, args, callback, headers);
+      };
+    },
+    set: function (receiver, name, val)
+    {
+      obj[name] = val;
+      return true;
+    }, // bad behavior when set fails in non-strict mode
+    enumerate: function ()
+    {
+      var result = [];
+      for (var name in obj) {
+        result.push(name);
+      }
+      ;
+      return result;
+    },
+    keys: function ()
+    {
+      return Object.keys(obj);
+    }
   };
 };
-Jamp.Channel = function (url)
+
+function guid() {
+  function _p8(s) {
+    var p = (Math.random().toString(16)+"000000000").substr(2,8);
+    return s ? "-" + p.substr(0,4) + "-" + p.substr(4,4) : p ;
+  }
+  return _p8() + _p8(true) + _p8(true) + _p8();
+}Jamp.Client = function (url)
 {
-  this.url = url;
+  this.transport;
+
+  url = url.trim();
+
+  if (url.indexOf("http:") == 0 || url.indexOf("https:") == 0) {
+    this.transport = new Jamp.HttpTransport(url, this);
+  }
+  else if (url.indexOf("ws:") == 0 || url.indexOf("wss:") == 0) {
+    this.transport = new Jamp.WsTransport(url, this);
+  }
+  else {
+    throw "Invalid url: " + url;
+  }
 
   this.requestMap = {};
-  this.callbackMap = {};
   this.listenerMap = {};
-
-  this.callbackCount = 0;
   this.queryCount = 0;
+};
 
-  this.close;
-  this.reconnect;
-  this.submitRequest;
+Jamp.Client.prototype.onMessage = function (msg)
+{
+  if (msg instanceof Jamp.ReplyMessage) {
+    var queryId = msg.queryId;
+    var request = this.removeRequest(queryId);
 
-  this.query = function (serviceName,
-                         methodName,
-                         args,
-                         isBlocking,
-                         headerMap,
-                         fromAddress)
-  {
-    var queryId = this.queryCount++;
-
-    var msg = new Jamp.QueryMessage(headerMap,
-                                    fromAddress,
-                                    queryId,
-                                    serviceName,
-                                    methodName,
-                                    args);
-
-    var request = this.createQueryRequest(queryId, msg);
-    this.submitRequest(request, isBlocking);
-
-    return request.promise;
-  };
-
-  this.send = function (serviceName,
-                        methodName,
-                        args,
-                        isBlocking,
-                        headerMap,
-                        fromAddress)
-  {
-    var queryId = this.queryCount++;
-
-    var msg = new Jamp.SendMessage(headerMap, serviceName, methodName, args);
-
-    var request = this.createSendRequest(queryId, msg);
-    this.submitRequest(request, isBlocking);
-
-    return request.promise;
-  };
-
-  this.setListener = function (serviceName,
-                               methodName,
-                               args,
-                               headerMap,
-                               callbackAddress,
-                               listener)
-  {
-    var queryId = this.queryCount++;
-
-    var msg = new Jamp.SubscribeMessage(headerMap,
-                                        serviceName,
-                                        methodName,
-                                        args,
-                                        callbackAddress);
-
-    this.addListener(callbackAddress, listener);
-
-    var request = this.createSendRequest(queryId, msg);
-    this.submitRequest(request, false);
-
-    return request.promise;
-  };
-
-  this.addListener = function (callbackAddress, listener)
-  {
-    this.listenerMap[callbackAddress] = listener;
-  };
-
-  this.getListener = function (callbackAddress)
-  {
-    return this.listenerMap[callbackAddress];
-  }
-
-  this.registerCallback = function (callback)
-  {
-    var serviceName = "channel:";
-    var methodName = "publishChannel";
-
-    var id = "/_cb_" + this.callbackCount++;
-    var args = new Array().push(id);
-
-    var promise = this.query(serviceName, methodName, args);
-
-    promise.then(function completed(value)
-                 {
-                   var address = value;
-
-                   this.callbackMap[address] = callback;
-
-                   promise.resolved(address);
-                 });
-
-    return promise;
-  };
-
-  this.removeCallback = function (callback)
-  {
-    var address = null;
-
-    for (var key in this.callbackMap) {
-      var value = this.callbackMap[key];
-
-      if (value === callback) {
-        address = key;
-
-        break;
-      }
-    }
-
-    if (address == null) {
-      throw new Error("callback has not been registered: " + callback);
-    }
-
-    delete this.callbackMap[address];
-  };
-
-  this.createSendRequest = function (queryId, msg)
-  {
-    var request = new Jamp.SendRequest(queryId, msg);
-
-    this.requestMap[queryId] = request;
-
-    return request;
-  };
-
-  this.createQueryRequest = function (queryId, msg)
-  {
-    var request = new Jamp.QueryRequest(queryId, msg);
-
-    this.requestMap[queryId] = request;
-
-    return request;
-  };
-
-  var myThis = this;
-
-  this.onMessageJson = function (json)
-  {
-    var msg = Jamp.unserialize(json);
-
-    myThis.onMessage(msg);
-  }
-
-  this.onMessageArray = function (list)
-  {
-    for (var i = 0; i < list.length; i++) {
-      var msg = Jamp.unserializeArray(list[i]);
-      this.onMessage(msg);
-    }
-  };
-
-  this.onMessage = function (msg)
-  {
-    if (msg instanceof Jamp.ReplyMessage) {
-      var queryId = msg.queryId;
-      var request = this.removeRequest(queryId);
-
-      if (request != null) {
-        request.completed(this, msg.result);
-      }
-      else {
-        console.log("cannot find request for query id: " + queryId);
-      }
-    }
-    else if (msg instanceof Jamp.ErrorMessage) {
-      var queryId = msg.queryId;
-      var request = this.removeRequest(queryId);
-
-      if (request != null) {
-        request.error(this, msg.result);
-      }
-      else {
-        console.log("cannot find request for query id: " + queryId);
-      }
-    }
-    else if (msg instanceof Jamp.SendMessage) {
-      var listener = this.getListener(msg.toAddress);
-
-      listener[msg.methodName].apply(listener, msg.parameters);
+    if (request != null) {
+      request.completed(this, msg.result);
     }
     else {
-      throw new Error("unexpected jamp message type: " + msg);
+      console.log("cannot find request for query id: " + queryId);
     }
-  };
+  }
+  else if (msg instanceof Jamp.ErrorMessage) {
+    var queryId = msg.queryId;
+    var request = this.removeRequest(queryId);
 
-  this.checkRequests = function ()
-  {
-    var expiredRequests = new Array();
-
-    for (var queryId in this.requestMap) {
-      var request = this.requestMap[queryId];
-
-      expiredRequests.push(request);
+    if (request != null) {
+      request.error(this, msg.result);
     }
-
-    for (var i = 0; i < expiredRequests.length; i++) {
-      var request = expiredRequests[i];
-
-      this.removeRequest(request.queryId);
-
-      request.error(this, "request expired");
+    else {
+      console.log("cannot find request for query id: " + queryId);
     }
-  };
+  }
+  else if (msg instanceof Jamp.SendMessage) {
+    var listener = this.getListener(msg.address);
+    listener[msg.method].apply(listener, msg.parameters);
+  }
+  else {
+    throw new Error("unexpected jamp message type: " + msg);
+  }
+};
 
-  this.removeRequest = function (queryId)
-  {
+Jamp.Client.prototype.onMessageArray = function (list)
+{
+  for (var i = 0; i < list.length; i++) {
+    var msg = Jamp.unserializeArray(list[i]);
+    this.onMessage(msg);
+  }
+};
+
+Jamp.Client.prototype.expireRequests = function ()
+{
+  var expiredRequests = new Array();
+
+  for (var queryId in this.requestMap) {
     var request = this.requestMap[queryId];
 
-    delete this.requestMap[queryId];
+    expiredRequests.push(request);
+  }
 
-    return request;
-  };
+  for (var i = 0; i < expiredRequests.length; i++) {
+    var request = expiredRequests[i];
+
+    this.removeRequest(request.queryId);
+
+    request.error(this, "request expired");
+  }
+};
+
+Jamp.Client.prototype.removeRequest = function (queryId)
+{
+  var request = this.requestMap[queryId];
+
+  delete this.requestMap[queryId];
+
+  return request;
+};
+
+Jamp.Client.prototype.close = function ()
+{
+  this.transport.close();
+};
+
+Jamp.Client.prototype.reconnect = function ()
+{
+  this.transport.reconnect();
+};
+
+Jamp.Client.prototype.submitRequest = function (request)
+{
+  this.transport.submitRequest(request);
+};
+
+Jamp.Client.prototype.onMessageJson = function (json, client)
+{
+  var msg = Jamp.unserialize(json);
+
+  client.onMessage(msg);
+};
+
+Jamp.Client.prototype.getListener = function (listenerAddress)
+{
+  return this.listenerMap[listenerAddress];
+}
+
+Jamp.Client.prototype.send = function (service,
+                                       method,
+                                       args,
+                                       headerMap)
+{
+  var queryId = this.queryCount++;
+
+  var msg = new Jamp.SendMessage(headerMap, service, method, args);
+
+  var request = this.createSendRequest(queryId, msg);
+
+  this.submitRequest(request);
+};
+
+Jamp.Client.prototype.query = function (service,
+                                        method,
+                                        args,
+                                        callback,
+                                        headerMap)
+{
+  var queryId = this.queryCount++;
+
+  var msg = new Jamp.QueryMessage(headerMap,
+                                  "/client",
+                                  queryId,
+                                  service,
+                                  method,
+                                  args);
+
+  if (msg.listeners !== undefined) {
+    for (var i = 0; i < msg.listeners.length; i++) {
+      var address = msg.listenerAddresses[i];
+      var listener = msg.listeners[i];
+      this.listenerMap[address] = listener;
+    }
+  }
+
+  var request = this.createQueryRequest(queryId, msg, callback);
+
+  this.submitRequest(request);
+};
+
+Jamp.Client.prototype.onfail = function (error)
+{
+  console.log("error: " + JSON.stringify(error));
+};
+
+Jamp.Client.prototype.createQueryRequest = function (queryId, msg, callback)
+{
+  var request = new Jamp.QueryRequest(queryId, msg, callback);
+
+  this.requestMap[queryId] = request;
+
+  return request;
+};
+
+Jamp.Client.prototype.createSendRequest = function (queryId, msg)
+{
+  var request = new Jamp.SendRequest(queryId, msg);
+
+  this.requestMap[queryId] = request;
+
+  return request;
+};
+
+Jamp.Client.prototype.toString = function ()
+{
+  return "Client[" + this.transport + "]";
 };
 
 Jamp.Request = function (queryId, msg, timeout)
@@ -496,7 +706,6 @@ Jamp.Request = function (queryId, msg, timeout)
   this.msg = msg;
 
   this.expirationTime = timeout;
-  this.promise = new Jamp.Promise();
 
   if (timeout == null) {
     this.expirationTime = new Date(new Date().getTime() + 1000 * 60 * 5);
@@ -511,22 +720,20 @@ Jamp.Request = function (queryId, msg, timeout)
     return (now.getTime() - this.expirationTime.getTime()) > 0;
   };
 
-  this.sent = function (channel)
+  this.sent = function (client)
   {
   };
 
-  this.completed = function (channel, value)
+  this.completed = function (client, value)
   {
-    if (!this.promise.isCompleted) {
-      this.promise.resolve(value);
-    }
+    client.remove(this.queryId);
   };
 
-  this.error = function (channel, value)
+  this.error = function (client, value)
   {
-    if (!this.promise.isCompleted) {
-      this.promise.reject(value);
-    }
+    client.remove(queryId);
+
+    console.log(value);
   };
 };
 
@@ -534,228 +741,226 @@ Jamp.SendRequest = function (queryId, msg, timeout)
 {
   Jamp.Request.call(this, queryId, msg, timeout);
 
-  this.sent = function (channel)
+  this.sent = function (client)
   {
-    channel.removeRequest(this.queryId);
-
-    if (!this.promise.isCompleted) {
-      this.promise.resolve(true);
-    }
+    client.removeRequest(this.queryId);
   };
 };
 
-Jamp.QueryRequest = function (queryId, msg, timeout)
+Jamp.QueryRequest = function (queryId, msg, callback, timeout)
 {
   Jamp.Request.call(this, queryId, msg, timeout);
-};
 
-Jamp.Promise = function ()
-{
-  this.resolvedValue = null;
-  this.rejectedValue = null;
+  this.callback = callback;
 
-  this.onFulfilledArray = new Array();
-  this.onRejectedArray = new Array();
-
-  this.isCompleted = false;
-
-  this.resolve = function (value)
+  this.completed = function (client, value)
   {
-    this.resolvedValue = value;
-    this.isCompleted = true;
+    client.removeRequest(this.queryId);
 
-    for (var i = 0; i < this.onFulfilledArray.length; i++) {
-      this.onFulfilledArray[i](value);
+    if (this.callback !== undefined) {
+      callback(value);
     }
   };
 
-  this.reject = function (value)
+  this.error = function (client, value)
   {
-    this.rejectedValue = value;
-    this.isCompleted = true;
+    client.removeRequest(this.queryId);
 
-    for (var i = 0; i < this.onRejectedArray.length; i++) {
-      this.onRejectedArray[i](value);
-    }
-  };
-
-  this.then = function (onFulfilled, onRejected)
-  {
-    if (onFulfilled != null) {
-      this.onFulfilledArray.push(onFulfilled);
-    }
-
-    if (onRejected != null) {
-      this.onRejectedArray.push(onRejected);
-    }
-
-    return this;
-  };
-};
-Jamp.HttpChannel = function (url, onChannel)
-{
-  Jamp.Channel.call(this, url);
-
-  this.submitRequest = function (request, isBlocking)
-  {
-    var httpRequest;
-
-    if (isBlocking) {
-      httpRequest = this.initRpcRequest();
+    if (this.callback !== undefined && this.callback.onfail !== undefined) {
+      callback.onfail(value);
     }
     else {
-      httpRequest = this.initPushRequest();
+      console.log(value);
+    }
+  };
+};
+Jamp.HttpTransport = function (url, client)
+{
+  this.url = url;
+  this.client = client;
+  this.isClosed = false;
+
+  return this;
+};
+
+Jamp.HttpTransport.prototype.submitRequest = function (request)
+{
+  if (this.isClosed)
+    throw this.toString() + " was already closed.";
+
+  var httpRequest;
+
+  httpRequest = this.initPushRequest();
+
+  var msg = request.msg;
+
+  var json = msg.serialize();
+  json = "[" + json + "]";
+
+  var client = this.client;
+  var transport = this;
+
+  httpRequest.onreadystatechange = function ()
+  {
+    if (httpRequest.readyState != 4) {
+      return;
     }
 
-    var msg = request.msg;
+    if (httpRequest.status == "200") {
 
-    var json = msg.serialize();
-    json = "[" + json + "]";
+      request.sent(client);
 
-    var channel = this;
-
-    httpRequest.onreadystatechange = function ()
-    {
-      if (httpRequest.readyState != 4) {
-        return;
-      }
-
-      if (httpRequest.status == "200") {
-        request.sent(channel);
-
-        channel.pull(channel);
-      }
-      else {
-        request.error(this,
-                      "error submitting query "
-                      + httpRequest.status
-                      + " "
-                      + httpRequest.statusText
-                      + " : "
-                      + httpRequest.responseText);
-      }
-    };
-
-    httpRequest.send(json);
-  };
-
-  this.initRpcRequest = function ()
-  {
-    var httpRequest = new XMLHttpRequest();
-
-    httpRequest.open("POST", this.url, true);
-    httpRequest.setRequestHeader("Content-Type", "x-application/jamp-rpc");
-
-    return httpRequest;
-  };
-
-  this.initPushRequest = function ()
-  {
-    var httpRequest = new XMLHttpRequest();
-
-    httpRequest.open("POST", this.url, true);
-    httpRequest.setRequestHeader("Content-Type", "x-application/jamp-push");
-
-    return httpRequest;
-  };
-
-  this.initPullRequest = function ()
-  {
-    var httpRequest = new XMLHttpRequest();
-
-    httpRequest.open("POST", this.url, true);
-    httpRequest.setRequestHeader("Content-Type", "x-application/jamp-pull");
-
-    return httpRequest;
-  };
-
-  this.pull = function (channel)
-  {
-    var httpRequest = channel.initPullRequest();
-    httpRequest.send("[]");
-
-    httpRequest.onreadystatechange = function ()
-    {
-      if (httpRequest.readyState != 4) {
-        return;
-      }
-
-      if (httpRequest.status == "200") {
-        var json = httpRequest.responseText;
-
-        var list = JSON.parse(json);
-
-        channel.onMessageArray(list);
-      }
-      else {
-        console.log(this,
+      transport.pull(client);
+    }
+    else {
+      request.error(this,
                     "error submitting query "
                     + httpRequest.status
                     + " "
                     + httpRequest.statusText
                     + " : "
                     + httpRequest.responseText);
-      }
-
-      channel.pull(channel);
-    };
-
-    httpRequest.ontimeout = function ()
-    {
-      channel.pull(channel);
-    };
+    }
   };
 
-  return this;
+  httpRequest.send(json);
 };
-Jamp.WebSocketChannel = function (url, onChannel)
+
+Jamp.HttpTransport.prototype.pull = function (client)
 {
-  Jamp.Channel.call(this, url);
+  if(this.isClosed)
+    return;
 
-  this.close = function ()
+  var httpRequest = this.initPullRequest();
+  this.pullRequest = httpRequest;
+
+  httpRequest.send("[]");
+
+  var transport = this;
+
+  httpRequest.onreadystatechange = function ()
   {
-    this.conn.close();
+    if (httpRequest.readyState != 4) {
+      return;
+    }
+
+    if (httpRequest.status == "200") {
+      var json = httpRequest.responseText;
+
+      var list = JSON.parse(json);
+
+      client.onMessageArray(list);
+    }
+    else {
+      console.log(this,
+                  "error submitting query "
+                  + httpRequest.status
+                  + " "
+                  + httpRequest.statusText
+                  + " : "
+                  + httpRequest.responseText);
+    }
+
+    transport.pullRequest = undefined;
+
+    transport.pull(client);
   };
 
-  this.reconnect = function ()
+  httpRequest.ontimeout = function ()
   {
-    this.conn.reconnect(this.conn);
+    if (! transport.isClosed)
+      transport.pull(client);
   };
+};
 
-  this.removeRequest = function (queryId)
-  {
-    var request = this.requestMap[queryId];
+Jamp.HttpTransport.prototype.initPushRequest = function ()
+{
+  var httpRequest = new XMLHttpRequest();
 
-    delete this.requestMap[queryId];
+  httpRequest.open("POST", this.url, true);
+  httpRequest.setRequestHeader("Content-Type", "x-application/jamp-push");
 
-    return request;
-  };
+  return httpRequest;
+};
 
-  this.submitRequest = function (request, isBlocking)
-  {
-    this.conn.addRequest(request);
-  };
+Jamp.HttpTransport.prototype.initPullRequest = function ()
+{
+  var httpRequest = new XMLHttpRequest();
 
-  this.toString = function ()
-  {
-    return "Jamp.WebSocketChannel[]";
-  };
+  httpRequest.open("POST", this.url, true);
+  httpRequest.setRequestHeader("Content-Type", "x-application/jamp-pull");
 
-  this.conn = new Jamp.WebSocketConnection(url, this.onMessageJson, this);
-  this.onChannel = onChannel;
+  return httpRequest;
+};
+
+Jamp.HttpTransport.prototype.close = function ()
+{
+  this.isClosed = true;
+
+  var pullRequest = this.pullRequest;
+
+  if (pullRequest !== undefined) {
+    try {
+      pullRequest.abort();
+    } catch (err) {
+    }
+  }
+};
+
+Jamp.HttpTransport.prototype.toString = function ()
+{
+  return "Jamp.HttpClient[" + this.url + "]";
+};
+Jamp.WsTransport = function (url, client)
+{
+  this.client = client;
+  this.url = url;
+
+  this.conn = new Jamp.WsConnection(client, this);
   this.conn.init(this.conn);
 };
 
-Jamp.WebSocketConnection = function (url,
-                                     onMessageHandler,
-                                     channel,
-                                     reconnectIntervalMs,
-                                     isReconnectOnClose,
-                                     isReconnectOnError)
+Jamp.WsTransport.prototype.close = function ()
 {
-  this.url = url;
-  this.channel = channel;
-  this.onMessageHandler = onMessageHandler;
+  this.conn.close();
+};
+
+Jamp.WsTransport.prototype.reconnect = function ()
+{
+  this.conn.reconnect(this.conn);
+};
+
+Jamp.WsTransport.prototype.removeRequest = function (queryId)
+{
+  var request = this.client.requestMap[queryId];
+
+  delete this.client.requestMap[queryId];
+
+  return request;
+};
+
+Jamp.WsTransport.prototype.submitRequest = function (request)
+{
+  this.conn.addRequest(request);
+
+  if (this.conn.isOpen) {
+    this.conn.submitRequestLoop();
+  }
+};
+
+Jamp.WsTransport.prototype.toString = function ()
+{
+  return "Jamp.WsTransport[" + this.url + "]";
+};
+
+Jamp.WsConnection = function (client,
+                              transport,
+                              reconnectIntervalMs,
+                              isReconnectOnClose,
+                              isReconnectOnError)
+{
+  this.client = client;
+  this.transport = transport;
 
   this.socket;
   this.isClosing = false;
@@ -764,6 +969,7 @@ Jamp.WebSocketConnection = function (url,
   this.reconnectIntervalMs = 5000;
   this.isReconnectOnClose = true;
   this.isReconnectOnError = true;
+  this.isOpen = false;
 
   if (reconnectIntervalMs != null) {
     this.reconnectIntervalMs = reconnectIntervalMs;
@@ -776,92 +982,98 @@ Jamp.WebSocketConnection = function (url,
   if (isReconnectOnError != true) {
     this.isReconnectOnError = false;
   }
+};
 
-  this.init = function (conn)
+Jamp.WsConnection.prototype.init = function (conn)
+{
+  if (conn.isClosing) {
+    return;
+  }
+
+  conn.socket = new WebSocket(conn.transport.url, ["jamp"]);
+
+  conn.socket.onopen = function ()
   {
+    if (conn.client.onOpen !== undefined)
+      conn.client.onOpen();
+
+    conn.isOpen = true;
+
+    conn.submitRequestLoop();
+  };
+
+  conn.socket.onclose = function ()
+  {
+    conn.isOpen = false;
+
     if (conn.isClosing) {
       return;
     }
 
-    conn.socket = new WebSocket(this.url, ["jamp"]);
-
-    conn.socket.onopen = function ()
-    {
-      if (conn.channel.onChannel)
-        conn.channel.onChannel(conn.channel);
-
-      conn.submitRequestLoop();
-    };
-
-    conn.socket.onclose = function ()
-    {
-      if (conn.isClosing) {
-        return;
-      }
-
-      conn.reconnect(conn);
-    };
-
-    conn.socket.onerror = function ()
-    {
-      if (conn.isClosing) {
-        return;
-      }
-
-      conn.reconnect(conn);
-    };
-
-    this.socket.onmessage = function (event)
-    {
-      conn.onMessageHandler(event.data);
-    }
+    conn.reconnect(conn);
   };
 
-  this.addRequest = function (data)
+  conn.socket.onerror = function ()
   {
-    if (this.isClosing) {
-      throw new Error("websocket is closing");
+    conn.isOpen = false;
+
+    if (conn.isClosing) {
+      return;
     }
 
-    this.requestQueue.push(data);
-
-    if (this.socket.readyState = WebSocket.OPEN) {
-      this.submitRequestLoop();
-    }
+    conn.reconnect(conn);
   };
 
-  this.submitRequestLoop = function ()
+  this.socket.onmessage = function (event)
   {
-    while (this.socket.readyState === WebSocket.OPEN
-           && this.requestQueue.length > 0) {
-      var request = this.requestQueue[0];
-      var msg = request.msg;
-
-      var json = msg.serialize();
-
-      this.socket.send(json);
-
-      request.sent(this.channel);
-
-      this.requestQueue.splice(0, 1);
-    }
-  };
-
-  this.reconnect = function (conn)
-  {
-    this.close();
-
-    this.isClosing = false;
-
-    setTimeout(conn.init(conn), this.reconnectIntervalMs);
-  };
-
-  this.close = function ()
-  {
-    this.isClosing = true;
-
-    if (this.socket.readyState == WebSocket.OPEN) {
-      this.socket.close();
-    }
-  };
+    conn.client.onMessageJson(event.data, conn.client);
+  }
 };
+
+Jamp.WsConnection.prototype.addRequest = function (data)
+{
+  if (this.isClosing) {
+    throw new Error("websocket is closing");
+  }
+
+  this.requestQueue.push(data);
+};
+
+Jamp.WsConnection.prototype.submitRequestLoop = function ()
+{
+  while (this.socket.readyState === WebSocket.OPEN
+         && this.requestQueue.length > 0
+         && ! this.isClosing) {
+    var request = this.requestQueue[0];
+    var msg = request.msg;
+
+    var json = msg.serialize();
+
+    this.socket.send(json);
+
+    request.sent(this.transport);
+
+    this.requestQueue.splice(0, 1);
+  }
+};
+
+Jamp.WsConnection.prototype.reconnect = function (conn)
+{
+  this.close();
+
+  this.isClosing = false;
+
+  setTimeout(conn.init(conn), this.reconnectIntervalMs);
+};
+
+Jamp.WsConnection.prototype.close = function ()
+{
+  this.isClosing = true;
+
+  try {
+    this.socket.close();
+  } catch (err ) {
+
+  }
+};
+
