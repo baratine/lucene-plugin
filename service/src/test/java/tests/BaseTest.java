@@ -22,7 +22,7 @@ public abstract class BaseTest
   private ServiceManager _serviceManager;
 
   @Inject @Lookup("/lucene-manager/bfs")
-  private SyncLuceneIndex _lucene;
+  private LuceneIndexSync _lucene;
 
   protected BfsFileSync lookup(String path)
   {

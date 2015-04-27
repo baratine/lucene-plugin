@@ -12,7 +12,7 @@ public interface LuceneIndex
    * @param path   BFS path e.g. bfs:///tmp/test.txt
    * @param result
    */
-  public void indexFile(String path, Result<Boolean> result)
+  void indexFile(String path, Result<Boolean> result)
     throws LuceneException;
 
   /**
@@ -22,7 +22,7 @@ public interface LuceneIndex
    * @param text   - text
    * @param result
    */
-  public void indexText(String id, String text, Result<Boolean> result)
+  void indexText(String id, String text, Result<Boolean> result)
     throws LuceneException;
 
   /**
@@ -34,9 +34,9 @@ public interface LuceneIndex
    * @param result
    * @throws LuceneException
    */
-  public void indexMap(String id,
-                       Map<String,Object> map,
-                       Result<Boolean> result)
+  void indexMap(String id,
+                Map<String,Object> map,
+                Result<Boolean> result)
     throws LuceneException;
 
   /**
@@ -46,7 +46,7 @@ public interface LuceneIndex
    * @param limit  specifies upper limit on the result set
    * @param result files
    */
-  public void search(String query, int limit, Result<LuceneEntry[]> result)
+  void search(String query, int limit, Result<LuceneEntry[]> result)
     throws LuceneException;
 
   /**
@@ -58,10 +58,10 @@ public interface LuceneIndex
    * @param limit
    * @param result
    */
-  public void searchAfter(String query,
-                          LuceneEntry after,
-                          int limit,
-                          Result<LuceneEntry[]> result) throws LuceneException;
+  void searchAfter(String query,
+                   LuceneEntry after,
+                   int limit,
+                   Result<LuceneEntry[]> result) throws LuceneException;
 
   /**
    * Deletes document from an index
@@ -70,7 +70,7 @@ public interface LuceneIndex
    * @see #indexFile
    * @see #indexText
    */
-  public void delete(String id, Result<Boolean> result)
+  void delete(String id, Result<Boolean> result)
     throws LuceneException;
 
   /**
@@ -78,5 +78,5 @@ public interface LuceneIndex
    *
    * @param result
    */
-  public void clear(Result<Void> result) throws LuceneException;
+  void clear(Result<Void> result) throws LuceneException;
 }

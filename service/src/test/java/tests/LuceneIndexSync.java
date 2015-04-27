@@ -6,7 +6,7 @@ import com.caucho.lucene.LuceneIndex;
 
 import java.util.Map;
 
-public interface SyncLuceneIndex extends LuceneIndex
+public interface LuceneIndexSync extends LuceneIndex
 {
   boolean indexFile(String path) throws LuceneException;
 

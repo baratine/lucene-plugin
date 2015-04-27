@@ -13,7 +13,7 @@ public interface LuceneSession
    * @param path       - BFS path e.g. bfs:///tmp/test.txt
    * @param result
    */
-  public void indexFile(String collection, String path, Result<Boolean> result)
+  void indexFile(String collection, String path, Result<Boolean> result)
     throws LuceneException;
 
   /**
@@ -24,10 +24,10 @@ public interface LuceneSession
    * @param text       - text
    * @param result
    */
-  public void indexText(String collection,
-                        String id,
-                        String text,
-                        Result<Boolean> result)
+  void indexText(String collection,
+                 String id,
+                 String text,
+                 Result<Boolean> result)
     throws LuceneException;
 
   /**
@@ -40,10 +40,10 @@ public interface LuceneSession
    * @param result
    * @throws LuceneException
    */
-  public void indexMap(String collection,
-                       String id,
-                       Map<String,Object> map,
-                       Result<Boolean> result)
+  void indexMap(String collection,
+                String id,
+                Map<String,Object> map,
+                Result<Boolean> result)
     throws LuceneException;
 
   /**
@@ -54,10 +54,10 @@ public interface LuceneSession
    * @param limit      - specifies upper limit on the result set
    * @param result
    */
-  public void search(String collection,
-                     String query,
-                     int limit,
-                     Result<LuceneEntry[]> result)
+  void search(String collection,
+              String query,
+              int limit,
+              Result<LuceneEntry[]> result)
     throws LuceneException;
 
   /**
@@ -70,11 +70,11 @@ public interface LuceneSession
    * @param limit
    * @param result
    */
-  public void searchAfter(String collection,
-                          String query,
-                          LuceneEntry after,
-                          int limit,
-                          Result<LuceneEntry[]> result) throws LuceneException;
+  void searchAfter(String collection,
+                   String query,
+                   LuceneEntry after,
+                   int limit,
+                   Result<LuceneEntry[]> result) throws LuceneException;
 
   /**
    * Deletes document from an index
@@ -84,7 +84,7 @@ public interface LuceneSession
    * @see #indexFile
    * @see #indexText
    */
-  public void delete(String collection, String id, Result<Boolean> result)
+  void delete(String collection, String id, Result<Boolean> result)
     throws LuceneException;
 
   /**
@@ -93,6 +93,6 @@ public interface LuceneSession
    * @param collection - collection name
    * @param result
    */
-  public void clear(String collection, Result<Void> result)
+  void clear(String collection, Result<Void> result)
     throws LuceneException;
 }
