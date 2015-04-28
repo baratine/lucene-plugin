@@ -1,11 +1,13 @@
 package com.caucho.lucene;
 
+import com.caucho.env.system.RootDirectorySystem;
 import io.baratine.core.Journal;
 import io.baratine.core.OnDestroy;
 import io.baratine.core.OnLookup;
 import io.baratine.core.Service;
 import io.baratine.core.Startup;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
@@ -21,15 +23,40 @@ public class LuceneManagerImpl
 
   private Map<String,LuceneIndexImpl> _map = new HashMap<>();
 
-  private String _indexDirectory = "/tmp";
+  private String _indexDirectory;
 
   public LuceneManagerImpl()
   {
+    _indexDirectory = RootDirectorySystem.getCurrentDataDirectory()
+                                         .getFullPath();
   }
 
   public void setIndexDirectory(String indexDirectory)
   {
-    _indexDirectory = indexDirectory;
+    indexDirectory = indexDirectory.replace('\\', '/');
+
+    if (isAbsolute(indexDirectory)) {
+      _indexDirectory = indexDirectory;
+    }
+    else if (_indexDirectory.endsWith(File.separator)) {
+      _indexDirectory = _indexDirectory + indexDirectory;
+    }
+    else {
+      _indexDirectory = _indexDirectory + File.separatorChar + indexDirectory;
+    }
+  }
+
+  private boolean isAbsolute(String path)
+  {
+
+    if (path.indexOf('/') == 0
+        || (Character.isLetter(path.charAt(0))
+            && path.charAt(1) == ':'
+            && path.charAt(2) == '/')) {
+      return true;
+    }
+
+    return false;
   }
 
   @OnLookup
@@ -53,7 +80,12 @@ public class LuceneManagerImpl
   {
     log.finer("destroying " + this);
 
-    _map.values().forEach(l -> {try {l.destroy();} catch (Exception e) {}});
+    _map.values().forEach(l -> {
+      try {
+        l.destroy();
+      } catch (Exception e) {
+      }
+    });
   }
 
   @Override
