@@ -161,7 +161,7 @@ public class LuceneIndexImpl implements LuceneIndex
   private Path getPath()
   {
     return FileSystems.getDefault().getPath(_indexDirectory,
-                                            "bfs-lucene-index",
+                                            "index",
                                             _address);
   }
 

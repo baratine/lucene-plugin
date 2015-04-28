@@ -27,8 +27,9 @@ public class LuceneManagerImpl
 
   public LuceneManagerImpl()
   {
-    _indexDirectory = RootDirectorySystem.getCurrentDataDirectory()
-                                         .getFullPath();
+    String baratineData = RootDirectorySystem.getCurrentDataDirectory()
+                                             .getFullPath();
+    _indexDirectory = baratineData + File.separatorChar + "lucene";
   }
 
   public void setIndexDirectory(String indexDirectory)
