@@ -27,11 +27,11 @@ cp  target/lucene-*.bar lucene.bar
 
 $BARATINE_HOME/bin/baratine start $BARATINE_ARGS --deploy lucene.bar
 
-#echo "index ..."
-#$BARATINE_HOME/bin/baratine jamp-query $BARATINE_ARGS --pod lucene /lucene/foo indexText foo bar mary
+echo "index ..."
+$BARATINE_HOME/bin/baratine jamp-query $BARATINE_ARGS --pod lucene /lucene/foo indexText foo bar mary
 
-#echo "search ..."
-#$BARATINE_HOME/bin/baratine jamp-query $BARATINE_ARGS --pod lucene /lucene/foo search foo lamb 3
+echo "search ..."
+$BARATINE_HOME/bin/baratine jamp-query $BARATINE_ARGS --pod lucene /lucene/foo search foo lamb 3
 
 $BARATINE_HOME/bin/baratine cat $BARATINE_ARGS /proc/services
 
