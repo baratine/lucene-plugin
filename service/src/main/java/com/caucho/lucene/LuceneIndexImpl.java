@@ -5,9 +5,11 @@ import io.baratine.core.Modify;
 import io.baratine.core.OnDestroy;
 import io.baratine.core.OnSave;
 import io.baratine.core.Result;
+import io.baratine.core.ResultSink;
 import io.baratine.core.ServiceManager;
 import io.baratine.core.Services;
 import io.baratine.files.BfsFile;
+import io.baratine.stream.StreamBuilder;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
@@ -192,6 +194,20 @@ public class LuceneIndexImpl implements LuceneIndex
   }
 
   @Override
+  public StreamBuilder search2(String query)
+  {
+    throw new AbstractMethodError();
+  }
+
+  public void search2(String query, ResultSink<String> results)
+  {
+    results.begin(2);
+    results.accept("junk-0");
+    results.accept("junk-1");
+    results.end();
+  }
+
+  @Override
   public void search(String query, int limit, Result<LuceneEntry[]> result)
   {
     Objects.requireNonNull(query);
@@ -218,7 +234,7 @@ public class LuceneIndexImpl implements LuceneIndex
     try {
       IndexWriter writer = getIndexWriter();
 
-      if (writer.hasUncommittedChanges())
+      if (false && writer.hasUncommittedChanges())
         writer.commit();
 
       List<LuceneEntry> temp = new ArrayList<>();
@@ -294,8 +310,10 @@ public class LuceneIndexImpl implements LuceneIndex
   @OnSave
   protected void checkpoint() throws IOException
   {
-    if (_writer != null)
+    if (_writer != null && _writer.hasUncommittedChanges()) {
       _writer.commit();
+      _searcher = null;
+    }
   }
 
   @OnDestroy
@@ -412,6 +430,10 @@ public class LuceneIndexImpl implements LuceneIndex
     IndexWriterConfig iwc = new IndexWriterConfig(analyzer);
 
     iwc.setOpenMode(IndexWriterConfig.OpenMode.CREATE_OR_APPEND);
+
+    iwc.setMaxBufferedDocs(16);
+
+    iwc.setRAMBufferSizeMB(64);
 
     _writer = new IndexWriter(getDirectory(), iwc);
 

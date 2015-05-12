@@ -1,6 +1,7 @@
 package com.caucho.lucene;
 
 import io.baratine.core.Result;
+import io.baratine.stream.StreamBuilder;
 
 import java.util.Map;
 
@@ -79,4 +80,6 @@ public interface LuceneIndex
    * @param result
    */
   void clear(Result<Void> result) throws LuceneException;
+
+  StreamBuilder search2(String query);
 }
