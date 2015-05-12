@@ -130,41 +130,6 @@ public class LuceneIndexImpl implements LuceneIndex
     }
   }
 
-  private IndexWriter getIndexWriter() throws IOException
-  {
-    if (_writer != null)
-      return _writer;
-
-    Analyzer analyzer = new StandardAnalyzer();
-    IndexWriterConfig iwc = new IndexWriterConfig(analyzer);
-
-    iwc.setOpenMode(IndexWriterConfig.OpenMode.CREATE_OR_APPEND);
-
-    _writer = new IndexWriter(getDirectory(), iwc);
-
-    return _writer;
-  }
-
-  private Directory getDirectory() throws IOException
-  {
-    if (_directory == null)
-      _directory = createDirectory();
-
-    return _directory;
-  }
-
-  private Directory createDirectory() throws IOException
-  {
-    return MMapDirectory.open(getPath());
-  }
-
-  private Path getPath()
-  {
-    return FileSystems.getDefault().getPath(_indexDirectory,
-                                            "index",
-                                            _address);
-  }
-
   @Override
   @Modify
   public void indexText(String id, String text, Result<Boolean> result)
@@ -224,21 +189,6 @@ public class LuceneIndexImpl implements LuceneIndex
       log.log(Level.WARNING, String.format("indexing ('%s') failed", id), e);
       throw new LuceneException(e);
     }
-  }
-
-  private IndexableField makeIndexableField(String name, Object obj)
-  {
-    IndexableField field = null;
-
-    if (name == null) {
-    }
-    else if (obj == null) {
-    }
-    else {
-      field = new TextField(name, String.valueOf(obj), Field.Store.NO);
-    }
-
-    return field;
   }
 
   @Override
@@ -341,41 +291,6 @@ public class LuceneIndexImpl implements LuceneIndex
     }
   }
 
-  private IndexSearcher getIndexSearcher() throws IOException
-  {
-    DirectoryReader newReader = null;
-    IndexWriter writer = getIndexWriter();
-
-    if (_reader != null)
-      newReader = DirectoryReader.openIfChanged(_reader, writer, true);
-
-    if (newReader == null)
-      newReader = DirectoryReader.open(writer, true);
-
-    IndexSearcher newSearcher = _searcher;
-
-    if (newReader != _reader) {
-      newSearcher = new IndexSearcher(newReader);
-    }
-
-    _reader = newReader;
-    _searcher = newSearcher;
-
-    return _searcher;
-  }
-
-  private QueryParser getQueryParser()
-  {
-    if (_queryParser != null)
-      return _queryParser;
-
-    Analyzer analyzer = new StandardAnalyzer();
-
-    _queryParser = new QueryParser("text", analyzer);
-
-    return _queryParser;
-  }
-
   @OnSave
   protected void checkpoint() throws IOException
   {
@@ -464,4 +379,90 @@ public class LuceneIndexImpl implements LuceneIndex
   {
     return this.getClass().getSimpleName() + '[' + _manager + _address + ']';
   }
+
+  private IndexSearcher getIndexSearcher() throws IOException
+  {
+    DirectoryReader newReader = null;
+    IndexWriter writer = getIndexWriter();
+
+    if (_reader != null)
+      newReader = DirectoryReader.openIfChanged(_reader, writer, true);
+
+    if (newReader == null)
+      newReader = DirectoryReader.open(writer, true);
+
+    IndexSearcher newSearcher = _searcher;
+
+    if (newReader != _reader) {
+      newSearcher = new IndexSearcher(newReader);
+    }
+
+    _reader = newReader;
+    _searcher = newSearcher;
+
+    return _searcher;
+  }
+
+  private IndexWriter getIndexWriter() throws IOException
+  {
+    if (_writer != null)
+      return _writer;
+
+    Analyzer analyzer = new StandardAnalyzer();
+    IndexWriterConfig iwc = new IndexWriterConfig(analyzer);
+
+    iwc.setOpenMode(IndexWriterConfig.OpenMode.CREATE_OR_APPEND);
+
+    _writer = new IndexWriter(getDirectory(), iwc);
+
+    return _writer;
+  }
+
+  private Directory getDirectory() throws IOException
+  {
+    if (_directory == null)
+      _directory = createDirectory();
+
+    return _directory;
+  }
+
+  private Directory createDirectory() throws IOException
+  {
+    return MMapDirectory.open(getPath());
+  }
+
+  private Path getPath()
+  {
+    return FileSystems.getDefault().getPath(_indexDirectory,
+                                            "index",
+                                            _address);
+  }
+
+  private QueryParser getQueryParser()
+  {
+    if (_queryParser != null)
+      return _queryParser;
+
+    Analyzer analyzer = new StandardAnalyzer();
+
+    _queryParser = new QueryParser("text", analyzer);
+
+    return _queryParser;
+  }
+
+  private IndexableField makeIndexableField(String name, Object obj)
+  {
+    IndexableField field = null;
+
+    if (name == null) {
+    }
+    else if (obj == null) {
+    }
+    else {
+      field = new TextField(name, String.valueOf(obj), Field.Store.NO);
+    }
+
+    return field;
+  }
 }
+
