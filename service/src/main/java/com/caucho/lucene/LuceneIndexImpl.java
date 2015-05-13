@@ -1,48 +1,18 @@
 package com.caucho.lucene;
 
-import com.caucho.env.system.RootDirectorySystem;
-import com.caucho.vfs.Vfs;
+import io.baratine.core.Lookup;
 import io.baratine.core.Modify;
 import io.baratine.core.OnDestroy;
 import io.baratine.core.OnSave;
 import io.baratine.core.Result;
+import io.baratine.core.ResultFuture;
 import io.baratine.core.ResultSink;
 import io.baratine.core.Service;
 import io.baratine.core.ServiceManager;
-import io.baratine.core.Services;
-import io.baratine.files.BfsFile;
 import io.baratine.stream.StreamBuilder;
-import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.standard.StandardAnalyzer;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.StringField;
-import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.IndexableField;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.queryparser.classic.QueryParser;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.ScoreDoc;
-import org.apache.lucene.search.TopDocs;
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.MMapDirectory;
-import org.apache.tika.exception.TikaException;
-import org.apache.tika.metadata.Metadata;
-import org.apache.tika.parser.AutoDetectParser;
-import org.xml.sax.SAXException;
 
-import java.io.ByteArrayInputStream;
-import java.io.File;
+import javax.inject.Inject;
 import java.io.IOException;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.FileSystems;
-import java.nio.file.Path;
-import java.util.Collections;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -55,25 +25,12 @@ public class LuceneIndexImpl implements LuceneIndex
 
   private ServiceManager _manager;
 
-  private Directory _directory;
-  private IndexWriter _writer;
-  private DirectoryReader _reader;
-  private IndexSearcher _searcher;
-  private QueryParser _queryParser;
-
-  private String _indexDirectory;
+  @Inject @Lookup("/lucene-worker")
+  private LuceneWorker _luceneWorker;
 
   public LuceneIndexImpl()
     throws IOException
   {
-    _manager = Services.getCurrentManager();
-
-    String baratineData = RootDirectorySystem.getCurrentDataDirectory()
-                                             .getFullPath();
-
-    _indexDirectory = baratineData + File.separatorChar + "lucene";
-
-    log.finer("creating new " + this);
   }
 
   @Modify
@@ -85,55 +42,7 @@ public class LuceneIndexImpl implements LuceneIndex
     if (log.isLoggable(Level.FINER))
       log.finer(String.format("indexFile('%s')", path));
 
-    BfsFile file = _manager.lookup(path).as(BfsFile.class);
-
-    Field id = new StringField(collection, path, Field.Store.YES);
-
-    Term key = new Term(collection, path);
-
-    file.openRead(result.from(i -> indexStream(i, id, key)));
-  }
-
-  public boolean indexStream(InputStream in, Field id, Term key)
-  {
-    try {
-      IndexWriter writer = getIndexWriter();
-
-      Document document = new Document();
-
-      document.add(id);
-
-      AutoDetectParser parser = new AutoDetectParser();
-      Metadata metadata = new Metadata();
-      LuceneContentHandler handler = new LuceneContentHandler(document);
-
-      parser.parse(in, handler, metadata);
-
-      for (String name : metadata.names()) {
-        for (String value : metadata.getValues(name)) {
-          document.add(new TextField(name, value, Field.Store.NO));
-        }
-      }
-
-      writer.updateDocument(key, document);
-
-      if (log.isLoggable(Level.FINER))
-        log.finer(String.format("indexing ('%s') complete",
-                                id.stringValue()));
-
-      return true;
-    } catch (IOException | SAXException e) {
-      log.log(Level.WARNING,
-              String.format("indexing ('%s') failed", id.stringValue()), e);
-      throw new LuceneException(e);
-    } catch (TikaException e) {
-      log.log(Level.WARNING,
-              String.format("indexing ('%s') failed", id.stringValue()), e);
-
-      LuceneException le = LuceneException.create(e);
-
-      throw le;
-    }
+    _luceneWorker.indexFile(collection, path, result);
   }
 
   @Override
@@ -146,14 +55,7 @@ public class LuceneIndexImpl implements LuceneIndex
     if (log.isLoggable(Level.FINER))
       log.finer(String.format("indexText('%s')", id));
 
-    Field idField = new StringField(collection, id, Field.Store.YES);
-
-    Term key = new Term(collection, id);
-
-    ByteArrayInputStream stream
-      = new ByteArrayInputStream(text.getBytes(StandardCharsets.UTF_8));
-
-    result.complete(indexStream(stream, idField, key));
+    _luceneWorker.indexText(collection, id, text, result);
   }
 
   @Override
@@ -163,42 +65,10 @@ public class LuceneIndexImpl implements LuceneIndex
                        Map<String,Object> map,
                        Result<Boolean> result) throws LuceneException
   {
-    if (map.isEmpty()) {
-      result.complete(true);
-
-      log.fine(String.format("indexMap('%s') empty map", id));
-
-      return;
-    }
-
     if (log.isLoggable(Level.FINER))
       log.finer(String.format("indexMap('%1$s') %2$s", id, map));
 
-    Field idField = new StringField(collection, id, Field.Store.YES);
-
-    Term key = new Term(collection, id);
-
-    try {
-      IndexWriter writer = getIndexWriter();
-
-      Document document = new Document();
-
-      document.add(idField);
-
-      for (Map.Entry<String,Object> entry : map.entrySet()) {
-        document.add(makeIndexableField(entry.getKey(), entry.getValue()));
-      }
-
-      writer.updateDocument(key, document);
-
-      if (log.isLoggable(Level.FINER))
-        log.finer(String.format("indexing ('%s') complete", id));
-
-      result.complete(true);
-    } catch (IOException e) {
-      log.log(Level.WARNING, String.format("indexing ('%s') failed", id), e);
-      throw new LuceneException(e);
-    }
+    _luceneWorker.indexMap(collection, id, map, result);
   }
 
   @Override
@@ -211,6 +81,7 @@ public class LuceneIndexImpl implements LuceneIndex
                      String query,
                      ResultSink<LuceneEntry> results)
   {
+
     int limit = 255;
 
     if (log.isLoggable(Level.FINER))
@@ -220,71 +91,34 @@ public class LuceneIndexImpl implements LuceneIndex
                       null,
                       limit));
 
-    try {
-      IndexSearcher searcher = getIndexSearcher();
+    ResultFuture<LuceneEntry[]> result = new ResultFuture<>();
 
-      Query q = getQueryParser().parse(query);
+    _luceneWorker.search(collection, query, result);
 
-      TopDocs docs = searcher.search(q, limit);
+    LuceneEntry[] entries = result.get();
 
-      ScoreDoc[] scoreDocs = docs.scoreDocs;
-
-      for (ScoreDoc doc : scoreDocs) {
-        Document d = searcher.doc(doc.doc, Collections.singleton(collection));
-
-        LuceneEntry entry = new LuceneEntry(doc.doc,
-                                            doc.score,
-                                            d.get(collection));
-
-        results.accept(entry);
-      }
-
-      if (log.isLoggable(Level.FINER))
-        log.finer(
-          String.format("search('%1$s', %2$d with %3$d results)",
-                        query,
-                        limit,
-                        scoreDocs.length));
-
-      results.end();
-    } catch (Throwable t) {
-      log.log(Level.WARNING, t.getMessage(), t);
-
-      throw LuceneException.create(t);
+    for (LuceneEntry entry : entries) {
+      results.accept(entry);
     }
+
+    results.end();
   }
 
   @Override
   @Modify
   public void delete(String collection, final String id, Result<Boolean> result)
   {
-    try {
-      if (log.isLoggable(Level.FINER))
-        log.finer(String.format("delete('%s')", id));
+    if (log.isLoggable(Level.FINER))
+      log.finer(String.format("delete('%s')", id));
 
-      IndexWriter writer = getIndexWriter();
-
-      Term idTerm = new Term(collection, id);
-      writer.deleteDocuments(idTerm);
-
-      if (log.isLoggable(Level.FINER))
-        log.finer(String.format("delete('%s') complete",
-                                id));
-      result.complete(true);
-    } catch (IOException e) {
-      log.log(Level.WARNING, e.getMessage(), e);
-
-      throw new LuceneException(e);
-    }
+    _luceneWorker.delete(collection, id, result);
   }
 
   @OnSave
-  protected void checkpoint() throws IOException
+  protected void save() throws IOException
   {
-    if (_writer != null && _writer.hasUncommittedChanges()) {
-      _writer.commit();
-      _searcher = null;
-    }
+    if (log.isLoggable(Level.FINER))
+      log.finer("save");
   }
 
   @OnDestroy
@@ -296,70 +130,9 @@ public class LuceneIndexImpl implements LuceneIndex
   @Override
   public void clear(String collection, Result<Void> result)
   {
-    if (log.isLoggable(Level.FINER))
-      log.finer(String.format("lucene-plugin#clear()"));
+    log.finer(String.format("clear collectin %1$s", collection));
 
-    _searcher = null;
-
-    Exception exception = null;
-
-    try {
-      if (_reader != null) {
-        _reader.close();
-      }
-    } catch (Exception e) {
-      log.log(Level.WARNING, e.getMessage(), e);
-
-      exception = e;
-    } finally {
-      _reader = null;
-    }
-
-    try {
-      if (_writer != null) {
-        _writer.rollback();
-        _writer.close();
-      }
-    } catch (IOException e) {
-      log.log(Level.WARNING, e.getMessage(), e);
-
-      exception = e;
-    } finally {
-      _writer = null;
-    }
-
-    try {
-      if (_directory != null)
-        _directory.close();
-    } catch (IOException e) {
-      log.log(Level.WARNING, e.getMessage(), e);
-
-      exception = e;
-    } finally {
-      _directory = null;
-    }
-
-    _reader = null;
-    _writer = null;
-    _searcher = null;
-
-    File path = getPath().toFile();
-
-    try {
-      if (path.exists() && (!Vfs.lookup(path.getAbsolutePath()).removeAll()))
-        result.fail(new IOException());
-    } catch (IOException e) {
-      log.log(Level.WARNING, e.getMessage(), e);
-
-      exception = e;
-    }
-
-    if (log.isLoggable(Level.FINER) && exception == null)
-      log.finer(String.format("clear complete"));
-
-    if (exception != null) {
-      throw new LuceneException(exception);
-    }
+    _luceneWorker.clear(collection, result);
   }
 
   @Override
@@ -367,93 +140,4 @@ public class LuceneIndexImpl implements LuceneIndex
   {
     return this.getClass().getSimpleName() + '[' + _manager + ']';
   }
-
-  private IndexSearcher getIndexSearcher() throws IOException
-  {
-    DirectoryReader newReader = null;
-    IndexWriter writer = getIndexWriter();
-
-    if (_reader != null)
-      newReader = DirectoryReader.openIfChanged(_reader, writer, true);
-
-    if (newReader == null)
-      newReader = DirectoryReader.open(writer, true);
-
-    IndexSearcher newSearcher = _searcher;
-
-    if (newReader != _reader) {
-      newSearcher = new IndexSearcher(newReader);
-    }
-
-    _reader = newReader;
-    _searcher = newSearcher;
-
-    return _searcher;
-  }
-
-  private IndexWriter getIndexWriter() throws IOException
-  {
-    if (_writer != null)
-      return _writer;
-
-    Analyzer analyzer = new StandardAnalyzer();
-    IndexWriterConfig iwc = new IndexWriterConfig(analyzer);
-
-    iwc.setOpenMode(IndexWriterConfig.OpenMode.CREATE_OR_APPEND);
-
-    iwc.setMaxBufferedDocs(16);
-
-    iwc.setRAMBufferSizeMB(64);
-
-    _writer = new IndexWriter(getDirectory(), iwc);
-
-    return _writer;
-  }
-
-  private Directory getDirectory() throws IOException
-  {
-    if (_directory == null)
-      _directory = createDirectory();
-
-    return _directory;
-  }
-
-  private Directory createDirectory() throws IOException
-  {
-    return MMapDirectory.open(getPath());
-  }
-
-  private Path getPath()
-  {
-    return FileSystems.getDefault().getPath(_indexDirectory,
-                                            "index");
-  }
-
-  private QueryParser getQueryParser()
-  {
-    if (_queryParser != null)
-      return _queryParser;
-
-    Analyzer analyzer = new StandardAnalyzer();
-
-    _queryParser = new QueryParser("text", analyzer);
-
-    return _queryParser;
-  }
-
-  private IndexableField makeIndexableField(String name, Object obj)
-  {
-    IndexableField field = null;
-
-    if (name == null) {
-    }
-    else if (obj == null) {
-    }
-    else {
-      field = new TextField(name, String.valueOf(obj), Field.Store.NO);
-    }
-
-    return field;
-  }
 }
-
