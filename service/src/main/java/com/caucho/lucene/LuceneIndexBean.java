@@ -24,6 +24,7 @@ import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MMapDirectory;
+import org.apache.lucene.store.NRTCachingDirectory;
 import org.apache.tika.exception.TikaException;
 import org.apache.tika.metadata.Metadata;
 import org.apache.tika.parser.AutoDetectParser;
@@ -424,7 +425,11 @@ public class LuceneIndexBean
 
   private Directory createDirectory() throws IOException
   {
-    return MMapDirectory.open(getPath());
+    Directory directory = MMapDirectory.open(getPath());
+
+    directory = new NRTCachingDirectory(directory, 5.0, 60.0);
+
+    return directory;
   }
 
   private Path getPath()

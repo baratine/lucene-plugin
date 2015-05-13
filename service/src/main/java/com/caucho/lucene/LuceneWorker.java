@@ -1,6 +1,7 @@
 package com.caucho.lucene;
 
 import io.baratine.core.Result;
+import io.baratine.core.ResultSink;
 
 import java.util.Map;
 

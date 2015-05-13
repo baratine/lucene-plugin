@@ -1,6 +1,7 @@
 package com.caucho.lucene;
 
 import io.baratine.core.Result;
+import io.baratine.core.ResultSink;
 import io.baratine.core.Service;
 import io.baratine.core.Workers;
 
@@ -41,9 +42,11 @@ public class LuceneWorkerImpl implements LuceneWorker
   @Override
   public void search(String collection,
                      String query,
-                     Result<LuceneEntry[]> results)
+                     Result<LuceneEntry[]> result)
   {
-    results.complete(_bean.search(collection, query, 255));
+    LuceneEntry[] entries = _bean.search(collection, query, 255);
+
+    result.complete(entries);
   }
 
   @Override

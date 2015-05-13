@@ -5,7 +5,6 @@ import io.baratine.core.Modify;
 import io.baratine.core.OnDestroy;
 import io.baratine.core.OnSave;
 import io.baratine.core.Result;
-import io.baratine.core.ResultFuture;
 import io.baratine.core.ResultSink;
 import io.baratine.core.Service;
 import io.baratine.core.ServiceManager;
@@ -81,27 +80,21 @@ public class LuceneIndexImpl implements LuceneIndex
                      String query,
                      ResultSink<LuceneEntry> results)
   {
-
-    int limit = 255;
-
     if (log.isLoggable(Level.FINER))
-      log.finer(
-        String.format("search('%1$s', %2$s, %3$d)",
-                      query,
-                      null,
-                      limit));
+      log.finer(String.format("search('%1$s', %2$s)", collection, query));
 
-    ResultFuture<LuceneEntry[]> result = new ResultFuture<>();
+    _luceneWorker.search(collection, query, results.from((e, r) -> add(r, e)));
+  }
 
-    _luceneWorker.search(collection, query, result);
-
-    LuceneEntry[] entries = result.get();
+  private void add(Result<LuceneEntry> result, LuceneEntry[] entries)
+  {
+    ResultSink<LuceneEntry> sink = (ResultSink<LuceneEntry>) result;
 
     for (LuceneEntry entry : entries) {
-      results.accept(entry);
+      sink.accept(entry);
     }
 
-    results.end();
+    sink.end();
   }
 
   @Override
