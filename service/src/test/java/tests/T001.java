@@ -4,6 +4,7 @@ import com.caucho.junit.ConfigurationBaratine;
 import com.caucho.junit.ConfigurationBaratine.Log;
 import com.caucho.junit.RunnerBaratine;
 import com.caucho.lucene.LuceneEntry;
+import com.caucho.lucene.LuceneIndexImpl;
 import com.caucho.lucene.LuceneManagerImpl;
 import junit.framework.Assert;
 import org.junit.Test;
@@ -17,9 +18,9 @@ import java.util.concurrent.ExecutionException;
  */
 
 @RunWith(RunnerBaratine.class)
-@ConfigurationBaratine(services = {LuceneManagerImpl.class},
+@ConfigurationBaratine(services = {LuceneIndexImpl.class},
   logs = {@Log(name = "com.caucho", level = "FINER")},
-  testTime = 0)
+  testTime = 0, pod = "lucene")
 public class T001 extends BaseTest
 {
   @Test(timeout = 2000)

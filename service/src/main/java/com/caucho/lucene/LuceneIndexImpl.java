@@ -1,11 +1,13 @@
 package com.caucho.lucene;
 
+import com.caucho.env.system.RootDirectorySystem;
 import com.caucho.vfs.Vfs;
 import io.baratine.core.Modify;
 import io.baratine.core.OnDestroy;
 import io.baratine.core.OnSave;
 import io.baratine.core.Result;
 import io.baratine.core.ResultSink;
+import io.baratine.core.Service;
 import io.baratine.core.ServiceManager;
 import io.baratine.core.Services;
 import io.baratine.files.BfsFile;
@@ -48,6 +50,7 @@ import java.util.Objects;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+@Service("pod://lucene/index")
 public class LuceneIndexImpl implements LuceneIndex
 {
   private static Logger log
@@ -60,32 +63,36 @@ public class LuceneIndexImpl implements LuceneIndex
   private DirectoryReader _reader;
   private IndexSearcher _searcher;
   private QueryParser _queryParser;
-  private String _address;
 
   private String _indexDirectory;
 
-  public LuceneIndexImpl(String address, String indexDirectory)
+  public LuceneIndexImpl()
     throws IOException
   {
-    _address = address;
     _manager = Services.getCurrentManager();
-    _indexDirectory = indexDirectory;
+
+    String baratineData = RootDirectorySystem.getCurrentDataDirectory()
+                                             .getFullPath();
+
+    _indexDirectory = baratineData + File.separatorChar + "lucene";
 
     log.finer("creating new " + this);
   }
 
   @Modify
   @Override
-  public void indexFile(final String path, Result<Boolean> result)
+  public void indexFile(final String collection,
+                        final String path,
+                        Result<Boolean> result)
   {
     if (log.isLoggable(Level.FINER))
       log.finer(String.format("indexFile('%s')", path));
 
     BfsFile file = _manager.lookup(path).as(BfsFile.class);
 
-    Field id = new StringField(_address, path, Field.Store.YES);
+    Field id = new StringField(collection, path, Field.Store.YES);
 
-    Term key = new Term(_address, path);
+    Term key = new Term(collection, path);
 
     file.openRead(result.from(i -> indexStream(i, id, key)));
   }
@@ -134,14 +141,17 @@ public class LuceneIndexImpl implements LuceneIndex
 
   @Override
   @Modify
-  public void indexText(String id, String text, Result<Boolean> result)
+  public void indexText(String collection,
+                        String id,
+                        String text,
+                        Result<Boolean> result)
   {
     if (log.isLoggable(Level.FINER))
       log.finer(String.format("indexText('%s')", id));
 
-    Field idField = new StringField(_address, id, Field.Store.YES);
+    Field idField = new StringField(collection, id, Field.Store.YES);
 
-    Term key = new Term(_address, id);
+    Term key = new Term(collection, id);
 
     ByteArrayInputStream stream
       = new ByteArrayInputStream(text.getBytes(StandardCharsets.UTF_8));
@@ -151,7 +161,8 @@ public class LuceneIndexImpl implements LuceneIndex
 
   @Override
   @Modify
-  public void indexMap(String id,
+  public void indexMap(String collection,
+                       String id,
                        Map<String,Object> map,
                        Result<Boolean> result) throws LuceneException
   {
@@ -166,9 +177,9 @@ public class LuceneIndexImpl implements LuceneIndex
     if (log.isLoggable(Level.FINER))
       log.finer(String.format("indexMap('%1$s') %2$s", id, map));
 
-    Field idField = new StringField(_address, id, Field.Store.YES);
+    Field idField = new StringField(collection, id, Field.Store.YES);
 
-    Term key = new Term(_address, id);
+    Term key = new Term(collection, id);
 
     try {
       IndexWriter writer = getIndexWriter();
@@ -194,12 +205,14 @@ public class LuceneIndexImpl implements LuceneIndex
   }
 
   @Override
-  public StreamBuilder search2(String query)
+  public StreamBuilder search2(String collection, String query)
   {
     throw new AbstractMethodError();
   }
 
-  public void search2(String query, ResultSink<String> results)
+  public void search2(String collection,
+                      String query,
+                      ResultSink<String> results)
   {
     results.begin(2);
     results.accept("junk-0");
@@ -208,18 +221,22 @@ public class LuceneIndexImpl implements LuceneIndex
   }
 
   @Override
-  public void search(String query, int limit, Result<LuceneEntry[]> result)
+  public void search(String collection,
+                     String query,
+                     int limit,
+                     Result<LuceneEntry[]> result)
   {
     Objects.requireNonNull(query);
 
     if (log.isLoggable(Level.FINER))
       log.finer(String.format("search('%s')", query));
 
-    searchAfter(query, null, limit, result);
+    searchAfter(collection, query, null, limit, result);
   }
 
   @Override
-  public void searchAfter(String query,
+  public void searchAfter(String collection,
+                          String query,
                           LuceneEntry afterEntry,
                           int limit,
                           Result<LuceneEntry[]> result)
@@ -255,11 +272,11 @@ public class LuceneIndexImpl implements LuceneIndex
       }
 
       for (ScoreDoc doc : docs.scoreDocs) {
-        Document d = searcher.doc(doc.doc, Collections.singleton(_address));
+        Document d = searcher.doc(doc.doc, Collections.singleton(collection));
 
         LuceneEntry entry = new LuceneEntry(doc.doc,
                                             doc.score,
-                                            d.get(_address));
+                                            d.get(collection));
 
         temp.add(entry);
       }
@@ -285,7 +302,7 @@ public class LuceneIndexImpl implements LuceneIndex
 
   @Override
   @Modify
-  public void delete(final String id, Result<Boolean> result)
+  public void delete(String collection, final String id, Result<Boolean> result)
   {
     try {
       if (log.isLoggable(Level.FINER))
@@ -293,7 +310,7 @@ public class LuceneIndexImpl implements LuceneIndex
 
       IndexWriter writer = getIndexWriter();
 
-      Term idTerm = new Term(_address, id);
+      Term idTerm = new Term(collection, id);
       writer.deleteDocuments(idTerm);
 
       if (log.isLoggable(Level.FINER))
@@ -320,11 +337,10 @@ public class LuceneIndexImpl implements LuceneIndex
   public void destroy() throws Exception
   {
     log.info("destroying " + this);
-
-    clear(Result.ignore());
   }
 
-  public void clear(Result<Void> result)
+  @Override
+  public void clear(String collection, Result<Void> result)
   {
     if (log.isLoggable(Level.FINER))
       log.finer(String.format("lucene-plugin#clear()"));
@@ -395,7 +411,7 @@ public class LuceneIndexImpl implements LuceneIndex
   @Override
   public String toString()
   {
-    return this.getClass().getSimpleName() + '[' + _manager + _address + ']';
+    return this.getClass().getSimpleName() + '[' + _manager + ']';
   }
 
   private IndexSearcher getIndexSearcher() throws IOException
@@ -456,8 +472,7 @@ public class LuceneIndexImpl implements LuceneIndex
   private Path getPath()
   {
     return FileSystems.getDefault().getPath(_indexDirectory,
-                                            "index",
-                                            _address);
+                                            "index");
   }
 
   private QueryParser getQueryParser()

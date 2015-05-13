@@ -3,8 +3,9 @@ package tests;
 import com.caucho.junit.ConfigurationBaratine;
 import com.caucho.junit.RunnerBaratine;
 import com.caucho.lucene.LuceneEntry;
-import com.caucho.lucene.LuceneManagerImpl;
+import com.caucho.lucene.LuceneIndexImpl;
 import com.caucho.lucene.LuceneSessionImpl;
+import com.caucho.lucene.LuceneManagerImpl;
 import io.baratine.core.Lookup;
 import junit.framework.Assert;
 import org.junit.After;
@@ -20,12 +21,12 @@ import java.util.Map;
  * title: tests LuceneSession methods
  */
 @RunWith(RunnerBaratine.class)
-@ConfigurationBaratine(services = {LuceneManagerImpl.class, LuceneSessionImpl.class},
+@ConfigurationBaratine(services = {LuceneIndexImpl.class, LuceneSessionImpl.class},
   logs = {@ConfigurationBaratine.Log(name = "com.caucho", level = "FINER")},
-  testTime = 0, pod="lucene")
+  testTime = 0, pod = "lucene")
 public class T300
 {
-  @Inject @Lookup("session://lucene/lucene/foo")
+  @Inject @Lookup("session://lucene/session/foo")
   LuceneSessionSync _lucene;
 
   @Test

@@ -13,7 +13,7 @@ public interface LuceneIndex
    * @param path   BFS path e.g. bfs:///tmp/test.txt
    * @param result
    */
-  void indexFile(String path, Result<Boolean> result)
+  void indexFile(String collection, String path, Result<Boolean> result)
     throws LuceneException;
 
   /**
@@ -23,7 +23,10 @@ public interface LuceneIndex
    * @param text   - text
    * @param result
    */
-  void indexText(String id, String text, Result<Boolean> result)
+  void indexText(String collection,
+                 String id,
+                 String text,
+                 Result<Boolean> result)
     throws LuceneException;
 
   /**
@@ -35,7 +38,8 @@ public interface LuceneIndex
    * @param result
    * @throws LuceneException
    */
-  void indexMap(String id,
+  void indexMap(String collection,
+                String id,
                 Map<String,Object> map,
                 Result<Boolean> result)
     throws LuceneException;
@@ -47,7 +51,10 @@ public interface LuceneIndex
    * @param limit  specifies upper limit on the result set
    * @param result files
    */
-  void search(String query, int limit, Result<LuceneEntry[]> result)
+  void search(String collection,
+              String query,
+              int limit,
+              Result<LuceneEntry[]> result)
     throws LuceneException;
 
   /**
@@ -59,7 +66,8 @@ public interface LuceneIndex
    * @param limit
    * @param result
    */
-  void searchAfter(String query,
+  void searchAfter(String collection,
+                   String query,
                    LuceneEntry after,
                    int limit,
                    Result<LuceneEntry[]> result) throws LuceneException;
@@ -71,7 +79,7 @@ public interface LuceneIndex
    * @see #indexFile
    * @see #indexText
    */
-  void delete(String id, Result<Boolean> result)
+  void delete(String collection, String id, Result<Boolean> result)
     throws LuceneException;
 
   /**
@@ -79,7 +87,13 @@ public interface LuceneIndex
    *
    * @param result
    */
-  void clear(Result<Void> result) throws LuceneException;
+  void clear(String collection, Result<Void> result) throws LuceneException;
 
-  StreamBuilder search2(String query);
+  /**
+   *
+   * @param collection
+   * @param query
+   * @return
+   */
+  StreamBuilder<String> search2(String collection, String query);
 }

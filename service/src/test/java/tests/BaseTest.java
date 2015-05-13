@@ -18,10 +18,11 @@ import java.util.Map;
 
 public abstract class BaseTest
 {
+  private static final String DEFAULT = "default";
   @Inject
   private ServiceManager _serviceManager;
 
-  @Inject @Lookup("/lucene-manager/bfs")
+  @Inject @Lookup("pod://lucene/index")
   private LuceneIndexSync _lucene;
 
   protected BfsFileSync lookup(String path)
@@ -31,7 +32,7 @@ public abstract class BaseTest
 
   final protected boolean delete(String fileName)
   {
-    return _lucene.delete(makeBfsPath(fileName));
+    return _lucene.delete(DEFAULT, makeBfsPath(fileName));
   }
 
   final protected String makeBfsPath(String file)
@@ -43,7 +44,7 @@ public abstract class BaseTest
                                        LuceneEntry after,
                                        int limit)
   {
-    return _lucene.searchAfter(query, after, limit);
+    return _lucene.searchAfter(DEFAULT, query, after, limit);
   }
 
   final protected LuceneEntry[] uploadAndSearch(String fileName, String query)
@@ -76,14 +77,14 @@ public abstract class BaseTest
   final protected boolean update(String fileName)
   {
     ResultFuture<Boolean> future = new ResultFuture<>();
-    _lucene.indexFile(fileName, future);
+    _lucene.indexFile("default", fileName, future);
 
     return future.get();
   }
 
   final protected LuceneEntry[] search(String query)
   {
-    return _lucene.search(query, 256);
+    return _lucene.search(DEFAULT, query, 256);
   }
 
   final protected LuceneEntry[] updateAndSearch(String id,
@@ -99,12 +100,12 @@ public abstract class BaseTest
 
   final protected boolean update(String id, String text)
   {
-    return _lucene.indexText(id, text);
+    return _lucene.indexText(DEFAULT, id, text);
   }
 
   final protected boolean update(String id, Map<String,Object> map)
   {
-    return _lucene.indexMap(id, map);
+    return _lucene.indexMap(DEFAULT, id, map);
   }
 
   @Before
@@ -115,7 +116,7 @@ public abstract class BaseTest
 
   final protected void clear()
   {
-    _lucene.clear();
+    _lucene.clear(DEFAULT);
   }
 
   @After

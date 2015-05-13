@@ -10,9 +10,9 @@ import java.io.File;
 import java.io.IOException;
 import java.util.logging.Logger;
 
-@Service("pod://lucene/lucene-manager")
-@Journal
-@Startup
+//@Service("pod://lucene/lucene-manager")
+//@Journal
+//@Startup
 public class LuceneManagerImpl
 {
   private static Logger log
@@ -60,7 +60,9 @@ public class LuceneManagerImpl
   {
     String address = path.substring(path.lastIndexOf("///") + 3);
 
-    return new LuceneIndexImpl(address, _indexDirectory);
+    //return new LuceneIndexImpl(address, _indexDirectory);
+
+    throw new IllegalStateException();
   }
 
   @Override

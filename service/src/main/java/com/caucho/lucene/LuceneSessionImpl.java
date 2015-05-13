@@ -2,41 +2,26 @@ package com.caucho.lucene;
 
 import io.baratine.core.Lookup;
 import io.baratine.core.Result;
-import io.baratine.core.ServiceRef;
 import io.baratine.core.SessionService;
+import io.baratine.session.SessionScoped;
 
 import javax.inject.Inject;
-import java.util.HashMap;
 import java.util.Map;
 
-@SessionService("session://lucene/lucene/{_id}")
+@SessionService("session://lucene/session/{_id}")
 public class LuceneSessionImpl implements LuceneSession
 {
+  @SessionScoped
   private String _id;
 
-  @Inject @Lookup("pod://lucene/lucene-manager")
-  private ServiceRef _luceneManager;
-
-  private Map<String,LuceneIndex> _luceneIndexMap = new HashMap<>();
-
-  private LuceneIndex getLuceneIndex(String collection)
-  {
-    LuceneIndex lucene = _luceneIndexMap.get(collection);
-
-    if (lucene == null) {
-      lucene = _luceneManager.lookup("/" + collection).as(LuceneIndex.class);
-
-      _luceneIndexMap.put(collection, lucene);
-    }
-
-    return lucene;
-  }
+  @Inject @Lookup("pod://lucene/index")
+  private LuceneIndex _index;
 
   @Override
   public void indexFile(String collection, String path, Result<Boolean> result)
     throws LuceneException
   {
-    getLuceneIndex(collection).indexFile(path, result);
+    _index.indexFile(collection, path, result);
   }
 
   @Override
@@ -45,7 +30,7 @@ public class LuceneSessionImpl implements LuceneSession
                         String text,
                         Result<Boolean> result) throws LuceneException
   {
-    getLuceneIndex(collection).indexText(id, text, result);
+    _index.indexText(collection, id, text, result);
   }
 
   @Override
@@ -54,7 +39,7 @@ public class LuceneSessionImpl implements LuceneSession
                        Map<String,Object> map,
                        Result<Boolean> result) throws LuceneException
   {
-    getLuceneIndex(collection).indexMap(id, map, result);
+    _index.indexMap(collection, id, map, result);
   }
 
   @Override
@@ -64,7 +49,7 @@ public class LuceneSessionImpl implements LuceneSession
                      Result<LuceneEntry[]> result)
     throws LuceneException
   {
-    getLuceneIndex(collection).search(query, limit, result);
+    _index.search(collection, query, limit, result);
   }
 
   @Override
@@ -75,20 +60,24 @@ public class LuceneSessionImpl implements LuceneSession
                           Result<LuceneEntry[]> result)
     throws LuceneException
   {
-    getLuceneIndex(collection).searchAfter(query, after, limit, result);
+    _index.searchAfter(collection,
+                       query,
+                       after,
+                       limit,
+                       result);
   }
 
   @Override
   public void delete(String collection, String id, Result<Boolean> result)
     throws LuceneException
   {
-    getLuceneIndex(collection).delete(id, result);
+    _index.delete(collection, id, result);
   }
 
   @Override
   public void clear(String collection, Result<Void> result)
     throws LuceneException
   {
-    getLuceneIndex(collection).clear(result);
+    _index.clear(collection, result);
   }
 }
