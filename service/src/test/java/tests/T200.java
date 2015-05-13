@@ -4,7 +4,6 @@ import com.caucho.junit.ConfigurationBaratine;
 import com.caucho.junit.RunnerBaratine;
 import com.caucho.lucene.LuceneEntry;
 import com.caucho.lucene.LuceneIndexImpl;
-import com.caucho.lucene.LuceneManagerImpl;
 import junit.framework.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -27,7 +26,7 @@ public class T200 extends BaseTest
   public void test()
     throws InterruptedException, ExecutionException, IOException
   {
-    Map<String, Object> map = new HashMap<>();
+    Map<String,Object> map = new HashMap<>();
 
     map.put("foo", "mary had a little lamb");
     map.put("bar", "mary had two little lamb");

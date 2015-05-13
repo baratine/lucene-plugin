@@ -5,7 +5,6 @@ import com.caucho.junit.RunnerBaratine;
 import com.caucho.lucene.LuceneEntry;
 import com.caucho.lucene.LuceneIndexImpl;
 import com.caucho.lucene.LuceneSessionImpl;
-import com.caucho.lucene.LuceneManagerImpl;
 import io.baratine.core.Lookup;
 import junit.framework.Assert;
 import org.junit.After;
@@ -34,7 +33,7 @@ public class T300
   {
     _lucene.indexText("foo", "foo", "mary had a little lamb");
 
-    LuceneEntry[] result = _lucene.search("foo", "mary", 255);
+    LuceneEntry[] result = _lucene.search("foo", "mary");
 
     Assert.assertEquals(1, result.length);
     Assert.assertEquals("foo", result[0].getExternalId());
@@ -46,7 +45,7 @@ public class T300
     _lucene.indexText("foo", "foo", "mary had a little lamb");
     _lucene.delete("foo", "foo");
 
-    LuceneEntry[] result = _lucene.search("foo", "mary", 255);
+    LuceneEntry[] result = _lucene.search("foo", "mary");
 
     Assert.assertEquals(0, result.length);
   }
@@ -65,19 +64,19 @@ public class T300
 
     _lucene.indexMap("foo", "map", map);
 
-    LuceneEntry[] result = _lucene.search("foo", "foo:lamb", 255);
+    LuceneEntry[] result = _lucene.search("foo", "foo:lamb");
     Assert.assertEquals(1, result.length);
 
-    result = _lucene.search("foo", "bar:two", 255);
+    result = _lucene.search("foo", "bar:two");
     Assert.assertEquals(1, result.length);
 
-    result = _lucene.search("foo", "age:[23 TO 23]", 255);
+    result = _lucene.search("foo", "age:[23 TO 23]");
     Assert.assertEquals(1, result.length);
 
-    result = _lucene.search("foo", "count:32", 255);
+    result = _lucene.search("foo", "count:32");
     Assert.assertEquals(1, result.length);
 
-    result = _lucene.search("foo", "count:[33 TO 34]", 255);
+    result = _lucene.search("foo", "count:[33 TO 34]");
     Assert.assertEquals(0, result.length);
   }
 

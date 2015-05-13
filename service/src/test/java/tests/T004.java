@@ -5,7 +5,6 @@ import com.caucho.junit.ConfigurationBaratine.Log;
 import com.caucho.junit.RunnerBaratine;
 import com.caucho.lucene.LuceneEntry;
 import com.caucho.lucene.LuceneIndexImpl;
-import com.caucho.lucene.LuceneManagerImpl;
 import junit.framework.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;

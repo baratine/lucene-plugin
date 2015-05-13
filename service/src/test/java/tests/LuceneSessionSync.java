@@ -17,16 +17,11 @@ public interface LuceneSessionSync extends LuceneSession
   boolean indexMap(String collection, String id, Map<String,Object> map)
     throws LuceneException;
 
-  LuceneEntry[] search(String collection, String query, int limit)
-    throws LuceneException;
-
-  LuceneEntry[] searchAfter(String collection,
-                            String query,
-                            LuceneEntry after,
-                            int limit)
-    throws LuceneException;
-
   boolean delete(String collection, String id)
+    throws LuceneException;
+
+  LuceneEntry[] search(String collection,
+                       String query)
     throws LuceneException;
 
   void clear(String collection)

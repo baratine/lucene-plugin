@@ -8,12 +8,15 @@ import io.baratine.core.ResultFuture;
 import io.baratine.core.ServiceManager;
 import io.baratine.files.BfsFile;
 import io.baratine.files.BfsFileSync;
+import io.baratine.stream.StreamBuilder;
 import org.junit.After;
 import org.junit.Before;
 
 import javax.inject.Inject;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 public abstract class BaseTest
@@ -23,7 +26,7 @@ public abstract class BaseTest
   private ServiceManager _serviceManager;
 
   @Inject @Lookup("pod://lucene/index")
-  private LuceneIndexSync _lucene;
+  private LuceneIndexSync _index;
 
   protected BfsFileSync lookup(String path)
   {
@@ -32,19 +35,12 @@ public abstract class BaseTest
 
   final protected boolean delete(String fileName)
   {
-    return _lucene.delete(DEFAULT, makeBfsPath(fileName));
+    return _index.delete(DEFAULT, makeBfsPath(fileName));
   }
 
   final protected String makeBfsPath(String file)
   {
     return "bfs:///tmp/" + file;
-  }
-
-  final protected LuceneEntry[] search(String query,
-                                       LuceneEntry after,
-                                       int limit)
-  {
-    return _lucene.searchAfter(DEFAULT, query, after, limit);
   }
 
   final protected LuceneEntry[] uploadAndSearch(String fileName, String query)
@@ -55,6 +51,17 @@ public abstract class BaseTest
     LuceneEntry[] result = search(query);
 
     return result;
+  }
+
+  final protected LuceneEntry[] search(String query)
+  {
+    StreamBuilder<LuceneEntry> stream = _index.search(DEFAULT, query);
+    List<LuceneEntry> list
+      = stream.collect(ArrayList<LuceneEntry>::new,
+                       (l, e) -> l.add(e),
+                       (a, b) -> a.addAll(b));
+
+    return list.toArray(new LuceneEntry[list.size()]);
   }
 
   final protected BfsFile upload(String fileName) throws IOException
@@ -77,14 +84,9 @@ public abstract class BaseTest
   final protected boolean update(String fileName)
   {
     ResultFuture<Boolean> future = new ResultFuture<>();
-    _lucene.indexFile("default", fileName, future);
+    _index.indexFile("default", fileName, future);
 
     return future.get();
-  }
-
-  final protected LuceneEntry[] search(String query)
-  {
-    return _lucene.search(DEFAULT, query, 256);
   }
 
   final protected LuceneEntry[] updateAndSearch(String id,
@@ -100,12 +102,12 @@ public abstract class BaseTest
 
   final protected boolean update(String id, String text)
   {
-    return _lucene.indexText(DEFAULT, id, text);
+    return _index.indexText(DEFAULT, id, text);
   }
 
   final protected boolean update(String id, Map<String,Object> map)
   {
-    return _lucene.indexMap(DEFAULT, id, map);
+    return _index.indexMap(DEFAULT, id, map);
   }
 
   @Before
@@ -116,7 +118,7 @@ public abstract class BaseTest
 
   final protected void clear()
   {
-    _lucene.clear(DEFAULT);
+    _index.clear(DEFAULT);
   }
 
   @After

@@ -51,30 +51,12 @@ public interface LuceneSession
    *
    * @param collection - collection name
    * @param query      - query that is passed to lucene QueryParser
-   * @param limit      - specifies upper limit on the result set
    * @param result
    */
   void search(String collection,
               String query,
-              int limit,
               Result<LuceneEntry[]> result)
     throws LuceneException;
-
-  /**
-   * Executes lucene search returning results after a known entry passed in
-   * parameter <code>after</code>.
-   *
-   * @param collection - collection name
-   * @param query      - query that is passed to lucene QueryParser
-   * @param after      - specifies last collected entry or null
-   * @param limit
-   * @param result
-   */
-  void searchAfter(String collection,
-                   String query,
-                   LuceneEntry after,
-                   int limit,
-                   Result<LuceneEntry[]> result) throws LuceneException;
 
   /**
    * Deletes document from an index

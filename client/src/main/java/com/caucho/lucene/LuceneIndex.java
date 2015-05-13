@@ -45,32 +45,11 @@ public interface LuceneIndex
     throws LuceneException;
 
   /**
-   * Executes lucene search
-   *
-   * @param query  query that is passed to lucene QueryParser
-   * @param limit  specifies upper limit on the result set
-   * @param result files
+   * @param collection
+   * @param query
+   * @return
    */
-  void search(String collection,
-              String query,
-              int limit,
-              Result<LuceneEntry[]> result)
-    throws LuceneException;
-
-  /**
-   * Executes lucene search returning results after a known entry passed in
-   * parameter <code>after</code>.
-   *
-   * @param query  query that is passed to lucene QueryParser
-   * @param after  specifies last collected entry or null
-   * @param limit
-   * @param result
-   */
-  void searchAfter(String collection,
-                   String query,
-                   LuceneEntry after,
-                   int limit,
-                   Result<LuceneEntry[]> result) throws LuceneException;
+  StreamBuilder<LuceneEntry> search(String collection, String query);
 
   /**
    * Deletes document from an index
@@ -88,12 +67,4 @@ public interface LuceneIndex
    * @param result
    */
   void clear(String collection, Result<Void> result) throws LuceneException;
-
-  /**
-   *
-   * @param collection
-   * @param query
-   * @return
-   */
-  StreamBuilder<String> search2(String collection, String query);
 }

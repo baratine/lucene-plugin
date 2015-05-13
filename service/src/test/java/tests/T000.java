@@ -29,6 +29,14 @@ public class T000 extends BaseTest
     test("test-00.txt");
   }
 
+  private void test(String fileName)
+    throws InterruptedException, IOException, ExecutionException
+  {
+    LuceneEntry[] result = uploadAndSearch(fileName, "Lorem");
+    Assert.assertEquals(1, result.length);
+    Assert.assertEquals(makeBfsPath(fileName), result[0].getExternalId());
+  }
+
   @Test(timeout = 2000)
   public void testXml()
     throws InterruptedException, IOException, ExecutionException
@@ -55,14 +63,6 @@ public class T000 extends BaseTest
     throws InterruptedException, IOException, ExecutionException
   {
     test("test-00.docx");
-  }
-
-  private void test(String fileName)
-    throws InterruptedException, IOException, ExecutionException
-  {
-    LuceneEntry[] result = uploadAndSearch(fileName, "Lorem");
-    Assert.assertEquals(1, result.length);
-    Assert.assertEquals(makeBfsPath(fileName), result[0].getExternalId());
   }
 }
 

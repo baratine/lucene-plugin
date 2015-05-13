@@ -42,11 +42,8 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystems;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -205,94 +202,51 @@ public class LuceneIndexImpl implements LuceneIndex
   }
 
   @Override
-  public StreamBuilder search2(String collection, String query)
+  public StreamBuilder search(String collection, String query)
   {
     throw new AbstractMethodError();
   }
 
-  public void search2(String collection,
-                      String query,
-                      ResultSink<String> results)
-  {
-    results.begin(2);
-    results.accept("junk-0");
-    results.accept("junk-1");
-    results.end();
-  }
-
-  @Override
   public void search(String collection,
                      String query,
-                     int limit,
-                     Result<LuceneEntry[]> result)
+                     ResultSink<LuceneEntry> results)
   {
-    Objects.requireNonNull(query);
+    int limit = 255;
 
-    if (log.isLoggable(Level.FINER))
-      log.finer(String.format("search('%s')", query));
-
-    searchAfter(collection, query, null, limit, result);
-  }
-
-  @Override
-  public void searchAfter(String collection,
-                          String query,
-                          LuceneEntry afterEntry,
-                          int limit,
-                          Result<LuceneEntry[]> result)
-  {
     if (log.isLoggable(Level.FINER))
       log.finer(
         String.format("search('%1$s', %2$s, %3$d)",
                       query,
-                      afterEntry,
+                      null,
                       limit));
 
     try {
-      IndexWriter writer = getIndexWriter();
-
-      if (false && writer.hasUncommittedChanges())
-        writer.commit();
-
-      List<LuceneEntry> temp = new ArrayList<>();
-
       IndexSearcher searcher = getIndexSearcher();
 
       Query q = getQueryParser().parse(query);
 
-      TopDocs docs;
-      if (afterEntry != null) {
-        ScoreDoc after = new ScoreDoc(afterEntry.getId(),
-                                      afterEntry.getScore());
+      TopDocs docs = searcher.search(q, limit);
 
-        docs = searcher.searchAfter(after, q, limit);
-      }
-      else {
-        docs = searcher.search(q, null, limit);
-      }
+      ScoreDoc[] scoreDocs = docs.scoreDocs;
 
-      for (ScoreDoc doc : docs.scoreDocs) {
+      for (ScoreDoc doc : scoreDocs) {
         Document d = searcher.doc(doc.doc, Collections.singleton(collection));
 
         LuceneEntry entry = new LuceneEntry(doc.doc,
                                             doc.score,
                                             d.get(collection));
 
-        temp.add(entry);
+        results.accept(entry);
       }
 
       if (log.isLoggable(Level.FINER))
         log.finer(
-          String.format("search('%1$s', %2$s, %3$d with %4$d results)",
+          String.format("search('%1$s', %2$d with %3$d results)",
                         query,
-                        afterEntry,
                         limit,
-                        temp.size()));
+                        scoreDocs.length));
 
-      LuceneEntry[] entries
-        = temp.toArray(new LuceneEntry[temp.size()]);
-
-      result.complete(entries);
+      results.end();
     } catch (Throwable t) {
       log.log(Level.WARNING, t.getMessage(), t);
 

@@ -5,7 +5,6 @@ import com.caucho.junit.ConfigurationBaratine.Log;
 import com.caucho.junit.RunnerBaratine;
 import com.caucho.lucene.LuceneEntry;
 import com.caucho.lucene.LuceneIndexImpl;
-import com.caucho.lucene.LuceneManagerImpl;
 import io.baratine.files.BfsFileSync;
 import junit.framework.Assert;
 import org.junit.Before;
@@ -52,29 +51,8 @@ public class T003 extends BaseTest
   public void testAll()
     throws InterruptedException, IOException, ExecutionException
   {
-    LuceneEntry[] results = search("hit", new LuceneEntry(0), 100);
+    LuceneEntry[] results = search("hit");
     Assert.assertEquals(10, results.length);
-  }
-
-  @Test
-  public void testNext()
-    throws InterruptedException, IOException, ExecutionException
-  {
-    LuceneEntry[] results = search("hit", new LuceneEntry(0), 100);
-    Assert.assertEquals(10, results.length);
-
-    results = search("hit", results[3], 3);
-    Assert.assertEquals(3, results.length);
-
-    Assert.assertEquals(4, results[0].getId());
-    Assert.assertEquals(5, results[1].getId());
-    Assert.assertEquals(6, results[2].getId());
-
-    results = search("hit", results[2], 3);
-    Assert.assertEquals(3, results.length);
-
-    results = search("hit", results[2], 3);
-    Assert.assertEquals(0, results.length);
   }
 }
 

@@ -5,7 +5,6 @@ import com.caucho.junit.ConfigurationBaratine.Log;
 import com.caucho.junit.RunnerBaratine;
 import com.caucho.lucene.LuceneEntry;
 import com.caucho.lucene.LuceneIndexImpl;
-import com.caucho.lucene.LuceneManagerImpl;
 import junit.framework.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -28,6 +27,14 @@ public class T001 extends BaseTest
     throws InterruptedException, IOException, ExecutionException
   {
     test("test-00.txt");
+  }
+
+  private void test(String fileName)
+    throws InterruptedException, IOException, ExecutionException
+  {
+    LuceneEntry[] result = uploadAndSearch(fileName, "versions");
+    Assert.assertEquals(1, result.length);
+    Assert.assertEquals(makeBfsPath(fileName), result[0].getExternalId());
   }
 
   @Test(timeout = 2000)
@@ -56,14 +63,6 @@ public class T001 extends BaseTest
     throws InterruptedException, IOException, ExecutionException
   {
     test("test-00.docx");
-  }
-
-  private void test(String fileName)
-    throws InterruptedException, IOException, ExecutionException
-  {
-    LuceneEntry[] result = uploadAndSearch(fileName, "versions");
-    Assert.assertEquals(1, result.length);
-    Assert.assertEquals(makeBfsPath(fileName), result[0].getExternalId());
   }
 }
 
