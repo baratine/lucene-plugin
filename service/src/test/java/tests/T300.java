@@ -26,7 +26,7 @@ import java.util.Map;
   testTime = 0, pod = "lucene")
 public class T300
 {
-  @Inject @Lookup("session://lucene/session/foo")
+  @Inject @Lookup("session://lucene/session")
   LuceneSessionSync _lucene;
 
   @Test

@@ -84,7 +84,7 @@ public abstract class BaseTest
   final protected boolean update(String fileName)
   {
     ResultFuture<Boolean> future = new ResultFuture<>();
-    _index.indexFile("default", fileName, future);
+    _index.indexFile(DEFAULT, fileName, future);
 
     return future.get();
   }

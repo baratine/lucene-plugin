@@ -23,6 +23,7 @@ import java.util.stream.Stream;
 @RunWith(RunnerBaratine.class)
 @ConfigurationBaratine(services = {LuceneWorkerImpl.class,LuceneIndexImpl.class},
   logs = {@Log(name = "com.caucho", level = "FINER")},
+  logLevel = "FINER",
   testTime = 0, pod = "lucene")
 public class T004 extends BaseTest
 {

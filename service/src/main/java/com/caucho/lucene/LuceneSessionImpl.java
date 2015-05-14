@@ -2,9 +2,9 @@ package com.caucho.lucene;
 
 import io.baratine.core.Lookup;
 import io.baratine.core.Result;
+import io.baratine.core.Service;
 import io.baratine.core.ServiceRef;
-import io.baratine.core.SessionService;
-import io.baratine.session.SessionScoped;
+import io.baratine.stream.BiConsumerAsync;
 import io.baratine.stream.StreamBuilder;
 
 import javax.inject.Inject;
@@ -12,10 +12,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-@SessionService("session://lucene/session/{_id}")
+@Service("session://lucene/session")
 public class LuceneSessionImpl implements LuceneSession
 {
-  @SessionScoped
   private String _id;
 
   @Inject @Lookup("pod://lucene/index")
@@ -61,6 +60,7 @@ public class LuceneSessionImpl implements LuceneSession
     throws LuceneException
   {
     StreamBuilder<LuceneEntry> stream = _index.search(collection, query);
+
     List<LuceneEntry> list
       = stream.collect(ArrayList<LuceneEntry>::new,
                        (l, e) -> l.add(e),
