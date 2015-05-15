@@ -53,7 +53,6 @@ public class LuceneIndexBean
   private IndexWriter _writer;
   private DirectoryReader _reader;
   private IndexSearcher _searcher;
-  private QueryParser _queryParser;
 
   private AutoDetectParser _parser;
 
@@ -63,6 +62,7 @@ public class LuceneIndexBean
 
   @Inject
   ServiceManager _manager;
+  private StandardAnalyzer _analyzer;
 
   public LuceneIndexBean()
   {
@@ -442,14 +442,12 @@ public class LuceneIndexBean
 
   private QueryParser getQueryParser()
   {
-    if (_queryParser != null)
-      return _queryParser;
+    if (_analyzer == null)
+      _analyzer = new StandardAnalyzer();
 
-    Analyzer analyzer = new StandardAnalyzer();
+    QueryParser queryParser = new QueryParser("text", _analyzer);
 
-    _queryParser = new QueryParser("text", analyzer);
-
-    return _queryParser;
+    return queryParser;
   }
 
   private IndexableField makeIndexableField(String name, Object obj)
