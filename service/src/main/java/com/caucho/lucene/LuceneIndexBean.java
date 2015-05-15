@@ -4,7 +4,6 @@ import com.caucho.env.system.RootDirectorySystem;
 import com.caucho.vfs.Vfs;
 import io.baratine.core.ServiceManager;
 import io.baratine.core.Services;
-import io.baratine.core.Startup;
 import io.baratine.files.BfsFileSync;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
@@ -31,7 +30,6 @@ import org.apache.tika.parser.AutoDetectParser;
 import org.xml.sax.SAXException;
 
 import javax.annotation.PostConstruct;
-import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 import java.io.ByteArrayInputStream;
 import java.io.File;
@@ -57,6 +55,8 @@ public class LuceneIndexBean
   private IndexSearcher _searcher;
   private QueryParser _queryParser;
 
+  private AutoDetectParser _parser;
+
   private String _indexDirectory;
 
   private final static LuceneIndexBean bean = new LuceneIndexBean();
@@ -66,6 +66,7 @@ public class LuceneIndexBean
 
   public LuceneIndexBean()
   {
+    _parser = new AutoDetectParser();
   }
 
   public final static LuceneIndexBean getInstance()
@@ -128,11 +129,10 @@ public class LuceneIndexBean
 
       document.add(id);
 
-      AutoDetectParser parser = new AutoDetectParser();
       Metadata metadata = new Metadata();
       LuceneContentHandler handler = new LuceneContentHandler(document);
 
-      parser.parse(in, handler, metadata);
+      _parser.parse(in, handler, metadata);
 
       for (String name : metadata.names()) {
         for (String value : metadata.getValues(name)) {
@@ -175,7 +175,9 @@ public class LuceneIndexBean
     ByteArrayInputStream stream
       = new ByteArrayInputStream(text.getBytes(StandardCharsets.UTF_8));
 
-    return indexStream(stream, idField, key);
+    boolean result = indexStream(stream, idField, key);
+
+    return result;
   }
 
   public boolean indexMap(String collection,

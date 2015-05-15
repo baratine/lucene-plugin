@@ -4,7 +4,6 @@ import io.baratine.core.Lookup;
 import io.baratine.core.Result;
 import io.baratine.core.Service;
 import io.baratine.core.ServiceRef;
-import io.baratine.stream.BiConsumerAsync;
 import io.baratine.stream.StreamBuilder;
 
 import javax.inject.Inject;
@@ -63,8 +62,14 @@ public class LuceneSessionImpl implements LuceneSession
 
     List<LuceneEntry> list
       = stream.collect(ArrayList<LuceneEntry>::new,
-                       (l, e) -> l.add(e),
-                       (a, b) -> a.addAll(b));
+                       (l, e, r) -> {
+                         l.add(e);
+                         r.complete(true);
+                       },
+                       (a, b, r) -> {
+                         a.addAll(b);
+                         r.complete(true);
+                       });
 
     result.complete(list.toArray(new LuceneEntry[list.size()]));
   }

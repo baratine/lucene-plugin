@@ -1,7 +1,6 @@
 package com.caucho.lucene;
 
 import io.baratine.core.Result;
-import io.baratine.core.ResultSink;
 import io.baratine.core.Service;
 import io.baratine.core.Workers;
 
@@ -13,6 +12,14 @@ public class LuceneWorkerImpl implements LuceneWorker
 {
   //@Inject
   private LuceneIndexBean _bean = LuceneIndexBean.getInstance();
+
+  final static int warmup = 100;
+  final static int cutOff = 400;
+
+  int _indexCounter = 0;
+  long _indexTime = 0;
+  int _searchCounter = 0;
+  long _searchTime = 0;
 
   @Override
   public void indexFile(String collection, String path, Result<Boolean> result)
@@ -27,7 +34,18 @@ public class LuceneWorkerImpl implements LuceneWorker
                         String text,
                         Result<Boolean> result) throws LuceneException
   {
+    long start = System.currentTimeMillis();
+
     result.complete(_bean.indexText(collection, id, text));
+
+    if (_indexCounter++ > warmup) {
+      _indexTime += (System.currentTimeMillis() - start);
+    }
+
+    if (_indexCounter == cutOff)
+      System.out.println("LuceneIndexBean.indexText: " + ((float) _indexTime
+                                                          / (cutOff - warmup)));
+
   }
 
   @Override
@@ -44,9 +62,19 @@ public class LuceneWorkerImpl implements LuceneWorker
                      String query,
                      Result<LuceneEntry[]> result)
   {
+    long start = System.currentTimeMillis();
+
     LuceneEntry[] entries = _bean.search(collection, query, 255);
 
     result.complete(entries);
+
+    if (_searchCounter++ > warmup)
+      _searchTime += (System.currentTimeMillis() - start);
+
+    if (_searchCounter == cutOff)
+      System.out.println("LuceneIndexBean.search " + ((float) _searchTime
+                                                      / (cutOff - warmup)));
+
   }
 
   @Override
