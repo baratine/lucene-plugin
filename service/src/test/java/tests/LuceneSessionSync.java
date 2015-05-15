@@ -4,6 +4,7 @@ import com.caucho.lucene.LuceneEntry;
 import com.caucho.lucene.LuceneException;
 import com.caucho.lucene.LuceneSession;
 
+import java.util.List;
 import java.util.Map;
 
 public interface LuceneSessionSync extends LuceneSession
@@ -20,8 +21,7 @@ public interface LuceneSessionSync extends LuceneSession
   boolean delete(String collection, String id)
     throws LuceneException;
 
-  LuceneEntry[] search(String collection,
-                       String query)
+  List<LuceneEntry> search(String collection, String query)
     throws LuceneException;
 
   void clear(String collection)

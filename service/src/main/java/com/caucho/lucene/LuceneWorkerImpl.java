@@ -6,7 +6,7 @@ import io.baratine.core.Workers;
 
 import java.util.Map;
 
-@Workers(5)
+@Workers(20)
 @Service("/lucene-worker")
 public class LuceneWorkerImpl implements LuceneWorker
 {

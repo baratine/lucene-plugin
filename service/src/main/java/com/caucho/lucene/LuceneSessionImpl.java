@@ -55,23 +55,15 @@ public class LuceneSessionImpl implements LuceneSession
   @Override
   public void search(String collection,
                      String query,
-                     Result<LuceneEntry[]> result)
+                     Result<List<LuceneEntry>> result)
     throws LuceneException
   {
     StreamBuilder<LuceneEntry> stream = _index.search(collection, query);
 
-    List<LuceneEntry> list
-      = stream.collect(ArrayList<LuceneEntry>::new,
-                       (l, e, r) -> {
-                         l.add(e);
-                         r.complete(true);
-                       },
-                       (a, b, r) -> {
-                         a.addAll(b);
-                         r.complete(true);
-                       });
-
-    result.complete(list.toArray(new LuceneEntry[list.size()]));
+     stream.collect(ArrayList<LuceneEntry>::new,
+                          (l, e) -> l.add(e),
+                          (a, b) -> a.addAll(b),
+                          result.from(x->x));
   }
 
   @Override

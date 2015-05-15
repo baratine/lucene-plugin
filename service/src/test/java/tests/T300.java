@@ -15,6 +15,7 @@ import org.junit.runner.RunWith;
 
 import javax.inject.Inject;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -26,7 +27,7 @@ import java.util.Map;
   testTime = 0, pod = "lucene")
 public class T300
 {
-  @Inject @Lookup("session://lucene/session")
+  @Inject @Lookup("session://lucene/session/foo")
   LuceneSessionSync _lucene;
 
   @Test
@@ -34,10 +35,10 @@ public class T300
   {
     _lucene.indexText("foo", "foo", "mary had a little lamb");
 
-    LuceneEntry[] result = _lucene.search("foo", "mary");
+    List<LuceneEntry> result = _lucene.search("foo", "mary");
 
-    Assert.assertEquals(1, result.length);
-    Assert.assertEquals("foo", result[0].getExternalId());
+    Assert.assertEquals(1, result.size());
+    Assert.assertEquals("foo", result.get(0).getExternalId());
   }
 
   @Test
@@ -46,9 +47,9 @@ public class T300
     _lucene.indexText("foo", "foo", "mary had a little lamb");
     _lucene.delete("foo", "foo");
 
-    LuceneEntry[] result = _lucene.search("foo", "mary");
+    List<LuceneEntry> result = _lucene.search("foo", "mary");
 
-    Assert.assertEquals(0, result.length);
+    Assert.assertEquals(0, result.size());
   }
 
   @Test
@@ -65,20 +66,20 @@ public class T300
 
     _lucene.indexMap("foo", "map", map);
 
-    LuceneEntry[] result = _lucene.search("foo", "foo:lamb");
-    Assert.assertEquals(1, result.length);
+    List<LuceneEntry> result = _lucene.search("foo", "foo:lamb");
+    Assert.assertEquals(1, result.size());
 
     result = _lucene.search("foo", "bar:two");
-    Assert.assertEquals(1, result.length);
+    Assert.assertEquals(1, result.size());
 
     result = _lucene.search("foo", "age:[23 TO 23]");
-    Assert.assertEquals(1, result.length);
+    Assert.assertEquals(1, result.size());
 
     result = _lucene.search("foo", "count:32");
-    Assert.assertEquals(1, result.length);
+    Assert.assertEquals(1, result.size());
 
     result = _lucene.search("foo", "count:[33 TO 34]");
-    Assert.assertEquals(0, result.length);
+    Assert.assertEquals(0, result.size());
   }
 
   @Before

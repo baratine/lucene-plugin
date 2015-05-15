@@ -2,6 +2,7 @@ package com.caucho.lucene;
 
 import io.baratine.core.Result;
 
+import java.util.List;
 import java.util.Map;
 
 public interface LuceneSession
@@ -55,7 +56,7 @@ public interface LuceneSession
    */
   void search(String collection,
               String query,
-              Result<LuceneEntry[]> result)
+              Result<List<LuceneEntry>> result)
     throws LuceneException;
 
   /**
