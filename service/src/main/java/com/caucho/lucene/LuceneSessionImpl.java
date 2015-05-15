@@ -55,6 +55,7 @@ public class LuceneSessionImpl implements LuceneSession
   @Override
   public void search(String collection,
                      String query,
+                     int limit,
                      Result<List<LuceneEntry>> result)
     throws LuceneException
   {

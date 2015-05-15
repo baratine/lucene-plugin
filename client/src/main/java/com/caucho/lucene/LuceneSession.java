@@ -56,6 +56,7 @@ public interface LuceneSession
    */
   void search(String collection,
               String query,
+              int limit,
               Result<List<LuceneEntry>> result)
     throws LuceneException;
 

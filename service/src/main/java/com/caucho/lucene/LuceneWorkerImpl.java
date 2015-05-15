@@ -1,15 +1,22 @@
 package com.caucho.lucene;
 
+import io.baratine.core.AfterBatch;
 import io.baratine.core.Result;
 import io.baratine.core.Service;
 import io.baratine.core.Workers;
 
+import java.io.IOException;
 import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 @Workers(20)
 @Service("/lucene-worker")
 public class LuceneWorkerImpl implements LuceneWorker
 {
+  private final static Logger log
+    = Logger.getLogger(LuceneWorkerImpl.class.getName());
+
   //@Inject
   private LuceneIndexBean _bean = LuceneIndexBean.getInstance();
 
@@ -74,7 +81,16 @@ public class LuceneWorkerImpl implements LuceneWorker
     if (_searchCounter == cutOff)
       System.out.println("LuceneIndexBean.search " + ((float) _searchTime
                                                       / (cutOff - warmup)));
+  }
 
+  @AfterBatch
+  public void afterBatch()
+  {
+    try {
+      _bean.commit();
+    } catch (IOException e) {
+      log.log(Level.SEVERE, e.getMessage(), e);
+    }
   }
 
   @Override

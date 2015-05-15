@@ -35,7 +35,7 @@ public class T300
   {
     _lucene.indexText("foo", "foo", "mary had a little lamb");
 
-    List<LuceneEntry> result = _lucene.search("foo", "mary");
+    List<LuceneEntry> result = _lucene.search("foo", "mary", 255);
 
     Assert.assertEquals(1, result.size());
     Assert.assertEquals("foo", result.get(0).getExternalId());
@@ -47,7 +47,7 @@ public class T300
     _lucene.indexText("foo", "foo", "mary had a little lamb");
     _lucene.delete("foo", "foo");
 
-    List<LuceneEntry> result = _lucene.search("foo", "mary");
+    List<LuceneEntry> result = _lucene.search("foo", "mary", 255);
 
     Assert.assertEquals(0, result.size());
   }
@@ -66,19 +66,19 @@ public class T300
 
     _lucene.indexMap("foo", "map", map);
 
-    List<LuceneEntry> result = _lucene.search("foo", "foo:lamb");
+    List<LuceneEntry> result = _lucene.search("foo", "foo:lamb", 255);
     Assert.assertEquals(1, result.size());
 
-    result = _lucene.search("foo", "bar:two");
+    result = _lucene.search("foo", "bar:two", 255);
     Assert.assertEquals(1, result.size());
 
-    result = _lucene.search("foo", "age:[23 TO 23]");
+    result = _lucene.search("foo", "age:[23 TO 23]", 255);
     Assert.assertEquals(1, result.size());
 
-    result = _lucene.search("foo", "count:32");
+    result = _lucene.search("foo", "count:32", 255);
     Assert.assertEquals(1, result.size());
 
-    result = _lucene.search("foo", "count:[33 TO 34]");
+    result = _lucene.search("foo", "count:[33 TO 34]", 255);
     Assert.assertEquals(0, result.size());
   }
 

@@ -31,7 +31,7 @@ echo "index ..."
 $BARATINE_HOME/bin/baratine jamp-query $BARATINE_ARGS --pod lucene /session indexText foo bar mary
 
 echo "search ..."
-$BARATINE_HOME/bin/baratine jamp-query $BARATINE_ARGS --pod lucene /session search foo lamb
+$BARATINE_HOME/bin/baratine jamp-query $BARATINE_ARGS --pod lucene /session search foo lamb 5
 
 $BARATINE_HOME/bin/baratine cat $BARATINE_ARGS /proc/services
 

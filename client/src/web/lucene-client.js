@@ -23,7 +23,7 @@ LuceneClient = function (url)
  */
 LuceneClient.prototype.indexText = function (collection, extId, text)
 {
-  this.client.send("/lucene", "indexText", [collection, extId, text]);
+  this.client.send("/session", "indexText", [collection, extId, text]);
 };
 
 /**
@@ -44,7 +44,7 @@ LuceneClient.prototype.indexText = function (collection, extId, text)
  */
 LuceneClient.prototype.indexMap = function (collection, extId, map)
 {
-  this.client.send("/lucene", "indexMap", [collection, extId, map]);
+  this.client.send("/session", "indexMap", [collection, extId, map]);
 };
 
 /**
@@ -82,7 +82,7 @@ LuceneClient.prototype.search = function (collection, query, limit, callback)
     console.log(error);
   };
 
-  this.client.query("/lucene",
+  this.client.query("/session",
                     "search",
     [collection, query, limit],
                     onSearch);

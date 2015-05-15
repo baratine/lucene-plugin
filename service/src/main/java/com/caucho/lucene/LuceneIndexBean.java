@@ -66,6 +66,7 @@ public class LuceneIndexBean
 
   public LuceneIndexBean()
   {
+    init();
     _parser = new AutoDetectParser();
   }
 
@@ -291,11 +292,10 @@ public class LuceneIndexBean
     }
   }
 
-  protected void commit() throws IOException
+  public void commit() throws IOException
   {
     if (_writer != null && _writer.hasUncommittedChanges()) {
       _writer.commit();
-      _searcher = null;
     }
   }
 
@@ -429,7 +429,7 @@ public class LuceneIndexBean
   {
     Directory directory = MMapDirectory.open(getPath());
 
-    directory = new NRTCachingDirectory(directory, 5.0, 60.0);
+    directory = new NRTCachingDirectory(directory, 4.0, 16.0);
 
     return directory;
   }
@@ -465,4 +465,3 @@ public class LuceneIndexBean
     return field;
   }
 }
-

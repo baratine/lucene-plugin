@@ -21,7 +21,7 @@ public interface LuceneSessionSync extends LuceneSession
   boolean delete(String collection, String id)
     throws LuceneException;
 
-  List<LuceneEntry> search(String collection, String query)
+  List<LuceneEntry> search(String collection, String query, int limit)
     throws LuceneException;
 
   void clear(String collection)
