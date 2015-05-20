@@ -19,6 +19,7 @@ import java.util.concurrent.ExecutionException;
 @RunWith(RunnerBaratine.class)
 @ConfigurationBaratine(testTime = 0,
   services = {LuceneWorkerImpl.class,LuceneIndexImpl.class},
+  logLevel = "FINER",
   logs = {@Log(name = "com.caucho", level = "FINER")}, pod = "lucene")
 public class T002 extends BaseTest
 {

@@ -47,9 +47,8 @@ import java.util.logging.Logger;
 //@ApplicationScoped
 public class LuceneIndexBean
 {
-  private static final String documentId = "__id__";
-  private static final String collectionId = "__collection__";
-  private static final String externalId = "__extId__";
+  private static final String exteralKey = "__extKey__";
+  private static final String collectionKey = "__collectionKey__";
 
   private static Logger log = Logger.getLogger(LuceneIndexBean.class.getName());
 
@@ -98,6 +97,18 @@ public class LuceneIndexBean
     log.finer("creating new " + this);
   }
 
+  private Term createPK(String collection, String externalId)
+  {
+    return new Term("__primary_key__", collection + ':' + externalId);
+  }
+
+  private StringField createIdField(String collection, String externalId)
+  {
+    return new StringField("__primary_key__",
+                           collection + ':' + externalId,
+                           Field.Store.YES);
+  }
+
   public boolean indexFile(final String collection,
                            final String path)
   {
@@ -106,12 +117,14 @@ public class LuceneIndexBean
 
     BfsFileSync file = getManager().lookup(path).as(BfsFileSync.class);
 
-    Field id = new StringField(externalId, path, Field.Store.YES);
+    Field id = new StringField(exteralKey, path, Field.Store.YES);
 
-    Term key = new Term(externalId, path);
+    StringField idField = createIdField(collection, path);
+
+    Term pk = createPK(collection, path);
 
     try (InputStream in = file.openRead()) {
-      indexStream(in, id, key);
+      indexStream(in, id, idField, pk);
 
       return true;
     } catch (IOException e) {
@@ -126,7 +139,8 @@ public class LuceneIndexBean
 
   public boolean indexStream(InputStream in,
                              Field id,
-                             Term key)
+                             Field idField,
+                             Term pk)
   {
     try {
       IndexWriter writer = getIndexWriter();
@@ -134,6 +148,7 @@ public class LuceneIndexBean
       Document document = new Document();
 
       document.add(id);
+      document.add(idField);
 
       Metadata metadata = new Metadata();
       LuceneContentHandler handler = new LuceneContentHandler(document);
@@ -146,11 +161,11 @@ public class LuceneIndexBean
         }
       }
 
-      writer.updateDocument(key, document);
+      writer.updateDocument(pk, document);
 
       if (log.isLoggable(Level.FINER))
-        log.finer(String.format("indexing ('%s') complete",
-                                id.stringValue()));
+        log.finer(String.format("indexing ('%1$s')->('%2$s') complete",
+                                pk, id.stringValue()));
 
       return true;
     } catch (IOException | SAXException e) {
@@ -168,53 +183,57 @@ public class LuceneIndexBean
   }
 
   public boolean indexText(String collection,
-                           String id,
+                           String externalId,
                            String text)
   {
     if (log.isLoggable(Level.FINER))
-      log.finer(String.format("indexText('%s')", id));
+      log.finer(String.format("indexText('%s')", externalId));
 
-    Field idField = new StringField(externalId, id, Field.Store.YES);
+    Field id = new StringField(exteralKey, externalId, Field.Store.YES);
 
-    Term key = new Term(externalId, id);
+    Field idField = createIdField(collection, externalId);
+
+    Term pk = createPK(collection, externalId);
 
     ByteArrayInputStream stream
       = new ByteArrayInputStream(text.getBytes(StandardCharsets.UTF_8));
 
-    boolean result = indexStream(stream, idField, key);
+    boolean result = indexStream(stream, id, idField, pk);
 
     return result;
   }
 
   public boolean indexMap(String collection,
-                          String id,
+                          String externalKey,
                           Map<String,Object> map) throws LuceneException
   {
     if (map.isEmpty()) {
-      log.fine(String.format("indexMap('%s') empty map", id));
+      log.fine(String.format("indexMap('%s') empty map", externalKey));
 
       return true;
     }
 
     if (log.isLoggable(Level.FINER))
-      log.finer(String.format("indexMap('%1$s') %2$s", id, map));
+      log.finer(String.format("indexMap('%1$s') %2$s", externalKey, map));
 
-    Field idField = new StringField(externalId, id, Field.Store.YES);
+    Field id = new StringField(exteralKey, externalKey, Field.Store.YES);
+    Field idField = createIdField(collection, externalKey);
 
-    Term key = new Term(externalId, id);
+    Term pk = createPK(collection, externalKey);
 
     try {
       IndexWriter writer = getIndexWriter();
 
       Document document = new Document();
 
+      document.add(id);
       document.add(idField);
 
       for (Map.Entry<String,Object> entry : map.entrySet()) {
         document.add(makeIndexableField(entry.getKey(), entry.getValue()));
       }
 
-      writer.updateDocument(key, document);
+      writer.updateDocument(pk, document);
 
       if (log.isLoggable(Level.FINER))
         log.finer(String.format("indexing ('%s') complete", id));
@@ -251,11 +270,11 @@ public class LuceneIndexBean
 
       for (int i = 0; i < scoreDocs.length; i++) {
         ScoreDoc doc = scoreDocs[i];
-        Document d = searcher.doc(doc.doc, Collections.singleton(externalId));
+        Document d = searcher.doc(doc.doc, Collections.singleton(exteralKey));
 
         LuceneEntry entry = new LuceneEntry(doc.doc,
                                             doc.score,
-                                            d.get(externalId));
+                                            d.get(exteralKey));
 
         results[i] = entry;
       }
@@ -275,20 +294,21 @@ public class LuceneIndexBean
     }
   }
 
-  public boolean delete(String collection, final String id)
+  public boolean delete(String collection, final String externalId)
   {
     try {
       if (log.isLoggable(Level.FINER))
-        log.finer(String.format("delete('%s')", id));
+        log.finer(String.format("delete('%s')", externalId));
 
       IndexWriter writer = getIndexWriter();
 
-      Term idTerm = new Term(externalId, id);
-      writer.deleteDocuments(idTerm);
+      Term pk = createPK(collection, externalId);
+
+      writer.deleteDocuments(pk);
 
       if (log.isLoggable(Level.FINER))
-        log.finer(String.format("delete('%s') complete",
-                                id));
+        log.finer(String.format("delete('%1$s'->'%2$s') complete",
+                                pk, externalId));
       return true;
     } catch (IOException e) {
       log.log(Level.WARNING, e.getMessage(), e);
