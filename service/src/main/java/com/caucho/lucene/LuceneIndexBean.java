@@ -1,6 +1,7 @@
 package com.caucho.lucene;
 
 import com.caucho.env.system.RootDirectorySystem;
+import com.caucho.lucene.bfs.BfsDirectory;
 import com.caucho.vfs.Vfs;
 import io.baratine.core.ServiceManager;
 import io.baratine.core.Services;
@@ -362,6 +363,9 @@ public class LuceneIndexBean
 
   public boolean clear()
   {
+    if (true )
+      return true;
+
     if (log.isLoggable(Level.FINER))
       log.finer(String.format("lucene-plugin#clear()"));
 
@@ -473,7 +477,12 @@ public class LuceneIndexBean
 
     iwc.setRAMBufferSizeMB(64);
 
-    _writer = new IndexWriter(getDirectory(), iwc);
+    _writer = new IndexWriter(getDirectory(), iwc) {
+      @Override public void close() throws IOException
+      {
+        super.close();
+      }
+    };
 
     return _writer;
   }
@@ -487,6 +496,15 @@ public class LuceneIndexBean
   }
 
   private Directory createDirectory() throws IOException
+  {
+    Directory directory = new BfsDirectory();
+
+    //directory = new NRTCachingDirectory(directory, 4.0, 16.0);
+
+    return directory;
+  }
+
+  private Directory createDirectory0() throws IOException
   {
     Directory directory = MMapDirectory.open(getPath());
 

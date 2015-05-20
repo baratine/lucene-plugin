@@ -123,7 +123,7 @@ public class LuceneIndexImpl implements LuceneIndex
   @Override
   public void clear(String collection, Result<Void> result)
   {
-    log.finer(String.format("clear collectin %1$s", collection));
+    log.finer(String.format("clear collection %1$s", collection));
 
     _luceneWorker.clear(collection, result);
   }
