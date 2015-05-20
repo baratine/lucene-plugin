@@ -33,7 +33,12 @@ public abstract class BaseTest
     return _serviceManager.lookup(path).as(BfsFileSync.class);
   }
 
-  final protected boolean delete(String fileName)
+  final protected boolean delete(String id)
+  {
+    return _index.delete(DEFAULT, id);
+  }
+
+  final protected boolean deleteFile(String fileName)
   {
     return _index.delete(DEFAULT, makeBfsPath(fileName));
   }
@@ -94,9 +99,20 @@ public abstract class BaseTest
     return future.get();
   }
 
-  final protected LuceneEntry[] updateAndSearch(String id,
-                                                String data,
-                                                String query)
+  final protected LuceneEntry[] updateAndSearchText(String id,
+                                                    String data,
+                                                    String query)
+  {
+    update(id, data);
+
+    LuceneEntry[] result = search(query);
+
+    return result;
+  }
+
+  final protected LuceneEntry[] updateAndSearchMap(String id,
+                                                   Map<String,Object> data,
+                                                   String query)
   {
     update(id, data);
 
