@@ -33,7 +33,12 @@ public abstract class BaseTest
     return _serviceManager.lookup(path).as(BfsFileSync.class);
   }
 
-  final protected boolean delete(String fileName)
+  final protected boolean delete(String id)
+  {
+    return _index.delete(DEFAULT, id);
+  }
+
+  final protected boolean deleteFile(String fileName)
   {
     return _index.delete(DEFAULT, makeBfsPath(fileName));
   }
@@ -55,7 +60,12 @@ public abstract class BaseTest
 
   final protected LuceneEntry[] search(String query)
   {
-    StreamBuilder<LuceneEntry> stream = _index.search(DEFAULT, query);
+    return search(DEFAULT, query);
+  }
+
+  final protected LuceneEntry[] search(String collection, String query)
+  {
+    StreamBuilder<LuceneEntry> stream = _index.search(collection, query);
     List<LuceneEntry> list
       = stream.collect(ArrayList<LuceneEntry>::new,
                        (l, e) -> l.add(e),
@@ -89,9 +99,20 @@ public abstract class BaseTest
     return future.get();
   }
 
-  final protected LuceneEntry[] updateAndSearch(String id,
-                                                String data,
-                                                String query)
+  final protected LuceneEntry[] updateAndSearchText(String id,
+                                                    String data,
+                                                    String query)
+  {
+    update(id, data);
+
+    LuceneEntry[] result = search(query);
+
+    return result;
+  }
+
+  final protected LuceneEntry[] updateAndSearchMap(String id,
+                                                   Map<String,Object> data,
+                                                   String query)
   {
     update(id, data);
 
@@ -103,6 +124,11 @@ public abstract class BaseTest
   final protected boolean update(String id, String text)
   {
     return _index.indexText(DEFAULT, id, text);
+  }
+
+  final protected boolean update(String collection, String id, String text)
+  {
+    return _index.indexText(collection, id, text);
   }
 
   final protected boolean update(String id, Map<String,Object> map)
@@ -119,6 +145,11 @@ public abstract class BaseTest
   final protected void clear()
   {
     _index.clear(DEFAULT);
+  }
+
+  final protected void clear(String collection)
+  {
+    _index.clear(collection);
   }
 
   @After

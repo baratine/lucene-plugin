@@ -16,6 +16,7 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
@@ -47,6 +48,10 @@ import java.util.logging.Logger;
 //@ApplicationScoped
 public class LuceneIndexBean
 {
+  private static final String exteralKey = "__extKey__";
+  private static final String collectionKey = "__collectionKey__";
+  private static final String primaryKey = "__primary_key__";
+
   private static Logger log = Logger.getLogger(LuceneIndexBean.class.getName());
 
   private Directory _directory;
@@ -94,6 +99,18 @@ public class LuceneIndexBean
     log.finer("creating new " + this);
   }
 
+  private Term createPkTerm(String collection, String externalId)
+  {
+    return new Term(primaryKey, collection + ':' + externalId);
+  }
+
+  private StringField createPkField(String collection, String externalId)
+  {
+    return new StringField(primaryKey,
+                           collection + ':' + externalId,
+                           Field.Store.YES);
+  }
+
   public boolean indexFile(final String collection,
                            final String path)
   {
@@ -102,13 +119,14 @@ public class LuceneIndexBean
 
     BfsFileSync file = getManager().lookup(path).as(BfsFileSync.class);
 
-    Field id = new StringField(collection, path, Field.Store.YES);
+    Field extId = new StringField(exteralKey, path, Field.Store.YES);
 
-    Term key = new Term(collection, path);
+    StringField pkField = createPkField(collection, path);
+
+    Term pkTerm = createPkTerm(collection, path);
 
     try (InputStream in = file.openRead()) {
-
-      indexStream(in, id, key);
+      indexStream(collection, in, extId, pkField, pkTerm);
 
       return true;
     } catch (IOException e) {
@@ -121,14 +139,20 @@ public class LuceneIndexBean
     }
   }
 
-  public boolean indexStream(InputStream in, Field id, Term key)
+  public boolean indexStream(String collection,
+                             InputStream in,
+                             Field extId,
+                             Field pkField,
+                             Term pkTerm)
   {
     try {
       IndexWriter writer = getIndexWriter();
 
       Document document = new Document();
 
-      document.add(id);
+      document.add(extId);
+      document.add(pkField);
+      document.add(new StringField(collectionKey, collection, Field.Store.YES));
 
       Metadata metadata = new Metadata();
       LuceneContentHandler handler = new LuceneContentHandler(document);
@@ -141,20 +165,20 @@ public class LuceneIndexBean
         }
       }
 
-      writer.updateDocument(key, document);
+      writer.updateDocument(pkTerm, document);
 
       if (log.isLoggable(Level.FINER))
-        log.finer(String.format("indexing ('%s') complete",
-                                id.stringValue()));
+        log.finer(String.format("indexing ('%1$s')->('%2$s') complete",
+                                pkTerm, extId.stringValue()));
 
       return true;
     } catch (IOException | SAXException e) {
       log.log(Level.WARNING,
-              String.format("indexing ('%s') failed", id.stringValue()), e);
+              String.format("indexing ('%s') failed", extId.stringValue()), e);
       throw LuceneException.create(e);
     } catch (TikaException e) {
       log.log(Level.WARNING,
-              String.format("indexing ('%s') failed", id.stringValue()), e);
+              String.format("indexing ('%s') failed", extId.stringValue()), e);
 
       LuceneException le = LuceneException.create(e);
 
@@ -169,14 +193,16 @@ public class LuceneIndexBean
     if (log.isLoggable(Level.FINER))
       log.finer(String.format("indexText('%s')", id));
 
-    Field idField = new StringField(collection, id, Field.Store.YES);
+    Field extId = new StringField(exteralKey, id, Field.Store.YES);
 
-    Term key = new Term(collection, id);
+    Field pkField = createPkField(collection, id);
+
+    Term pkTerm = createPkTerm(collection, id);
 
     ByteArrayInputStream stream
       = new ByteArrayInputStream(text.getBytes(StandardCharsets.UTF_8));
 
-    boolean result = indexStream(stream, idField, key);
+    boolean result = indexStream(collection, stream, extId, pkField, pkTerm);
 
     return result;
   }
@@ -194,29 +220,33 @@ public class LuceneIndexBean
     if (log.isLoggable(Level.FINER))
       log.finer(String.format("indexMap('%1$s') %2$s", id, map));
 
-    Field idField = new StringField(collection, id, Field.Store.YES);
+    Field extId = new StringField(exteralKey, id, Field.Store.YES);
 
-    Term key = new Term(collection, id);
+    Field pkField = createPkField(collection, id);
+
+    Term pkTerm = createPkTerm(collection, id);
 
     try {
       IndexWriter writer = getIndexWriter();
 
       Document document = new Document();
 
-      document.add(idField);
+      document.add(extId);
+      document.add(pkField);
+      document.add(new StringField(collectionKey, collection, Field.Store.YES));
 
       for (Map.Entry<String,Object> entry : map.entrySet()) {
         document.add(makeIndexableField(entry.getKey(), entry.getValue()));
       }
 
-      writer.updateDocument(key, document);
+      writer.updateDocument(pkTerm, document);
 
       if (log.isLoggable(Level.FINER))
-        log.finer(String.format("indexing ('%s') complete", id));
+        log.finer(String.format("indexing ('%s') complete", extId));
 
       return true;
     } catch (IOException e) {
-      log.log(Level.WARNING, String.format("indexing ('%s') failed", id), e);
+      log.log(Level.WARNING, String.format("indexing ('%s') failed", extId), e);
 
       throw LuceneException.create(e);
     }
@@ -229,12 +259,14 @@ public class LuceneIndexBean
     if (log.isLoggable(Level.FINER))
       log.finer(
         String.format("search('%1$s', %2$s, %3$d)",
+                      collection,
                       query,
-                      null,
                       limit));
 
     try {
       IndexSearcher searcher = getIndexSearcher();
+
+      query = query + " AND " + collectionKey + ':' + collection;
 
       Query q = getQueryParser().parse(query);
 
@@ -246,11 +278,11 @@ public class LuceneIndexBean
 
       for (int i = 0; i < scoreDocs.length; i++) {
         ScoreDoc doc = scoreDocs[i];
-        Document d = searcher.doc(doc.doc, Collections.singleton(collection));
+        Document d = searcher.doc(doc.doc, Collections.singleton(exteralKey));
 
         LuceneEntry entry = new LuceneEntry(doc.doc,
                                             doc.score,
-                                            d.get(collection));
+                                            d.get(exteralKey));
 
         results[i] = entry;
       }
@@ -278,12 +310,13 @@ public class LuceneIndexBean
 
       IndexWriter writer = getIndexWriter();
 
-      Term idTerm = new Term(collection, id);
-      writer.deleteDocuments(idTerm);
+      Term pk = createPkTerm(collection, id);
+
+      writer.deleteDocuments(pk);
 
       if (log.isLoggable(Level.FINER))
-        log.finer(String.format("delete('%s') complete",
-                                id));
+        log.finer(String.format("delete('%1$s'->'%2$s') complete",
+                                pk, id));
       return true;
     } catch (IOException e) {
       log.log(Level.WARNING, e.getMessage(), e);
@@ -300,6 +333,34 @@ public class LuceneIndexBean
   }
 
   public boolean clear(String collection)
+  {
+    try {
+      if (log.isLoggable(Level.FINER))
+        log.finer(String.format("clear('%s')", collection));
+
+      IndexWriter writer = getIndexWriter();
+
+      QueryParser queryParser = getQueryParser();
+      Query query = queryParser.parse(collectionKey + ':' + collection);
+
+      writer.deleteDocuments(query);
+
+      if (log.isLoggable(Level.FINER))
+        log.finer(String.format("clear('%1$s') complete", query));
+
+      return true;
+    } catch (IOException e) {
+      log.log(Level.WARNING, e.getMessage(), e);
+
+      throw LuceneException.create(e);
+    } catch (ParseException e) {
+      log.log(Level.WARNING, e.getMessage(), e);
+
+      throw LuceneException.create(e);
+    }
+  }
+
+  public boolean clear()
   {
     if (log.isLoggable(Level.FINER))
       log.finer(String.format("lucene-plugin#clear()"));
