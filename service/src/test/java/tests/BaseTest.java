@@ -65,7 +65,7 @@ public abstract class BaseTest
 
   final protected LuceneEntry[] search(String collection, String query)
   {
-    StreamBuilder<LuceneEntry> stream = _index.search(DEFAULT, query);
+    StreamBuilder<LuceneEntry> stream = _index.search(collection, query);
     List<LuceneEntry> list
       = stream.collect(ArrayList<LuceneEntry>::new,
                        (l, e) -> l.add(e),
