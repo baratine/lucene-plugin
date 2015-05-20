@@ -47,6 +47,10 @@ import java.util.logging.Logger;
 //@ApplicationScoped
 public class LuceneIndexBean
 {
+  private static final String documentId = "__id__";
+  private static final String collectionId = "__collection__";
+  private static final String externalId = "__extId__";
+
   private static Logger log = Logger.getLogger(LuceneIndexBean.class.getName());
 
   private Directory _directory;
@@ -102,12 +106,11 @@ public class LuceneIndexBean
 
     BfsFileSync file = getManager().lookup(path).as(BfsFileSync.class);
 
-    Field id = new StringField(collection, path, Field.Store.YES);
+    Field id = new StringField(externalId, path, Field.Store.YES);
 
-    Term key = new Term(collection, path);
+    Term key = new Term(externalId, path);
 
     try (InputStream in = file.openRead()) {
-
       indexStream(in, id, key);
 
       return true;
@@ -121,7 +124,9 @@ public class LuceneIndexBean
     }
   }
 
-  public boolean indexStream(InputStream in, Field id, Term key)
+  public boolean indexStream(InputStream in,
+                             Field id,
+                             Term key)
   {
     try {
       IndexWriter writer = getIndexWriter();
@@ -169,9 +174,9 @@ public class LuceneIndexBean
     if (log.isLoggable(Level.FINER))
       log.finer(String.format("indexText('%s')", id));
 
-    Field idField = new StringField(collection, id, Field.Store.YES);
+    Field idField = new StringField(externalId, id, Field.Store.YES);
 
-    Term key = new Term(collection, id);
+    Term key = new Term(externalId, id);
 
     ByteArrayInputStream stream
       = new ByteArrayInputStream(text.getBytes(StandardCharsets.UTF_8));
@@ -194,9 +199,9 @@ public class LuceneIndexBean
     if (log.isLoggable(Level.FINER))
       log.finer(String.format("indexMap('%1$s') %2$s", id, map));
 
-    Field idField = new StringField(collection, id, Field.Store.YES);
+    Field idField = new StringField(externalId, id, Field.Store.YES);
 
-    Term key = new Term(collection, id);
+    Term key = new Term(externalId, id);
 
     try {
       IndexWriter writer = getIndexWriter();
@@ -246,11 +251,11 @@ public class LuceneIndexBean
 
       for (int i = 0; i < scoreDocs.length; i++) {
         ScoreDoc doc = scoreDocs[i];
-        Document d = searcher.doc(doc.doc, Collections.singleton(collection));
+        Document d = searcher.doc(doc.doc, Collections.singleton(externalId));
 
         LuceneEntry entry = new LuceneEntry(doc.doc,
                                             doc.score,
-                                            d.get(collection));
+                                            d.get(externalId));
 
         results[i] = entry;
       }
@@ -278,7 +283,7 @@ public class LuceneIndexBean
 
       IndexWriter writer = getIndexWriter();
 
-      Term idTerm = new Term(collection, id);
+      Term idTerm = new Term(externalId, id);
       writer.deleteDocuments(idTerm);
 
       if (log.isLoggable(Level.FINER))

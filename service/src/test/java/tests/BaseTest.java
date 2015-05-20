@@ -55,6 +55,11 @@ public abstract class BaseTest
 
   final protected LuceneEntry[] search(String query)
   {
+    return search(DEFAULT, query);
+  }
+
+  final protected LuceneEntry[] search(String collection, String query)
+  {
     StreamBuilder<LuceneEntry> stream = _index.search(DEFAULT, query);
     List<LuceneEntry> list
       = stream.collect(ArrayList<LuceneEntry>::new,
@@ -105,6 +110,11 @@ public abstract class BaseTest
     return _index.indexText(DEFAULT, id, text);
   }
 
+  final protected boolean update(String collection, String id, String text)
+  {
+    return _index.indexText(collection, id, text);
+  }
+
   final protected boolean update(String id, Map<String,Object> map)
   {
     return _index.indexMap(DEFAULT, id, map);
@@ -119,6 +129,11 @@ public abstract class BaseTest
   final protected void clear()
   {
     _index.clear(DEFAULT);
+  }
+
+  final protected void clear(String collection)
+  {
+    _index.clear(collection);
   }
 
   @After
