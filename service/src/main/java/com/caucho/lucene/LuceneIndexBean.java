@@ -112,11 +112,13 @@ public class LuceneIndexBean
                            Field.Store.YES);
   }
 
-  public boolean indexFile(final String collection,
+  public boolean indexFile(String collection,
                            final String path)
   {
     if (log.isLoggable(Level.FINER))
       log.finer(String.format("indexFile('%s')", path));
+
+    collection = escape(collection);
 
     BfsFileSync file = getManager().lookup(path).as(BfsFileSync.class);
 
@@ -140,11 +142,11 @@ public class LuceneIndexBean
     }
   }
 
-  public boolean indexStream(String collection,
-                             InputStream in,
-                             Field extId,
-                             Field pkField,
-                             Term pkTerm)
+  private boolean indexStream(String collection,
+                              InputStream in,
+                              Field extId,
+                              Field pkField,
+                              Term pkTerm)
   {
     try {
       IndexWriter writer = getIndexWriter();
@@ -194,6 +196,8 @@ public class LuceneIndexBean
     if (log.isLoggable(Level.FINER))
       log.finer(String.format("indexText('%s')", id));
 
+    collection = escape(collection);
+
     Field extId = new StringField(exteralKey, id, Field.Store.YES);
 
     Field pkField = createPkField(collection, id);
@@ -217,6 +221,8 @@ public class LuceneIndexBean
 
       return true;
     }
+
+    collection = escape(collection);
 
     if (log.isLoggable(Level.FINER))
       log.finer(String.format("indexMap('%1$s') %2$s", id, map));
@@ -264,6 +270,8 @@ public class LuceneIndexBean
                       query,
                       limit));
 
+    collection = escape(collection);
+
     try {
       IndexSearcher searcher = getIndexSearcher();
 
@@ -309,6 +317,8 @@ public class LuceneIndexBean
       if (log.isLoggable(Level.FINER))
         log.finer(String.format("delete('%s')", id));
 
+      collection = escape(collection);
+
       IndexWriter writer = getIndexWriter();
 
       Term pk = createPkTerm(collection, id);
@@ -339,6 +349,8 @@ public class LuceneIndexBean
       if (log.isLoggable(Level.FINER))
         log.finer(String.format("clear('%s')", collection));
 
+      collection = escape(collection);
+
       IndexWriter writer = getIndexWriter();
 
       QueryParser queryParser = getQueryParser();
@@ -361,9 +373,44 @@ public class LuceneIndexBean
     }
   }
 
+  private String escape(String collection)
+  {
+    StringBuilder builder = new StringBuilder();
+
+    char[] buffer = collection.toCharArray();
+    for (char c : buffer) {
+      switch (c) {
+      case '+':
+      case '-':
+      case '!':
+      case '(':
+      case ')':
+      case '{':
+      case '}':
+      case '[':
+      case ']':
+      case '^':
+      case '"':
+      case '~':
+      case '*':
+      case '?':
+      case ':':
+      case '\\': {
+        //XXX: escaping doesn't really work for some reason
+        break;
+      }
+      default: {
+        builder.append(c);
+      }
+      }
+    }
+
+    return builder.toString();
+  }
+
   public boolean clear()
   {
-    if (true )
+    if (true)
       return true;
 
     if (log.isLoggable(Level.FINER))
@@ -477,7 +524,8 @@ public class LuceneIndexBean
 
     iwc.setRAMBufferSizeMB(64);
 
-    _writer = new IndexWriter(getDirectory(), iwc) {
+    _writer = new IndexWriter(getDirectory(), iwc)
+    {
       @Override public void close() throws IOException
       {
         super.close();
