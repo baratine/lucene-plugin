@@ -115,7 +115,7 @@ public class BfsDirectory extends BaseDirectory
       log.log(Level.FINER, String.format("%1$s sync(%2$s)", this, collection));
 
     for (String s : collection) {
-      ((OutputStreamIndexOutput) _outputMap.get(s)).getChecksum();
+      _outputMap.get(s).getChecksum();
     }
   }
 
