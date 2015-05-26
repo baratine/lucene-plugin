@@ -1,6 +1,5 @@
 package com.caucho.lucene.bfs;
 
-import com.caucho.lucene.LuceneException;
 import com.caucho.vfs.ReadStream;
 import com.caucho.vfs.Vfs;
 import io.baratine.core.ServiceManager;
@@ -19,8 +18,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -30,8 +27,6 @@ public class BfsDirectory extends BaseDirectory
     = Logger.getLogger(BfsDirectory.class.getName());
 
   private BfsFileSync _root;
-
-  private Map<String,IndexOutput> _outputMap = new HashMap<>();
 
   public BfsDirectory()
   {
@@ -95,11 +90,7 @@ public class BfsDirectory extends BaseDirectory
   {
     BfsFileSync file = _root.lookup(s);
 
-    IndexOutput out = new OutputStreamIndexOutput(s,
-                                                  file.openWrite(),
-                                                  1);// = new BfsIndexOutput(s, file);
-
-    _outputMap.put(s, out);
+    IndexOutput out = new OutputStreamIndexOutput(s, file.openWrite(), 256);
 
     if (log.isLoggable(Level.FINER))
       log.log(Level.FINER, String.format("%1$s createOutput() -> %2$s",
@@ -114,9 +105,11 @@ public class BfsDirectory extends BaseDirectory
     if (log.isLoggable(Level.FINER))
       log.log(Level.FINER, String.format("%1$s sync(%2$s)", this, collection));
 
+/*
     for (String s : collection) {
-      _outputMap.get(s).getChecksum();
+      _outputMap.get(s).getChecksum();//flush side effect
     }
+*/
   }
 
   @Override
@@ -294,19 +287,21 @@ class BfsIndexInput extends IndexInput
   @Override
   public IndexInput clone()
   {
-    String description = String.format("%1$s | clone %2$d:%3$d:%4$d)",
-                                       this, _offset, _pointer, _length);
     try {
-      BfsIndexInput clone
-        = new BfsIndexInput(description, _file, _offset, _length);
+      BfsIndexInput clone;
 
-      //clone._pointer = _pointer;
-      //clone._in.skip(_pointer);
+      clone = (BfsIndexInput) super.clone();
+      clone._in = _file.openRead();
+
+      clone._in.skip(_offset);
+
+      clone._pointer = 0;
 
       return clone;
     } catch (IOException e) {
-      throw LuceneException.create(e);
+      throw new RuntimeException(e);
     }
+
   }
 
   @Override

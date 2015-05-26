@@ -545,6 +545,8 @@ public class LuceneIndexBean
 
   private Directory createDirectory() throws IOException
   {
+    log.log(Level.FINER, "create new BfsDirectory");
+
     Directory directory = new BfsDirectory();
 
     //directory = new NRTCachingDirectory(directory, 4.0, 16.0);
