@@ -6,7 +6,9 @@ import io.baratine.core.ServiceManager;
 import io.baratine.core.Services;
 import io.baratine.files.BfsFileSync;
 import io.baratine.files.Status;
+import io.baratine.files.WriteOption;
 import org.apache.lucene.store.BaseDirectory;
+import org.apache.lucene.store.BufferedIndexInput;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
@@ -18,6 +20,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Objects;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -90,13 +93,15 @@ public class BfsDirectory extends BaseDirectory
   {
     BfsFileSync file = _root.lookup(s);
 
-    IndexOutput out = new OutputStreamIndexOutput(s, file.openWrite(), 256);
+    OutputStream out = file.openWrite(WriteOption.Standard.OVERWRITE);
+
+    IndexOutput indexOut = new OutputStreamIndexOutput(s, out, 256);
 
     if (log.isLoggable(Level.FINER))
       log.log(Level.FINER, String.format("%1$s createOutput() -> %2$s",
-                                         this, out));
+                                         this, indexOut));
 
-    return out;
+    return indexOut;
   }
 
   @Override
@@ -104,12 +109,6 @@ public class BfsDirectory extends BaseDirectory
   {
     if (log.isLoggable(Level.FINER))
       log.log(Level.FINER, String.format("%1$s sync(%2$s)", this, collection));
-
-/*
-    for (String s : collection) {
-      _outputMap.get(s).getChecksum();//flush side effect
-    }
-*/
   }
 
   @Override
@@ -138,10 +137,11 @@ public class BfsDirectory extends BaseDirectory
 
     long length = file.getStatus().getLength();
 
-    IndexInput in = new BfsIndexInput(s, file, 0, length);
+    IndexInput in = new BfsIndexInput(s, ioContext, file, 0, length);
 
     if (log.isLoggable(Level.FINER))
-      log.log(Level.FINER, String.format("%1$s openInput() -> %2$s", this, in));
+      log.log(Level.FINER,
+              String.format("%1$s openInput() -> %2$s", this, in));
 
     return in;
   }
@@ -165,29 +165,40 @@ public class BfsDirectory extends BaseDirectory
   }
 }
 
-class BfsIndexInput extends IndexInput
+class BfsIndexInput extends BufferedIndexInput
 {
   private final static Logger log
     = Logger.getLogger(BfsIndexInput.class.getName());
 
   private InputStream _in;
   private BfsFileSync _file;
+  private IOContext _context;
 
   private final long _offset;
   private final long _length;
   private long _pointer = 0;
 
   public BfsIndexInput(String resourceDescription,
+                       IOContext context,
                        BfsFileSync file,
                        long offset,
                        long length) throws IOException
   {
-    super(resourceDescription);
+    super(resourceDescription, context);
+    _context = context;
     _file = file;
     _offset = offset;
     _length = length;
 
     _in = file.openRead();
+
+    Objects.requireNonNull(_in, String.format("_in should not be null for %1$s",
+                                              file));
+
+    if (_in == null) {
+      log.log(Level.WARNING, "");
+    }
+
     _in.skip(_offset);
 
     if (log.isLoggable(Level.FINER))
@@ -207,18 +218,20 @@ class BfsIndexInput extends IndexInput
   }
 
   @Override
-  public long getFilePointer()
+  protected void readInternal(byte[] bytes, int offset, int len)
+    throws IOException
   {
-    if (log.isLoggable(Level.FINER))
-      log.log(Level.FINER, String.format("%1$s getFilePointer() %2$d",
-                                         this,
-                                         _pointer));
+    _pointer += len;
+    int l;
 
-    return _pointer;
+    while ((l = _in.read(bytes, offset, len)) > 0) {
+      offset = offset + l;
+      len = len - l;
+    }
   }
 
   @Override
-  public void seek(long pos) throws IOException
+  protected void seekInternal(long pos) throws IOException
   {
     if (log.isLoggable(Level.FINER))
       log.log(Level.FINER, String.format("%1$s seek(%2$d) %3$d",
@@ -259,33 +272,17 @@ class BfsIndexInput extends IndexInput
                                        offset,
                                        length);
 
-    BfsIndexInput slice
-      = new BfsIndexInput(description, _file, _offset + offset, length);
+    BfsIndexInput slice = new BfsIndexInput(description,
+                                            _context,
+                                            _file,
+                                            _offset + offset,
+                                            length);
 
     return slice;
   }
 
   @Override
-  public byte readByte() throws IOException
-  {
-    byte b = (byte) _in.read();
-
-    _pointer++;
-
-    return b;
-  }
-
-  @Override
-  public void readBytes(byte[] bytes, int offset, int len)
-    throws IOException
-  {
-    _pointer += len;
-
-    _in.read(bytes, offset, len);
-  }
-
-  @Override
-  public IndexInput clone()
+  public BfsIndexInput clone()
   {
     try {
       BfsIndexInput clone;
@@ -301,7 +298,6 @@ class BfsIndexInput extends IndexInput
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
-
   }
 
   @Override

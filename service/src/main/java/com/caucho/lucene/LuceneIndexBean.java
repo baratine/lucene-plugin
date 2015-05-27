@@ -26,6 +26,7 @@ import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MMapDirectory;
 import org.apache.lucene.store.NRTCachingDirectory;
+import org.apache.lucene.util.InfoStream;
 import org.apache.tika.exception.TikaException;
 import org.apache.tika.metadata.Metadata;
 import org.apache.tika.parser.AutoDetectParser;
@@ -520,17 +521,13 @@ public class LuceneIndexBean
 
     iwc.setOpenMode(IndexWriterConfig.OpenMode.CREATE_OR_APPEND);
 
+    iwc.setInfoStream(new LucenePluginInfoStream());
+
     iwc.setMaxBufferedDocs(16);
 
     iwc.setRAMBufferSizeMB(64);
 
-    _writer = new IndexWriter(getDirectory(), iwc)
-    {
-      @Override public void close() throws IOException
-      {
-        super.close();
-      }
-    };
+    _writer = new IndexWriter(getDirectory(), iwc);
 
     return _writer;
   }
@@ -549,7 +546,7 @@ public class LuceneIndexBean
 
     Directory directory = new BfsDirectory();
 
-    //directory = new NRTCachingDirectory(directory, 4.0, 16.0);
+    directory = new NRTCachingDirectory(directory, 4.0, 16.0);
 
     return directory;
   }
@@ -592,5 +589,29 @@ public class LuceneIndexBean
     }
 
     return field;
+  }
+}
+
+class LucenePluginInfoStream extends InfoStream
+{
+  private final static Logger log
+    = Logger.getLogger(LucenePluginInfoStream.class.getName());
+
+  @Override
+  public void message(String component, String message)
+  {
+    log.log(Level.FINEST, component + ": " + message);
+  }
+
+  @Override
+  public boolean isEnabled(String component)
+  {
+    return true;
+  }
+
+  @Override
+  public void close() throws IOException
+  {
+
   }
 }
