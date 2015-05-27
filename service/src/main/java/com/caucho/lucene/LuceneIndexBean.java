@@ -521,7 +521,7 @@ public class LuceneIndexBean
 
     iwc.setOpenMode(IndexWriterConfig.OpenMode.CREATE_OR_APPEND);
 
-    iwc.setInfoStream(new LucenePluginInfoStream());
+    //iwc.setInfoStream(new LucenePluginInfoStream());
 
     iwc.setMaxBufferedDocs(16);
 
