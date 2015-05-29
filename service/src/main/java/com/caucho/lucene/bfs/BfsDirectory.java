@@ -197,10 +197,6 @@ class BfsIndexInput extends BufferedIndexInput
     Objects.requireNonNull(_in, String.format("_in should not be null for %1$s",
                                               file));
 
-    if (_in == null) {
-      log.log(Level.WARNING, "");
-    }
-
     _in.skip(_offset);
 
     if (log.isLoggable(Level.FINER))
