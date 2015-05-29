@@ -1,6 +1,7 @@
 package com.caucho.lucene;
 
-import io.baratine.core.AfterBatch;
+import io.baratine.core.Modify;
+import io.baratine.core.OnSave;
 import io.baratine.core.Result;
 import io.baratine.core.Service;
 import io.baratine.core.Workers;
@@ -18,7 +19,7 @@ public class LuceneWorkerImpl implements LuceneWorker
     = Logger.getLogger(LuceneWorkerImpl.class.getName());
 
   //@Inject
-  private LuceneIndexBean _bean = LuceneIndexBean.getInstance();
+  private LuceneIndexBean _luceneBean = LuceneIndexBean.getInstance();
 
   final static int warmup = 100;
   final static int cutOff = 400;
@@ -29,13 +30,15 @@ public class LuceneWorkerImpl implements LuceneWorker
   long _searchTime = 0;
 
   @Override
+  @Modify
   public void indexFile(String collection, String path, Result<Boolean> result)
     throws LuceneException
   {
-    result.complete(_bean.indexFile(collection, path));
+    result.complete(_luceneBean.indexFile(collection, path));
   }
 
   @Override
+  @Modify
   public void indexText(String collection,
                         String id,
                         String text,
@@ -43,7 +46,7 @@ public class LuceneWorkerImpl implements LuceneWorker
   {
     long start = System.currentTimeMillis();
 
-    result.complete(_bean.indexText(collection, id, text));
+    result.complete(_luceneBean.indexText(collection, id, text));
 
     if (_indexCounter++ > warmup) {
       _indexTime += (System.currentTimeMillis() - start);
@@ -56,12 +59,13 @@ public class LuceneWorkerImpl implements LuceneWorker
   }
 
   @Override
+  @Modify
   public void indexMap(String collection,
                        String id,
                        Map<String,Object> map,
                        Result<Boolean> result) throws LuceneException
   {
-    result.complete(_bean.indexMap(collection, id, map));
+    result.complete(_luceneBean.indexMap(collection, id, map));
   }
 
   @Override
@@ -71,7 +75,7 @@ public class LuceneWorkerImpl implements LuceneWorker
   {
     long start = System.currentTimeMillis();
 
-    LuceneEntry[] entries = _bean.search(collection, query, 255);
+    LuceneEntry[] entries = _luceneBean.search(collection, query, 255);
 
     result.complete(entries);
 
@@ -83,27 +87,29 @@ public class LuceneWorkerImpl implements LuceneWorker
                                                       / (cutOff - warmup)));
   }
 
-  @AfterBatch
-  public void afterBatch()
+  @OnSave
+  public void save()
   {
     try {
-      _bean.commit();
+      _luceneBean.commit();
     } catch (IOException e) {
       log.log(Level.SEVERE, e.getMessage(), e);
     }
   }
 
   @Override
+  @Modify
   public void delete(String collection, String id, Result<Boolean> result)
     throws LuceneException
   {
-    result.complete(_bean.delete(collection, id));
+    result.complete(_luceneBean.delete(collection, id));
   }
 
   @Override
+  @Modify
   public void clear(String collection, Result<Void> result)
     throws LuceneException
   {
-    _bean.clear(collection);
+    _luceneBean.clear(collection);
   }
 }

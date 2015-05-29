@@ -1,9 +1,7 @@
 package com.caucho.lucene;
 
 import io.baratine.core.Lookup;
-import io.baratine.core.Modify;
 import io.baratine.core.OnDestroy;
-import io.baratine.core.OnSave;
 import io.baratine.core.Result;
 import io.baratine.core.ResultSink;
 import io.baratine.core.Service;
@@ -24,7 +22,8 @@ public class LuceneIndexImpl implements LuceneIndex
 
   private ServiceManager _manager;
 
-  @Inject @Lookup("/lucene-worker")
+  @Inject
+  @Lookup("/lucene-worker")
   private LuceneWorker _luceneWorker;
 
   public LuceneIndexImpl()
@@ -32,7 +31,6 @@ public class LuceneIndexImpl implements LuceneIndex
   {
   }
 
-  @Modify
   @Override
   public void indexFile(final String collection,
                         final String path,
@@ -45,7 +43,6 @@ public class LuceneIndexImpl implements LuceneIndex
   }
 
   @Override
-  @Modify
   public void indexText(String collection,
                         String id,
                         String text,
@@ -58,7 +55,6 @@ public class LuceneIndexImpl implements LuceneIndex
   }
 
   @Override
-  @Modify
   public void indexMap(String collection,
                        String id,
                        Map<String,Object> map,
@@ -98,20 +94,12 @@ public class LuceneIndexImpl implements LuceneIndex
   }
 
   @Override
-  @Modify
   public void delete(String collection, final String id, Result<Boolean> result)
   {
     if (log.isLoggable(Level.FINER))
       log.finer(String.format("delete('%s')", id));
 
     _luceneWorker.delete(collection, id, result);
-  }
-
-  @OnSave
-  protected void save() throws IOException
-  {
-    if (log.isLoggable(Level.FINER))
-      log.finer("save");
   }
 
   @OnDestroy
