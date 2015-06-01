@@ -34,7 +34,7 @@ public class LuceneIndexImpl implements LuceneIndex
 
   @Inject
   @Lookup("/lucene-reader")
-  private LuceneIndexReader _indexReader;
+  private LuceneReader _indexReader;
 
   @Inject
   @Lookup("/lucene-writer")

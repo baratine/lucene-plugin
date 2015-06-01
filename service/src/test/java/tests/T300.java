@@ -5,7 +5,7 @@ import com.caucho.junit.RunnerBaratine;
 import com.caucho.lucene.LuceneEntry;
 import com.caucho.lucene.LuceneIndexImpl;
 import com.caucho.lucene.LuceneSessionImpl;
-import com.caucho.lucene.LuceneWorkerImpl;
+import com.caucho.lucene.LuceneWriterImpl;
 import io.baratine.core.Lookup;
 import junit.framework.Assert;
 import org.junit.After;
@@ -22,7 +22,7 @@ import java.util.Map;
  * title: tests LuceneSession methods
  */
 @RunWith(RunnerBaratine.class)
-@ConfigurationBaratine(services = {LuceneWorkerImpl.class, LuceneIndexImpl.class, LuceneSessionImpl.class},
+@ConfigurationBaratine(services = {LuceneWriterImpl.class, LuceneIndexImpl.class, LuceneSessionImpl.class},
   logs = {@ConfigurationBaratine.Log(name = "com.caucho", level = "FINER")},
   testTime = 0, pod = "lucene")
 public class T300

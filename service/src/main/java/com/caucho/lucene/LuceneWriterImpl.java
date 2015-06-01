@@ -2,19 +2,18 @@ package com.caucho.lucene;
 
 import io.baratine.core.Result;
 import io.baratine.core.Service;
-import io.baratine.core.Workers;
 
 import java.io.IOException;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-@Workers(20)
+//@Workers(20)
 @Service("/lucene-writer")
-public class LuceneWorkerImpl implements LuceneIndexWriter
+public class LuceneWriterImpl implements LuceneIndexWriter
 {
   private final static Logger log
-    = Logger.getLogger(LuceneWorkerImpl.class.getName());
+    = Logger.getLogger(LuceneWriterImpl.class.getName());
 
   //@Inject
   private LuceneIndexBean _luceneBean = LuceneIndexBean.getInstance();

@@ -2,14 +2,16 @@ package com.caucho.lucene;
 
 import io.baratine.core.Result;
 import io.baratine.core.Service;
+import io.baratine.core.Workers;
 
 import java.util.logging.Logger;
 
 @Service("/lucene-reader")
-public class LuceneIndexReaderImpl implements LuceneIndexReader
+@Workers(20)
+public class LuceneReaderImpl implements LuceneReader
 {
   private final static Logger log
-    = Logger.getLogger(LuceneIndexReaderImpl.class.getName());
+    = Logger.getLogger(LuceneReaderImpl.class.getName());
 
   //@Inject
   private LuceneIndexBean _luceneBean = LuceneIndexBean.getInstance();

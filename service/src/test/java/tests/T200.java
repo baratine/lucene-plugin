@@ -4,7 +4,7 @@ import com.caucho.junit.ConfigurationBaratine;
 import com.caucho.junit.RunnerBaratine;
 import com.caucho.lucene.LuceneEntry;
 import com.caucho.lucene.LuceneIndexImpl;
-import com.caucho.lucene.LuceneWorkerImpl;
+import com.caucho.lucene.LuceneWriterImpl;
 import junit.framework.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -18,7 +18,7 @@ import java.util.concurrent.ExecutionException;
  * title: tests map indexing
  */
 @RunWith(RunnerBaratine.class)
-@ConfigurationBaratine(services = {LuceneWorkerImpl.class,LuceneIndexImpl.class},
+@ConfigurationBaratine(services = {LuceneWriterImpl.class,LuceneIndexImpl.class},
   logs = {@ConfigurationBaratine.Log(name = "com.caucho", level = "FINER")},
   testTime = 0, pod = "lucene")
 public class T200 extends BaseTest
