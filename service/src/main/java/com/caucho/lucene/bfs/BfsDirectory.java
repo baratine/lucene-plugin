@@ -23,7 +23,6 @@ import java.util.Objects;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import static io.baratine.files.WriteOption.Standard.CLOSE_WAIT_FOR_PUT;
 import static io.baratine.files.WriteOption.Standard.OVERWRITE;
 
 public class BfsDirectory extends BaseDirectory
@@ -95,7 +94,7 @@ public class BfsDirectory extends BaseDirectory
   {
     BfsFileSync file = _root.lookup(s);
 
-    OutputStream out = file.openWrite(OVERWRITE, CLOSE_WAIT_FOR_PUT);
+    OutputStream out = file.openWrite(OVERWRITE);//, CLOSE_WAIT_FOR_PUT);
 
     IndexOutput indexOut = new OutputStreamIndexOutput(s, out, 256);
 

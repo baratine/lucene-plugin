@@ -17,6 +17,7 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.index.TieredMergePolicy;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.IndexSearcher;
@@ -43,6 +44,7 @@ import java.nio.file.FileSystems;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -70,6 +72,15 @@ public class LuceneIndexBean
   @Inject
   ServiceManager _manager;
   private StandardAnalyzer _analyzer;
+
+  private double _maxMergeSizeMb = 4;
+  private double _maxCacheMb = 48;
+
+  private int _maxMergeAtOnce = 10;
+  private double _segmentsPerTier = 10;
+
+  private long _lastCommit = -1;
+  private long _commitThreshold = TimeUnit.SECONDS.toMillis(5);
 
   public LuceneIndexBean()
   {
@@ -339,8 +350,22 @@ public class LuceneIndexBean
 
   public void commit() throws IOException
   {
+    log.warning(String.format("%1$s commit", this));
+
+    if (_lastCommit == -1) {
+      _lastCommit = System.currentTimeMillis();
+    }
+
+    final long now = System.currentTimeMillis();
+
+    if (now - System.currentTimeMillis() < _commitThreshold) {
+      return;
+    }
+
     if (_writer != null && _writer.hasUncommittedChanges()) {
       _writer.commit();
+
+      _lastCommit = now;
     }
   }
 
@@ -521,11 +546,12 @@ public class LuceneIndexBean
 
     iwc.setOpenMode(IndexWriterConfig.OpenMode.CREATE_OR_APPEND);
 
-    //iwc.setInfoStream(new LucenePluginInfoStream());
+    TieredMergePolicy mergePolicy = new TieredMergePolicy();
 
-    iwc.setMaxBufferedDocs(16);
+    mergePolicy.setMaxMergeAtOnce(_maxMergeAtOnce);
+    mergePolicy.setSegmentsPerTier(_segmentsPerTier);
 
-    iwc.setRAMBufferSizeMB(64);
+    iwc.setMergePolicy(mergePolicy);
 
     _writer = new IndexWriter(getDirectory(), iwc);
 
@@ -544,18 +570,13 @@ public class LuceneIndexBean
   {
     log.log(Level.FINER, "create new BfsDirectory");
 
+    //Directory directory = MMapDirectory.open(getPath());
+
     Directory directory = new BfsDirectory();
 
-    directory = new NRTCachingDirectory(directory, 4.0, 16.0);
-
-    return directory;
-  }
-
-  private Directory createDirectory0() throws IOException
-  {
-    Directory directory = MMapDirectory.open(getPath());
-
-    directory = new NRTCachingDirectory(directory, 4.0, 16.0);
+    directory = new NRTCachingDirectory(directory,
+                                        _maxMergeSizeMb,
+                                        _maxCacheMb);
 
     return directory;
   }
