@@ -10,22 +10,14 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 @Workers(20)
-@Service("/lucene-worker")
-public class LuceneWorkerImpl implements LuceneWorker
+@Service("/lucene-writer")
+public class LuceneWorkerImpl implements LuceneIndexWriter
 {
   private final static Logger log
     = Logger.getLogger(LuceneWorkerImpl.class.getName());
 
   //@Inject
   private LuceneIndexBean _luceneBean = LuceneIndexBean.getInstance();
-
-  final static int warmup = 100;
-  final static int cutOff = 400;
-
-  int _indexCounter = 0;
-  long _indexTime = 0;
-  int _searchCounter = 0;
-  long _searchTime = 0;
 
   @Override
   public void indexFile(String collection, String path, Result<Boolean> result)
@@ -40,18 +32,7 @@ public class LuceneWorkerImpl implements LuceneWorker
                         String text,
                         Result<Boolean> result) throws LuceneException
   {
-    long start = System.currentTimeMillis();
-
     result.complete(_luceneBean.indexText(collection, id, text));
-
-    if (_indexCounter++ > warmup) {
-      _indexTime += (System.currentTimeMillis() - start);
-    }
-
-    if (_indexCounter == cutOff)
-      System.out.println("LuceneIndexBean.indexText: " + ((float) _indexTime
-                                                          / (cutOff - warmup)));
-
   }
 
   @Override
@@ -61,25 +42,6 @@ public class LuceneWorkerImpl implements LuceneWorker
                        Result<Boolean> result) throws LuceneException
   {
     result.complete(_luceneBean.indexMap(collection, id, map));
-  }
-
-  @Override
-  public void search(String collection,
-                     String query,
-                     Result<LuceneEntry[]> result)
-  {
-    long start = System.currentTimeMillis();
-
-    LuceneEntry[] entries = _luceneBean.search(collection, query, 255);
-
-    result.complete(entries);
-
-    if (_searchCounter++ > warmup)
-      _searchTime += (System.currentTimeMillis() - start);
-
-    if (_searchCounter == cutOff)
-      System.out.println("LuceneIndexBean.search " + ((float) _searchTime
-                                                      / (cutOff - warmup)));
   }
 
   @Override

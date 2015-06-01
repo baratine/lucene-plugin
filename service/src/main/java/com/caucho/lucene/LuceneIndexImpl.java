@@ -33,8 +33,12 @@ public class LuceneIndexImpl implements LuceneIndex
   private TimerService _timer;
 
   @Inject
-  @Lookup("/lucene-worker")
-  private LuceneWorker _luceneWorker;
+  @Lookup("/lucene-reader")
+  private LuceneIndexReader _indexReader;
+
+  @Inject
+  @Lookup("/lucene-writer")
+  private LuceneIndexWriter _indexWriter;
 
   public LuceneIndexImpl()
     throws IOException
@@ -62,7 +66,7 @@ public class LuceneIndexImpl implements LuceneIndex
     if (log.isLoggable(Level.FINER))
       log.finer(String.format("indexFile('%s')", path));
 
-    _luceneWorker.indexFile(collection, path, result);
+    _indexWriter.indexFile(collection, path, result);
   }
 
   @Override
@@ -74,7 +78,7 @@ public class LuceneIndexImpl implements LuceneIndex
     if (log.isLoggable(Level.FINER))
       log.finer(String.format("indexText('%s')", id));
 
-    _luceneWorker.indexText(collection, id, text, result);
+    _indexWriter.indexText(collection, id, text, result);
   }
 
   @Override
@@ -86,7 +90,7 @@ public class LuceneIndexImpl implements LuceneIndex
     if (log.isLoggable(Level.FINER))
       log.finer(String.format("indexMap('%1$s') %2$s", id, map));
 
-    _luceneWorker.indexMap(collection, id, map, result);
+    _indexWriter.indexMap(collection, id, map, result);
   }
 
   @Override
@@ -102,7 +106,7 @@ public class LuceneIndexImpl implements LuceneIndex
     if (log.isLoggable(Level.FINER))
       log.finer(String.format("search('%1$s', %2$s)", collection, query));
 
-    _luceneWorker.search(collection, query, results.from((e, r) -> add(r, e)));
+    _indexReader.search(collection, query, results.from((e, r) -> add(r, e)));
   }
 
   private void add(Result<LuceneEntry> result, LuceneEntry[] entries)
@@ -122,7 +126,7 @@ public class LuceneIndexImpl implements LuceneIndex
     if (log.isLoggable(Level.FINER))
       log.finer(String.format("delete('%s')", id));
 
-    _luceneWorker.delete(collection, id, result);
+    _indexWriter.delete(collection, id, result);
   }
 
   public void commit()
@@ -130,7 +134,7 @@ public class LuceneIndexImpl implements LuceneIndex
     if (log.isLoggable(Level.FINER))
       log.finer(String.format("commit('%1$s')", this));
 
-    _luceneWorker.commit(Result.<Boolean>ignore());
+    _indexWriter.commit(Result.<Boolean>ignore());
   }
 
   @OnDestroy
@@ -144,7 +148,7 @@ public class LuceneIndexImpl implements LuceneIndex
   {
     log.finer(String.format("clear collection %1$s", collection));
 
-    _luceneWorker.clear(collection, result);
+    _indexWriter.clear(collection, result);
   }
 
   @Override
