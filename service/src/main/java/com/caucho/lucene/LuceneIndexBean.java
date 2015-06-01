@@ -25,7 +25,6 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.MMapDirectory;
 import org.apache.lucene.store.NRTCachingDirectory;
 import org.apache.lucene.util.InfoStream;
 import org.apache.tika.exception.TikaException;

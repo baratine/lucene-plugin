@@ -28,4 +28,6 @@ public interface LuceneWorker
     throws LuceneException;
 
   void clear(String collection, Result<Void> result) throws LuceneException;
+
+  void commit(Result<Boolean> result);
 }

@@ -2,15 +2,19 @@ package com.caucho.lucene;
 
 import io.baratine.core.Lookup;
 import io.baratine.core.OnDestroy;
+import io.baratine.core.OnInit;
 import io.baratine.core.Result;
 import io.baratine.core.ResultSink;
 import io.baratine.core.Service;
 import io.baratine.core.ServiceManager;
 import io.baratine.stream.StreamBuilder;
+import io.baratine.timer.TimerScheduler;
+import io.baratine.timer.TimerService;
 
 import javax.inject.Inject;
 import java.io.IOException;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -22,6 +26,12 @@ public class LuceneIndexImpl implements LuceneIndex
 
   private ServiceManager _manager;
 
+  private long _commitRate = TimeUnit.SECONDS.toMillis(10);
+
+  @Inject
+  @Lookup("timer:")
+  private TimerService _timer;
+
   @Inject
   @Lookup("/lucene-worker")
   private LuceneWorker _luceneWorker;
@@ -29,6 +39,19 @@ public class LuceneIndexImpl implements LuceneIndex
   public LuceneIndexImpl()
     throws IOException
   {
+  }
+
+  @OnInit
+  public void init()
+  {
+    _timer.schedule(() -> commit(), new TimerScheduler()
+    {
+      @Override
+      public long nextRunTime(long l)
+      {
+        return System.currentTimeMillis() + _commitRate;
+      }
+    });
   }
 
   @Override
@@ -100,6 +123,14 @@ public class LuceneIndexImpl implements LuceneIndex
       log.finer(String.format("delete('%s')", id));
 
     _luceneWorker.delete(collection, id, result);
+  }
+
+  public void commit()
+  {
+    if (log.isLoggable(Level.FINER))
+      log.finer(String.format("commit('%1$s')", this));
+
+    _luceneWorker.commit(Result.<Boolean>ignore());
   }
 
   @OnDestroy

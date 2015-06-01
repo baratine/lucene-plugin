@@ -1,7 +1,5 @@
 package com.caucho.lucene;
 
-import io.baratine.core.Modify;
-import io.baratine.core.OnSave;
 import io.baratine.core.Result;
 import io.baratine.core.Service;
 import io.baratine.core.Workers;
@@ -30,7 +28,6 @@ public class LuceneWorkerImpl implements LuceneWorker
   long _searchTime = 0;
 
   @Override
-  @Modify
   public void indexFile(String collection, String path, Result<Boolean> result)
     throws LuceneException
   {
@@ -38,7 +35,6 @@ public class LuceneWorkerImpl implements LuceneWorker
   }
 
   @Override
-  @Modify
   public void indexText(String collection,
                         String id,
                         String text,
@@ -59,7 +55,6 @@ public class LuceneWorkerImpl implements LuceneWorker
   }
 
   @Override
-  @Modify
   public void indexMap(String collection,
                        String id,
                        Map<String,Object> map,
@@ -87,18 +82,21 @@ public class LuceneWorkerImpl implements LuceneWorker
                                                       / (cutOff - warmup)));
   }
 
-  @OnSave
-  public void save()
+  @Override
+  public void commit(Result<Boolean> result)
   {
     try {
       _luceneBean.commit();
+
+      result.complete(true);
     } catch (IOException e) {
       log.log(Level.SEVERE, e.getMessage(), e);
+
+      result.complete(false);
     }
   }
 
   @Override
-  @Modify
   public void delete(String collection, String id, Result<Boolean> result)
     throws LuceneException
   {
@@ -106,7 +104,6 @@ public class LuceneWorkerImpl implements LuceneWorker
   }
 
   @Override
-  @Modify
   public void clear(String collection, Result<Void> result)
     throws LuceneException
   {

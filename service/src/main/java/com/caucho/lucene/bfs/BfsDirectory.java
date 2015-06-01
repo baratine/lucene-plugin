@@ -6,6 +6,7 @@ import io.baratine.core.ServiceManager;
 import io.baratine.core.Services;
 import io.baratine.files.BfsFileSync;
 import io.baratine.files.Status;
+import io.baratine.files.WriteOption;
 import org.apache.lucene.store.BaseDirectory;
 import org.apache.lucene.store.BufferedIndexInput;
 import org.apache.lucene.store.IOContext;
@@ -120,14 +121,8 @@ public class BfsDirectory extends BaseDirectory
                                          this, from, to));
 
     BfsFileSync fromFile = _root.lookup(from);
-    BfsFileSync toFile = _root.lookup(to);
 
-    try (ReadStream in = Vfs.openRead(fromFile.openRead());
-         OutputStream out = toFile.openWrite()) {
-      in.writeToStream(out);
-    }
-
-    fromFile.remove();
+    fromFile.renameTo(to, WriteOption.Standard.OVERWRITE);
   }
 
   @Override
