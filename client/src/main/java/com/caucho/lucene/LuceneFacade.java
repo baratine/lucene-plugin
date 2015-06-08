@@ -5,7 +5,7 @@ import io.baratine.core.Result;
 import java.util.List;
 import java.util.Map;
 
-public interface LuceneSession
+public interface LuceneFacade
 {
   /**
    * Updates lucene index for item at bfsPath

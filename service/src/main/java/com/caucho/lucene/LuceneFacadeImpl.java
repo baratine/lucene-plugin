@@ -11,15 +11,15 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-@Service("session://lucene/session")
-public class LuceneSessionImpl implements LuceneSession
+@Service("pod://lucene/service")
+public class LuceneFacadeImpl implements LuceneFacade
 {
-  private String _id;
-
-  @Inject @Lookup("pod://lucene/index")
+  @Inject
+  @Lookup("pod://lucene/index")
   private LuceneIndex _index;
 
-  @Inject @Lookup("pod://lucene/index")
+  @Inject
+  @Lookup("pod://lucene/index")
   private ServiceRef _indexRef;
 
   private LuceneIndex getLuceneIndex(String id)
@@ -61,10 +61,10 @@ public class LuceneSessionImpl implements LuceneSession
   {
     StreamBuilder<LuceneEntry> stream = _index.search(collection, query);
 
-     stream.collect(ArrayList<LuceneEntry>::new,
-                          (l, e) -> l.add(e),
-                          (a, b) -> a.addAll(b),
-                          result.from(x->x));
+    stream.collect(ArrayList<LuceneEntry>::new,
+                   (l, e) -> l.add(e),
+                   (a, b) -> a.addAll(b),
+                   result.from(x -> x));
   }
 
   @Override

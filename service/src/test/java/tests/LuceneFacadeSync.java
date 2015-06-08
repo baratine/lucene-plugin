@@ -2,12 +2,12 @@ package tests;
 
 import com.caucho.lucene.LuceneEntry;
 import com.caucho.lucene.LuceneException;
-import com.caucho.lucene.LuceneSession;
+import com.caucho.lucene.LuceneFacade;
 
 import java.util.List;
 import java.util.Map;
 
-public interface LuceneSessionSync extends LuceneSession
+public interface LuceneFacadeSync extends LuceneFacade
 {
   boolean indexFile(String collection, String path)
     throws LuceneException;
