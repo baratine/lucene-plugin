@@ -21,7 +21,7 @@ public class LuceneContentHandler extends DefaultHandler
   public void characters(char[] ch, int start, int length)
     throws SAXException
   {
-    _document.add(new TextField(_fieldName, new String(ch, start, length),
-                                Field.Store.NO));
+    _document.add(
+      new TextField(_fieldName, new String(ch, start, length), Field.Store.NO));
   }
 }

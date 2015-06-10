@@ -2,14 +2,11 @@ package com.caucho.lucene;
 
 import io.baratine.core.Lookup;
 import io.baratine.core.OnDestroy;
-import io.baratine.core.OnInit;
 import io.baratine.core.Result;
 import io.baratine.core.ResultSink;
 import io.baratine.core.Service;
 import io.baratine.core.ServiceManager;
 import io.baratine.stream.StreamBuilder;
-import io.baratine.timer.TimerScheduler;
-import io.baratine.timer.TimerService;
 
 import javax.inject.Inject;
 import java.io.IOException;
@@ -29,10 +26,6 @@ public class LuceneIndexImpl implements LuceneIndex
   private long _commitRate = TimeUnit.SECONDS.toMillis(10);
 
   @Inject
-  @Lookup("timer:")
-  private TimerService _timer;
-
-  @Inject
   @Lookup("/lucene-reader")
   private LuceneReader _indexReader;
 
@@ -43,19 +36,6 @@ public class LuceneIndexImpl implements LuceneIndex
   public LuceneIndexImpl()
     throws IOException
   {
-  }
-
-  @OnInit
-  public void init()
-  {
-    _timer.schedule(() -> commit(), new TimerScheduler()
-    {
-      @Override
-      public long nextRunTime(long l)
-      {
-        return System.currentTimeMillis() + _commitRate;
-      }
-    });
   }
 
   @Override

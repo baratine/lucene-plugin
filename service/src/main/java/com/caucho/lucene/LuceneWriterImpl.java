@@ -1,5 +1,7 @@
 package com.caucho.lucene;
 
+import io.baratine.core.Modify;
+import io.baratine.core.OnSave;
 import io.baratine.core.Result;
 import io.baratine.core.Service;
 
@@ -8,7 +10,6 @@ import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-//@Workers(20)
 @Service("/lucene-writer")
 public class LuceneWriterImpl implements LuceneIndexWriter
 {
@@ -19,6 +20,7 @@ public class LuceneWriterImpl implements LuceneIndexWriter
   private LuceneIndexBean _luceneBean = LuceneIndexBean.getInstance();
 
   @Override
+  @Modify
   public void indexFile(String collection, String path, Result<Boolean> result)
     throws LuceneException
   {
@@ -26,6 +28,7 @@ public class LuceneWriterImpl implements LuceneIndexWriter
   }
 
   @Override
+  @Modify
   public void indexText(String collection,
                         String id,
                         String text,
@@ -35,6 +38,7 @@ public class LuceneWriterImpl implements LuceneIndexWriter
   }
 
   @Override
+  @Modify
   public void indexMap(String collection,
                        String id,
                        Map<String,Object> map,
@@ -44,6 +48,7 @@ public class LuceneWriterImpl implements LuceneIndexWriter
   }
 
   @Override
+  @OnSave
   public void commit(Result<Boolean> result)
   {
     try {
@@ -58,6 +63,7 @@ public class LuceneWriterImpl implements LuceneIndexWriter
   }
 
   @Override
+  @Modify
   public void delete(String collection, String id, Result<Boolean> result)
     throws LuceneException
   {
@@ -65,6 +71,7 @@ public class LuceneWriterImpl implements LuceneIndexWriter
   }
 
   @Override
+  @Modify
   public void clear(String collection, Result<Void> result)
     throws LuceneException
   {

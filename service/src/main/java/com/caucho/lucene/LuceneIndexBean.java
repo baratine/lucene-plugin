@@ -2,7 +2,6 @@ package com.caucho.lucene;
 
 import com.caucho.env.system.RootDirectorySystem;
 import com.caucho.lucene.bfs.BfsDirectory;
-import com.caucho.vfs.Vfs;
 import io.baratine.core.ServiceManager;
 import io.baratine.core.Services;
 import io.baratine.files.BfsFileSync;
@@ -12,7 +11,6 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.IndexableField;
@@ -23,6 +21,7 @@ import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.SearcherManager;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.NRTCachingDirectory;
@@ -41,9 +40,9 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystems;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -59,8 +58,6 @@ public class LuceneIndexBean
 
   private Directory _directory;
   private IndexWriter _writer;
-  private DirectoryReader _reader;
-  private IndexSearcher _searcher;
 
   private AutoDetectParser _parser;
 
@@ -77,9 +74,7 @@ public class LuceneIndexBean
 
   private int _maxMergeAtOnce = 10;
   private double _segmentsPerTier = 10;
-
-  private long _lastCommit = -1;
-  private long _commitThreshold = TimeUnit.SECONDS.toMillis(5);
+  private SearcherManager _searcherManager;
 
   public LuceneIndexBean()
   {
@@ -283,8 +278,9 @@ public class LuceneIndexBean
 
     collection = escape(collection);
 
+    IndexSearcher searcher = null;
     try {
-      IndexSearcher searcher = getIndexSearcher();
+      searcher = getIndexSearcher();
 
       query = query + " AND " + collectionKey + ':' + collection;
 
@@ -309,16 +305,34 @@ public class LuceneIndexBean
 
       if (log.isLoggable(Level.FINER))
         log.finer(
-          String.format("search('%1$s', %2$d with %3$d results)",
+          String.format("search('%1$s', %2$d with results %3$s)",
                         query,
                         limit,
-                        results.length));
+                        Arrays.asList(results)));
+
+      if (results.length == 0)
+        if (log.isLoggable(Level.WARNING))
+          log.warning(
+            String.format("search('%1$s', %2$d with results %3$s, %4$s)",
+                          query,
+                          limit,
+                          Arrays.asList(results),
+                          searcher + "@" + System.identityHashCode(searcher))
+            + ": ");
 
       return results;
     } catch (Throwable t) {
       log.log(Level.WARNING, t.getMessage(), t);
 
       throw LuceneException.create(t);
+    } finally {
+      try {
+        release(searcher);
+      } catch (Throwable t) {
+        log.log(Level.WARNING, t.getMessage(), t);
+
+        throw LuceneException.create(t);
+      }
     }
   }
 
@@ -349,22 +363,12 @@ public class LuceneIndexBean
 
   public void commit() throws IOException
   {
-    log.warning(String.format("%1$s commit", this));
-
-    if (_lastCommit == -1) {
-      _lastCommit = System.currentTimeMillis();
-    }
-
-    final long now = System.currentTimeMillis();
-
-    if (now - System.currentTimeMillis() < _commitThreshold) {
-      return;
-    }
+    if (log.isLoggable(Level.FINER))
+      log.finer(this + ".commit()");
 
     if (_writer != null && _writer.hasUncommittedChanges()) {
       _writer.commit();
-
-      _lastCommit = now;
+      _searcherManager.maybeRefresh();
     }
   }
 
@@ -433,79 +437,6 @@ public class LuceneIndexBean
     return builder.toString();
   }
 
-  public boolean clear()
-  {
-    if (true)
-      return true;
-
-    if (log.isLoggable(Level.FINER))
-      log.finer(String.format("lucene-plugin#clear()"));
-
-    _searcher = null;
-
-    Exception exception = null;
-
-    try {
-      if (_reader != null) {
-        _reader.close();
-      }
-    } catch (Exception e) {
-      log.log(Level.WARNING, e.getMessage(), e);
-
-      exception = e;
-    } finally {
-      _reader = null;
-    }
-
-    try {
-      if (_writer != null) {
-        _writer.rollback();
-        _writer.close();
-      }
-    } catch (IOException e) {
-      log.log(Level.WARNING, e.getMessage(), e);
-
-      exception = e;
-    } finally {
-      _writer = null;
-    }
-
-    try {
-      if (_directory != null)
-        _directory.close();
-    } catch (IOException e) {
-      log.log(Level.WARNING, e.getMessage(), e);
-
-      exception = e;
-    } finally {
-      _directory = null;
-    }
-
-    _reader = null;
-    _writer = null;
-    _searcher = null;
-
-    File path = getPath().toFile();
-
-    try {
-      if (path.exists() && (!Vfs.lookup(path.getAbsolutePath()).removeAll()))
-        throw new IOException();
-    } catch (IOException e) {
-      log.log(Level.WARNING, e.getMessage(), e);
-
-      exception = e;
-    }
-
-    if (log.isLoggable(Level.FINER) && exception == null)
-      log.finer(String.format("clear complete"));
-
-    if (exception != null) {
-      throw LuceneException.create(exception);
-    }
-
-    return true;
-  }
-
   @Override
   public String toString()
   {
@@ -514,25 +445,12 @@ public class LuceneIndexBean
 
   private IndexSearcher getIndexSearcher() throws IOException
   {
-    DirectoryReader newReader = null;
-    IndexWriter writer = getIndexWriter();
+    return _searcherManager.acquire();
+  }
 
-    if (_reader != null)
-      newReader = DirectoryReader.openIfChanged(_reader, writer, true);
-
-    if (newReader == null)
-      newReader = DirectoryReader.open(writer, true);
-
-    IndexSearcher newSearcher = _searcher;
-
-    if (newReader != _reader) {
-      newSearcher = new IndexSearcher(newReader);
-    }
-
-    _reader = newReader;
-    _searcher = newSearcher;
-
-    return _searcher;
+  private void release(IndexSearcher searcher) throws IOException
+  {
+    _searcherManager.release(searcher);
   }
 
   private IndexWriter getIndexWriter() throws IOException
@@ -554,6 +472,8 @@ public class LuceneIndexBean
 
     _writer = new IndexWriter(getDirectory(), iwc);
 
+    _searcherManager = new SearcherManager(_writer, true, null);
+
     return _writer;
   }
 
@@ -568,8 +488,6 @@ public class LuceneIndexBean
   private Directory createDirectory() throws IOException
   {
     log.log(Level.FINER, "create new BfsDirectory");
-
-    //Directory directory = MMapDirectory.open(getPath());
 
     Directory directory = new BfsDirectory();
 
