@@ -28,6 +28,8 @@ public class BfsDirectory extends BaseDirectory
   private final static Logger log
     = Logger.getLogger(BfsDirectory.class.getName());
 
+  private static int bufferSize = 8 * 1024;
+
   private BfsFileSync _root;
 
   public BfsDirectory()
@@ -92,9 +94,9 @@ public class BfsDirectory extends BaseDirectory
   {
     BfsFileSync file = _root.lookup(s);
 
-    OutputStream out = file.openWrite(OVERWRITE);//, CLOSE_WAIT_FOR_PUT);
+    OutputStream out = file.openWrite(OVERWRITE);
 
-    IndexOutput indexOut = new OutputStreamIndexOutput(s, out, 256);
+    IndexOutput indexOut = new OutputStreamIndexOutput(s, out, bufferSize);
 
     if (log.isLoggable(Level.FINER))
       log.log(Level.FINER, String.format("%1$s createOutput() -> %2$s",

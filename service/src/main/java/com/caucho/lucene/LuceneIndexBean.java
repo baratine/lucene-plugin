@@ -11,6 +11,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.IndexableField;
@@ -21,7 +22,6 @@ import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
-import org.apache.lucene.search.SearcherManager;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.NRTCachingDirectory;
@@ -74,7 +74,11 @@ public class LuceneIndexBean
 
   private int _maxMergeAtOnce = 10;
   private double _segmentsPerTier = 10;
-  private SearcherManager _searcherManager;
+
+  private volatile IndexSearcher _searcher;
+  private volatile long _lastUpdate = Long.MAX_VALUE;
+  private volatile long _searcherAcquiredTime = -1;
+  private Object _searcherAcquireLock = new Object();
 
   public LuceneIndexBean()
   {
@@ -180,6 +184,8 @@ public class LuceneIndexBean
         log.finer(String.format("indexing ('%1$s')->('%2$s') complete",
                                 pkTerm, extId.stringValue()));
 
+      _lastUpdate = System.currentTimeMillis();
+
       return true;
     } catch (IOException | SAXException e) {
       log.log(Level.WARNING,
@@ -257,6 +263,8 @@ public class LuceneIndexBean
       if (log.isLoggable(Level.FINER))
         log.finer(String.format("indexing ('%s') complete", extId));
 
+      _lastUpdate = System.currentTimeMillis();
+
       return true;
     } catch (IOException e) {
       log.log(Level.WARNING, String.format("indexing ('%s') failed", extId), e);
@@ -280,7 +288,7 @@ public class LuceneIndexBean
 
     IndexSearcher searcher = null;
     try {
-      searcher = getIndexSearcher();
+      searcher = getSearcher();
 
       query = query + " AND " + collectionKey + ':' + collection;
 
@@ -310,15 +318,14 @@ public class LuceneIndexBean
                         limit,
                         Arrays.asList(results)));
 
-      if (results.length == 0)
-        if (log.isLoggable(Level.WARNING))
-          log.warning(
-            String.format("search('%1$s', %2$d with results %3$s, %4$s)",
-                          query,
-                          limit,
-                          Arrays.asList(results),
-                          searcher + "@" + System.identityHashCode(searcher))
-            + ": ");
+      if (log.isLoggable(Level.FINEST))
+        log.finest(
+          String.format("search('%1$s', %2$d with results %3$s, %4$s)",
+                        query,
+                        limit,
+                        Arrays.asList(results),
+                        searcher + "@" + System.identityHashCode(searcher))
+          + ": ");
 
       return results;
     } catch (Throwable t) {
@@ -353,6 +360,9 @@ public class LuceneIndexBean
       if (log.isLoggable(Level.FINER))
         log.finer(String.format("delete('%1$s'->'%2$s') complete",
                                 pk, id));
+
+      _lastUpdate = System.currentTimeMillis();
+
       return true;
     } catch (IOException e) {
       log.log(Level.WARNING, e.getMessage(), e);
@@ -363,12 +373,13 @@ public class LuceneIndexBean
 
   public void commit() throws IOException
   {
-    if (log.isLoggable(Level.FINER))
-      log.finer(this + ".commit()");
-
     if (_writer != null && _writer.hasUncommittedChanges()) {
+      if (log.isLoggable(Level.FINER))
+        log.finer(this + " commit()");
+
       _writer.commit();
-      _searcherManager.maybeRefresh();
+
+      _lastUpdate = System.currentTimeMillis();
     }
   }
 
@@ -389,6 +400,8 @@ public class LuceneIndexBean
 
       if (log.isLoggable(Level.FINER))
         log.finer(String.format("clear('%1$s') complete", query));
+
+      _lastUpdate = System.currentTimeMillis();
 
       return true;
     } catch (IOException e) {
@@ -443,14 +456,49 @@ public class LuceneIndexBean
     return this.getClass().getSimpleName() + '[' + _manager + ']';
   }
 
-  private IndexSearcher getIndexSearcher() throws IOException
+  private IndexSearcher getSearcher() throws IOException
   {
-    return _searcherManager.acquire();
+    synchronized (_searcherAcquireLock) {
+      if (_lastUpdate > _searcherAcquiredTime || _searcher == null) {
+
+        log.warning(String.format(
+          "acquiring new searcher updateTime: [%1$d] searcherTime[%2$d] updateTime-searcherTime: [%3$d] _searcher: %4$s",
+          _lastUpdate,
+          _searcherAcquiredTime,
+          (_lastUpdate - _searcherAcquiredTime),
+          _searcher));
+
+        IndexSearcher searcher = _searcher;
+
+        if (searcher == null) {
+          DirectoryReader reader = DirectoryReader.open(getIndexWriter(), true);
+
+          searcher = new IndexSearcher(reader);
+        }
+        else {
+          DirectoryReader currentReader
+            = (DirectoryReader) _searcher.getIndexReader();
+
+          DirectoryReader newReader
+            = DirectoryReader.openIfChanged(currentReader);
+
+          if (newReader != null) {
+            searcher = new IndexSearcher(newReader);
+          }
+        }
+
+        _searcherAcquiredTime = System.currentTimeMillis();
+
+        _searcher = searcher;
+      }
+    }
+
+    return _searcher;
   }
 
   private void release(IndexSearcher searcher) throws IOException
   {
-    _searcherManager.release(searcher);
+
   }
 
   private IndexWriter getIndexWriter() throws IOException
@@ -472,8 +520,6 @@ public class LuceneIndexBean
 
     _writer = new IndexWriter(getDirectory(), iwc);
 
-    _searcherManager = new SearcherManager(_writer, true, null);
-
     return _writer;
   }
 
@@ -490,6 +536,10 @@ public class LuceneIndexBean
     log.log(Level.FINER, "create new BfsDirectory");
 
     Directory directory = new BfsDirectory();
+    //Directory directory = new MyDirectory();
+    //Directory directory = new RAMDirectory();
+
+    //Directory directory = MMapDirectory.open(getPath());
 
     directory = new NRTCachingDirectory(directory,
                                         _maxMergeSizeMb,
