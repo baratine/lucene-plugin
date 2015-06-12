@@ -1,7 +1,5 @@
 package com.caucho.lucene.bfs;
 
-import com.caucho.vfs.ReadStream;
-import com.caucho.vfs.Vfs;
 import io.baratine.core.ServiceManager;
 import io.baratine.core.Services;
 import io.baratine.files.BfsFileSync;
@@ -20,7 +18,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Objects;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -173,6 +170,7 @@ class BfsIndexInput extends BufferedIndexInput
   private final long _offset;
   private final long _length;
   private long _pointer = 0;
+  private String _toString;
 
   public BfsIndexInput(String resourceDescription,
                        IOContext context,
@@ -185,13 +183,6 @@ class BfsIndexInput extends BufferedIndexInput
     _file = file;
     _offset = offset;
     _length = length;
-
-    _in = file.openRead();
-
-    Objects.requireNonNull(_in, String.format("_in should not be null for %1$s",
-                                              file));
-
-    _in.skip(_offset);
 
     if (log.isLoggable(Level.FINER))
       log.log(Level.FINER, String.format("new %1$s %2$d %3$s",
@@ -206,7 +197,8 @@ class BfsIndexInput extends BufferedIndexInput
     if (log.isLoggable(Level.FINER))
       log.log(Level.FINER, String.format("%1$s close()", this));
 
-    _in.close();
+    if (_in != null)
+      _in.close();
   }
 
   @Override
@@ -215,6 +207,8 @@ class BfsIndexInput extends BufferedIndexInput
   {
     _pointer += len;
     int l;
+
+    openSkip(_offset, 0);
 
     while ((l = _in.read(bytes, offset, len)) > 0) {
       offset = offset + l;
@@ -232,15 +226,31 @@ class BfsIndexInput extends BufferedIndexInput
                                          _pointer));
 
     if (_pointer > pos) {
-      _in.close();
-      _in = _file.openRead();
-      _in.skip(_offset + pos);
+      if (_in != null)
+        _in.close();
+
+      _in = null;
+
+      openSkip(_offset + pos, 0);
     }
     else {
-      _in.skip(pos - _pointer);
+      openSkip(_offset, pos - _pointer);
+
+      //_in.skip(pos - _pointer);
     }
 
     _pointer = pos;
+  }
+
+  private void openSkip(long inOffset, long offset) throws IOException
+  {
+    if (_in == null) {
+      _in = _file.openRead();
+      _in.skip(inOffset + offset);
+    }
+    else if (offset > 0) {
+      _in.skip(offset);
+    }
   }
 
   @Override
@@ -276,25 +286,28 @@ class BfsIndexInput extends BufferedIndexInput
   @Override
   public BfsIndexInput clone()
   {
-    try {
-      BfsIndexInput clone;
+    BfsIndexInput clone;
 
-      clone = (BfsIndexInput) super.clone();
-      clone._in = _file.openRead();
+    clone = (BfsIndexInput) super.clone();
 
-      clone._in.skip(_offset);
+    clone._in = null;
 
-      clone._pointer = 0;
+    clone._pointer = 0;
 
-      return clone;
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    }
+    clone._toString = null;
+
+    return clone;
   }
 
   @Override
   public String toString()
   {
-    return this.getClass().getSimpleName() + '[' + super.toString() + ']';
+    if (_toString == null)
+      _toString = this.getClass().getSimpleName()
+                  + '['
+                  + super.toString()
+                  + ']';
+
+    return _toString;
   }
 }
