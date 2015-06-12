@@ -205,10 +205,10 @@ class BfsIndexInput extends BufferedIndexInput
   protected void readInternal(byte[] bytes, int offset, int len)
     throws IOException
   {
+    skipOpen(_offset, 0);
+
     _pointer += len;
     int l;
-
-    openSkip(_offset, 0);
 
     while ((l = _in.read(bytes, offset, len)) > 0) {
       offset = offset + l;
@@ -231,18 +231,16 @@ class BfsIndexInput extends BufferedIndexInput
 
       _in = null;
 
-      openSkip(_offset + pos, 0);
+      skipOpen(_offset + pos, 0);
     }
     else {
-      openSkip(_offset, pos - _pointer);
-
-      //_in.skip(pos - _pointer);
+      skipOpen(_offset, pos - _pointer);
     }
 
     _pointer = pos;
   }
 
-  private void openSkip(long inOffset, long offset) throws IOException
+  private void skipOpen(long inOffset, long offset) throws IOException
   {
     if (_in == null) {
       _in = _file.openRead();
