@@ -12,6 +12,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.IndexableField;
@@ -23,6 +24,7 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.NRTCachingDirectory;
 import org.apache.lucene.util.InfoStream;
@@ -43,6 +45,8 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -75,10 +79,11 @@ public class LuceneIndexBean
   private int _maxMergeAtOnce = 10;
   private double _segmentsPerTier = 10;
 
-  private volatile IndexSearcher _searcher;
+  private AtomicReference<XIndexSearcher> _searcher = new AtomicReference<>();
+
   private volatile long _lastUpdate = Long.MAX_VALUE;
   private volatile long _searcherAcquiredTime = -1;
-  private Object _searcherAcquireLock = new Object();
+  private Object _searcherLock = new Object();
 
   public LuceneIndexBean()
   {
@@ -286,7 +291,7 @@ public class LuceneIndexBean
 
     collection = escape(collection);
 
-    IndexSearcher searcher = null;
+    XIndexSearcher searcher = null;
     try {
       searcher = getSearcher();
 
@@ -328,6 +333,9 @@ public class LuceneIndexBean
           + ": ");
 
       return results;
+    } catch (AlreadyClosedException e) {
+      log.log(Level.WARNING, String.format("%1$s searcher %2$s", e, searcher));
+      throw LuceneException.create(e);
     } catch (Throwable t) {
       log.log(Level.WARNING, t.getMessage(), t);
 
@@ -456,49 +464,54 @@ public class LuceneIndexBean
     return this.getClass().getSimpleName() + '[' + _manager + ']';
   }
 
-  private IndexSearcher getSearcher() throws IOException
+  private XIndexSearcher getSearcher() throws IOException
   {
-    synchronized (_searcherAcquireLock) {
-      if (_lastUpdate > _searcherAcquiredTime || _searcher == null) {
+    XIndexSearcher searcher;
+    synchronized (_searcherLock) {
+      searcher = _searcher.get();
 
-        log.warning(String.format(
-          "acquiring new searcher updateTime: [%1$d] searcherTime[%2$d] updateTime-searcherTime: [%3$d] _searcher: %4$s",
-          _lastUpdate,
-          _searcherAcquiredTime,
-          (_lastUpdate - _searcherAcquiredTime),
-          _searcher));
+      if (_lastUpdate > _searcherAcquiredTime
+          || searcher == null) {
+        if (log.isLoggable(Level.WARNING))
+          log.warning(String.format(
+            "acquiring new searcher updateTime: [%1$d] searcherTime[%2$d] updateTime-searcherTime: [%3$d] searcher: %4$s",
+            _lastUpdate,
+            _searcherAcquiredTime,
+            (_lastUpdate - _searcherAcquiredTime),
+            searcher));
 
-        IndexSearcher searcher = _searcher;
+        DirectoryReader reader = DirectoryReader.open(getIndexWriter(),
+                                                      false);
 
-        if (searcher == null) {
-          DirectoryReader reader = DirectoryReader.open(getIndexWriter(), true);
+        XIndexSearcher newSearcher = new XIndexSearcher(reader);
 
-          searcher = new IndexSearcher(reader);
-        }
-        else {
-          DirectoryReader currentReader
-            = (DirectoryReader) _searcher.getIndexReader();
-
-          DirectoryReader newReader
-            = DirectoryReader.openIfChanged(currentReader);
-
-          if (newReader != null) {
-            searcher = new IndexSearcher(newReader);
-          }
-        }
+        _searcher.set(newSearcher);
 
         _searcherAcquiredTime = System.currentTimeMillis();
 
-        _searcher = searcher;
+        if (searcher != null && searcher.getUseCount() == 0)
+          searcher.release();
+
+        searcher = newSearcher;
       }
+
+      searcher.incUseCount();
     }
 
-    return _searcher;
+    return searcher;
   }
 
-  private void release(IndexSearcher searcher) throws IOException
+  private void release(XIndexSearcher searcher) throws IOException
   {
+    searcher.decUseCount();
 
+    synchronized (_searcherLock) {
+      if (_searcher.get() == searcher) {
+      }
+      else if (searcher.getUseCount() == 0) {
+        searcher.release();
+      }
+    }
   }
 
   private IndexWriter getIndexWriter() throws IOException
@@ -601,5 +614,54 @@ class LucenePluginInfoStream extends InfoStream
   public void close() throws IOException
   {
 
+  }
+}
+
+class XIndexSearcher extends IndexSearcher
+{
+  private static Logger log = Logger.getLogger(XIndexSearcher.class.getName());
+
+  AtomicInteger _useCount = new AtomicInteger();
+
+  public XIndexSearcher(IndexReader r)
+  {
+    super(r);
+  }
+
+  public int incUseCount()
+  {
+    return _useCount.incrementAndGet();
+  }
+
+  public int decUseCount()
+  {
+    return _useCount.decrementAndGet();
+  }
+
+  public int getUseCount()
+  {
+    return _useCount.get();
+  }
+
+  public void release() throws IOException
+  {
+    log.warning(this + " release ");
+
+    getIndexReader().close();
+  }
+
+  @Override
+  public String toString()
+  {
+    IndexReader reader = getIndexReader();
+    return "XIndexSearcher ["
+           +
+           _useCount.get()
+           + ", "
+           + reader.getClass().getSimpleName()
+           + '@'
+           + System.identityHashCode(reader)
+           +
+           ']';
   }
 }
