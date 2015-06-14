@@ -549,9 +549,7 @@ public class LuceneIndexBean
     log.log(Level.FINER, "create new BfsDirectory");
 
     Directory directory = new BfsDirectory();
-    //Directory directory = new MyDirectory();
     //Directory directory = new RAMDirectory();
-
     //Directory directory = MMapDirectory.open(getPath());
 
     directory = new NRTCachingDirectory(directory,
