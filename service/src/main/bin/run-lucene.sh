@@ -27,6 +27,8 @@ cd service
 
 cp  target/lucene-*.bar lucene.bar
 
+exit;
+
 $BARATINE_HOME/bin/baratine start $BARATINE_ARGS --deploy lucene.bar
 
 echo "index ..."

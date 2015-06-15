@@ -342,7 +342,8 @@ public class LuceneIndexBean
       throw LuceneException.create(t);
     } finally {
       try {
-        release(searcher);
+        if (searcher != null)
+          release(searcher);
       } catch (Throwable t) {
         log.log(Level.WARNING, t.getMessage(), t);
 
@@ -472,8 +473,8 @@ public class LuceneIndexBean
 
       if (_lastUpdate > _searcherAcquiredTime
           || searcher == null) {
-        if (log.isLoggable(Level.WARNING))
-          log.warning(String.format(
+        if (log.isLoggable(Level.FINER))
+          log.finer(String.format(
             "acquiring new searcher updateTime: [%1$d] searcherTime[%2$d] updateTime-searcherTime: [%3$d] searcher: %4$s",
             _lastUpdate,
             _searcherAcquiredTime,
@@ -503,9 +504,9 @@ public class LuceneIndexBean
 
   private void release(XIndexSearcher searcher) throws IOException
   {
-    searcher.decUseCount();
-
     synchronized (_searcherLock) {
+      searcher.decUseCount();
+
       if (_searcher.get() == searcher) {
       }
       else if (searcher.getUseCount() == 0) {
@@ -643,9 +644,13 @@ class XIndexSearcher extends IndexSearcher
 
   public void release() throws IOException
   {
-    log.warning(this + " release ");
+    if (log.isLoggable(Level.FINER))
+      log.finer(this + " release ");
 
-    getIndexReader().close();
+    IndexReader reader = getIndexReader();
+
+    if (reader != null)
+      reader.close();
   }
 
   @Override
