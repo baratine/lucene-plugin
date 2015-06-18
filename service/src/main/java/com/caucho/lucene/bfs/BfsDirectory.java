@@ -18,6 +18,8 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -165,14 +167,18 @@ class BfsIndexInput extends BufferedIndexInput
   private final static Logger log
     = Logger.getLogger(BfsIndexInput.class.getName());
 
+  private static Map<String,Integer> _counter = new HashMap<>();
+
   private InputStream _in;
   private BfsFileSync _file;
   private IOContext _context;
 
   private final long _offset;
   private final long _length;
-  private long _pointer = 0;
+  private long _pos = 0;
   private String _toString;
+
+  private int _n;
 
   public BfsIndexInput(String resourceDescription,
                        IOContext context,
@@ -186,11 +192,25 @@ class BfsIndexInput extends BufferedIndexInput
     _offset = offset;
     _length = length;
 
+    initCounter();
+
     if (log.isLoggable(Level.FINER))
       log.log(Level.FINER, String.format("new %1$s %2$d %3$s",
                                          this,
                                          _offset,
                                          length));
+  }
+
+  void initCounter()
+  {
+    String path = _file.getStatus().getPath();
+    Integer n = _counter.get(path);
+    if (n == null)
+      _counter.put(path, n = new Integer(0));
+    else
+      _counter.put(path, n = new Integer(n.intValue() + 1));
+
+    _n = n;
   }
 
   @Override
@@ -209,7 +229,7 @@ class BfsIndexInput extends BufferedIndexInput
   {
     skipOpen(_offset, 0);
 
-    _pointer += len;
+    _pos += len;
     int l;
 
     while ((l = _in.read(bytes, offset, len)) > 0) {
@@ -222,12 +242,14 @@ class BfsIndexInput extends BufferedIndexInput
   protected void seekInternal(long pos) throws IOException
   {
     if (log.isLoggable(Level.FINER))
-      log.log(Level.FINER, String.format("%1$s seek(%2$d) %3$d",
+      log.log(Level.FINER, String.format("seek %1$s pos: %2$d -> %3$d ",
                                          this,
-                                         pos,
-                                         _pointer));
+                                         _pos,
+                                         pos));
 
-    if (_pointer > pos) {
+    if (pos == _pos) {
+    }
+    else if (_pos > pos) {
       if (_in != null)
         _in.close();
 
@@ -236,10 +258,10 @@ class BfsIndexInput extends BufferedIndexInput
       skipOpen(_offset + pos, 0);
     }
     else {
-      skipOpen(_offset, pos - _pointer);
+      skipOpen(_offset, pos - _pos);
     }
 
-    _pointer = pos;
+    _pos = pos;
   }
 
   private void skipOpen(long inOffset, long offset) throws IOException
@@ -264,8 +286,9 @@ class BfsIndexInput extends BufferedIndexInput
     throws IOException
   {
     if (log.isLoggable(Level.FINER))
-      log.log(Level.FINER, String.format("%1$s slice %2$d:%3$d",
+      log.log(Level.FINER, String.format("%1$s pos: %2$d slice %3$d:%4$d",
                                          this,
+                                         _pos,
                                          offset,
                                          length));
 
@@ -286,15 +309,22 @@ class BfsIndexInput extends BufferedIndexInput
   @Override
   public BfsIndexInput clone()
   {
+    if (log.isLoggable(Level.FINER))
+      log.log(Level.FINER, String.format("clone %1$s pos: %2$d",
+                                         this,
+                                         _pos));
+
     BfsIndexInput clone;
 
     clone = (BfsIndexInput) super.clone();
 
     clone._in = null;
 
-    clone._pointer = 0;
+    clone._pos = 0;
 
     clone._toString = null;
+
+    clone.initCounter();
 
     return clone;
   }
@@ -306,6 +336,7 @@ class BfsIndexInput extends BufferedIndexInput
       _toString = this.getClass().getSimpleName()
                   + '['
                   + super.toString()
+                  + ':' + _n
                   + ']';
 
     return _toString;
