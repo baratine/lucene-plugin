@@ -242,10 +242,11 @@ class BfsIndexInput extends BufferedIndexInput
   protected void seekInternal(long pos) throws IOException
   {
     if (log.isLoggable(Level.FINER))
-      log.log(Level.FINER, String.format("seek %1$s pos: %2$d -> %3$d ",
+      log.log(Level.FINER, String.format("seek %1$s pos: %2$d -> %3$d %4$s",
                                          this,
                                          _pos,
-                                         pos));
+                                         pos,
+                                         Thread.currentThread()));
 
     if (pos == _pos) {
     }
@@ -286,11 +287,12 @@ class BfsIndexInput extends BufferedIndexInput
     throws IOException
   {
     if (log.isLoggable(Level.FINER))
-      log.log(Level.FINER, String.format("%1$s pos: %2$d slice %3$d:%4$d",
+      log.log(Level.FINER, String.format("%1$s pos: %2$d slice %3$d:%4$d %5$s",
                                          this,
                                          _pos,
                                          offset,
-                                         length));
+                                         length,
+                                         Thread.currentThread()));
 
     String description = String.format("%1$s | slice %2$d:%3$d",
                                        this,
@@ -310,9 +312,10 @@ class BfsIndexInput extends BufferedIndexInput
   public BfsIndexInput clone()
   {
     if (log.isLoggable(Level.FINER))
-      log.log(Level.FINER, String.format("clone %1$s pos: %2$d",
+      log.log(Level.FINER, String.format("clone %1$s pos: %2$d %3$s",
                                          this,
-                                         _pos));
+                                         _pos,
+                                         Thread.currentThread()));
 
     BfsIndexInput clone;
 

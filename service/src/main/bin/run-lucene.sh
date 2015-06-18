@@ -21,15 +21,15 @@ rm -rf $BARATINE_DATA_DIR
 
 cd ..
 
-mvn -Dmaven.test.skip=true -P local clean package
+mvn -Dmaven.test.skip=true -Dbaratine.run.skip=true -P local clean package
 
 cd service
 
-cp  target/lucene-*.bar lucene.bar
+cp  target/lucene-*.bar lucene-plugin.bar
 
 exit;
 
-$BARATINE_HOME/bin/baratine start $BARATINE_ARGS --deploy lucene.bar
+$BARATINE_HOME/bin/baratine start $BARATINE_ARGS --deploy lucene-plugin.bar
 
 echo "index ..."
 $BARATINE_HOME/bin/baratine jamp-query $BARATINE_ARGS --pod lucene /service indexText foo bar mary

@@ -1,7 +1,7 @@
 namespace lucene "com.caucho.lucene";
 
 pod lucene {
-  archive "/usr/lib/pods/lucene.bar";
+  archive "/usr/lib/pods/lucene-plugin-service.bar";
 }
 
 
