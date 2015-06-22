@@ -21,7 +21,7 @@ public class LuceneReaderImpl implements LuceneReader
                      String query,
                      Result<LuceneEntry[]> result)
   {
-    LuceneEntry[] entries = _luceneBean.search(collection, query, 255);
+    LuceneEntry[] entries = _luceneBean.search(this, collection, query, 255);
 
     result.complete(entries);
   }
