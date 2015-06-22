@@ -370,6 +370,8 @@ public class LuceneIndexBean
       if (log.isLoggable(Level.FINER))
         log.finer(this + " commit()");
 
+      _sequence.incrementAndGet();
+
       _writer.commit();
     }
   }

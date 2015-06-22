@@ -35,6 +35,8 @@ public class LuceneReaderImpl implements LuceneReader
         _searcher = _luceneBean.createSearcher();
       }
     } catch (IOException e) {
+      log.log(Level.WARNING, "error creating IndexSearcher", e);
+
       throw LuceneException.create(e);
     }
 
