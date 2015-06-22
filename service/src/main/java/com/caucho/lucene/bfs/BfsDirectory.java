@@ -167,7 +167,7 @@ class BfsIndexInput extends BufferedIndexInput
   private final static Logger log
     = Logger.getLogger(BfsIndexInput.class.getName());
 
-  private static Map<String,Integer> _counter = new HashMap<>();
+  //private static Map<String,Integer> _counter = new HashMap<>();
 
   private InputStream _in;
   private BfsFileSync _file;
@@ -178,7 +178,7 @@ class BfsIndexInput extends BufferedIndexInput
   private long _pos = 0;
   private String _toString;
 
-  private int _n;
+  //private int _n;
 
   public BfsIndexInput(String resourceDescription,
                        IOContext context,
@@ -192,7 +192,7 @@ class BfsIndexInput extends BufferedIndexInput
     _offset = offset;
     _length = length;
 
-    initCounter();
+    //initCounter();
 
     if (log.isLoggable(Level.FINER))
       log.log(Level.FINER, String.format("new %1$s %2$d %3$s",
@@ -201,6 +201,7 @@ class BfsIndexInput extends BufferedIndexInput
                                          length));
   }
 
+/*
   void initCounter()
   {
     String path = _file.getStatus().getPath();
@@ -212,6 +213,7 @@ class BfsIndexInput extends BufferedIndexInput
 
     _n = n;
   }
+*/
 
   @Override
   public void close() throws IOException
@@ -327,7 +329,7 @@ class BfsIndexInput extends BufferedIndexInput
 
     clone._toString = null;
 
-    clone.initCounter();
+    //clone.initCounter();
 
     return clone;
   }
@@ -339,7 +341,7 @@ class BfsIndexInput extends BufferedIndexInput
       _toString = this.getClass().getSimpleName()
                   + '['
                   + super.toString()
-                  + ':' + _n
+                  + ':'//_n
                   + ']';
 
     return _toString;
