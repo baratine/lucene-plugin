@@ -34,7 +34,6 @@ import org.apache.tika.parser.AutoDetectParser;
 import org.xml.sax.SAXException;
 
 import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
 import javax.inject.Inject;
 import java.io.ByteArrayInputStream;
 import java.io.File;
@@ -46,7 +45,7 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -79,10 +78,7 @@ public class LuceneIndexBean
   private int _maxMergeAtOnce = 10;
   private double _segmentsPerTier = 10;
 
-  private long _lastUpdate = Long.MAX_VALUE;
-
-  private Map<LuceneReaderImpl,XIndexSearcher> _searchers
-    = new ConcurrentHashMap<>();
+  private AtomicLong _sequence = new AtomicLong();
 
   public LuceneIndexBean()
   {
@@ -188,7 +184,7 @@ public class LuceneIndexBean
         log.finer(String.format("indexing ('%1$s')->('%2$s') complete",
                                 pkTerm, extId.stringValue()));
 
-      _lastUpdate = System.currentTimeMillis();
+      _sequence.incrementAndGet();
 
       return true;
     } catch (IOException | SAXException e) {
@@ -267,7 +263,7 @@ public class LuceneIndexBean
       if (log.isLoggable(Level.FINER))
         log.finer(String.format("indexing ('%s') complete", extId));
 
-      _lastUpdate = System.currentTimeMillis();
+      _sequence.incrementAndGet();
 
       return true;
     } catch (IOException e) {
@@ -277,7 +273,7 @@ public class LuceneIndexBean
     }
   }
 
-  public LuceneEntry[] search(LuceneReaderImpl reader,
+  public LuceneEntry[] search(XIndexSearcher searcher,
                               String collection,
                               String query,
                               int limit)
@@ -291,10 +287,7 @@ public class LuceneIndexBean
 
     collection = escape(collection);
 
-    XIndexSearcher searcher = null;
     try {
-      searcher = getSearcher(reader);
-
       query = query + " AND " + collectionKey + ':' + collection;
 
       Query q = getQueryParser().parse(query);
@@ -340,15 +333,6 @@ public class LuceneIndexBean
       log.log(Level.WARNING, t.getMessage(), t);
 
       throw LuceneException.create(t);
-    } finally {
-      try {
-        if (searcher != null)
-          release(searcher);
-      } catch (Throwable t) {
-        log.log(Level.WARNING, t.getMessage(), t);
-
-        throw LuceneException.create(t);
-      }
     }
   }
 
@@ -370,7 +354,7 @@ public class LuceneIndexBean
         log.finer(String.format("delete('%1$s'->'%2$s') complete",
                                 pk, id));
 
-      _lastUpdate = System.currentTimeMillis();
+      _sequence.incrementAndGet();
 
       return true;
     } catch (IOException e) {
@@ -387,8 +371,6 @@ public class LuceneIndexBean
         log.finer(this + " commit()");
 
       _writer.commit();
-
-      _lastUpdate = System.currentTimeMillis();
     }
   }
 
@@ -410,7 +392,7 @@ public class LuceneIndexBean
       if (log.isLoggable(Level.FINER))
         log.finer(String.format("clear('%1$s') complete", query));
 
-      _lastUpdate = System.currentTimeMillis();
+      _sequence.incrementAndGet();
 
       return true;
     } catch (IOException e) {
@@ -465,32 +447,15 @@ public class LuceneIndexBean
     return this.getClass().getSimpleName() + '[' + _manager + ']';
   }
 
-  private XIndexSearcher getSearcher(LuceneReaderImpl reader) throws IOException
+  public XIndexSearcher createSearcher() throws IOException
   {
-    XIndexSearcher searcher = _searchers.get(reader);
+    DirectoryReader directoryReader
+      = DirectoryReader.open(getIndexWriter(), false);
 
-    if (searcher == null) {
-
-    }
-    else if (searcher.getTimeAcquired() > _lastUpdate) {
-      return searcher;
-    }
-    else {
-      searcher.release();
-    }
-
-    DirectoryReader directoryReader = DirectoryReader.open(getIndexWriter(),
-                                                           false);
-
-    searcher = new XIndexSearcher(directoryReader, System.currentTimeMillis());
-
-    _searchers.put(reader, searcher);
+    XIndexSearcher searcher
+      = new XIndexSearcher(directoryReader, _sequence.get());
 
     return searcher;
-  }
-
-  private void release(XIndexSearcher searcher) throws IOException
-  {
   }
 
   private IndexWriter getIndexWriter() throws IOException
@@ -569,15 +534,9 @@ public class LuceneIndexBean
     return field;
   }
 
-  @PreDestroy
-  public void destroy() {
-    for (XIndexSearcher searcher : _searchers.values()) {
-      try {
-        searcher.release();
-      } catch (Throwable t) {
-        log.warning(String.format("error releasing %1$s", searcher));
-      }
-    }
+  public long getSequence()
+  {
+    return _sequence.get();
   }
 }
 
@@ -609,18 +568,18 @@ class XIndexSearcher extends IndexSearcher
 {
   private static Logger log = Logger.getLogger(XIndexSearcher.class.getName());
 
-  public long _timeAcquired;
+  public long _sequence;
 
-  public XIndexSearcher(IndexReader r, long timeAcquired)
+  public XIndexSearcher(IndexReader r, long sequence)
   {
     super(r);
 
-    _timeAcquired = timeAcquired;
+    _sequence = sequence;
   }
 
-  public long getTimeAcquired()
+  public long getSequence()
   {
-    return _timeAcquired;
+    return _sequence;
   }
 
   public void release() throws IOException
@@ -640,7 +599,7 @@ class XIndexSearcher extends IndexSearcher
     IndexReader reader = getIndexReader();
     return "XIndexSearcher ["
            +
-           +_timeAcquired
+           +_sequence
            + ", "
            + reader.getClass().getSimpleName()
            + '@'
