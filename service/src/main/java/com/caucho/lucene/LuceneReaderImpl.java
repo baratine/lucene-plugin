@@ -31,6 +31,7 @@ public class LuceneReaderImpl implements LuceneReader
         _searcher = _luceneBean.createSearcher();
       }
       else if (_searcher.getSequence() < _luceneBean.getSequence()) {
+        _searcher.release();
         _searcher = _luceneBean.createSearcher();
       }
     } catch (IOException e) {
