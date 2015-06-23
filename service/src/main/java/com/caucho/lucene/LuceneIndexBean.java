@@ -274,6 +274,7 @@ public class LuceneIndexBean
   }
 
   public LuceneEntry[] search(XIndexSearcher searcher,
+                              QueryParser queryParser,
                               String collection,
                               String query,
                               int limit)
@@ -290,7 +291,7 @@ public class LuceneIndexBean
     try {
       query = query + " AND " + collectionKey + ':' + collection;
 
-      Query q = getQueryParser().parse(query);
+      Query q = queryParser.parse(query);
 
       TopDocs docs = searcher.search(q, limit);
 
@@ -376,7 +377,7 @@ public class LuceneIndexBean
     }
   }
 
-  public boolean clear(String collection)
+  public boolean clear(QueryParser queryParser, String collection)
   {
     try {
       if (log.isLoggable(Level.FINER))
@@ -386,7 +387,6 @@ public class LuceneIndexBean
 
       IndexWriter writer = getIndexWriter();
 
-      QueryParser queryParser = getQueryParser();
       Query query = queryParser.parse(collectionKey + ':' + collection);
 
       writer.deleteDocuments(query);
@@ -511,7 +511,7 @@ public class LuceneIndexBean
                                             "index");
   }
 
-  private QueryParser getQueryParser()
+  QueryParser createQueryParser()
   {
     if (_analyzer == null)
       _analyzer = new StandardAnalyzer();
@@ -540,6 +540,7 @@ public class LuceneIndexBean
   {
     return _sequence.get();
   }
+
 }
 
 class LucenePluginInfoStream extends InfoStream

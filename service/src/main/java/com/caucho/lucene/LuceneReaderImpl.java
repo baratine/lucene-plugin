@@ -1,9 +1,11 @@
 package com.caucho.lucene;
 
 import io.baratine.core.OnDestroy;
+import io.baratine.core.OnInit;
 import io.baratine.core.Result;
 import io.baratine.core.Service;
 import io.baratine.core.Workers;
+import org.apache.lucene.queryparser.classic.QueryParser;
 
 import java.io.IOException;
 import java.util.logging.Level;
@@ -20,6 +22,21 @@ public class LuceneReaderImpl implements LuceneReader
   private LuceneIndexBean _luceneBean = LuceneIndexBean.getInstance();
 
   private XIndexSearcher _searcher;
+  private QueryParser _queryParser;
+
+  @OnInit
+  public void init(Result<Boolean> result)
+  {
+    try {
+      _queryParser = _luceneBean.createQueryParser();
+
+      result.complete(true);
+    } catch (Throwable t) {
+      log.log(Level.WARNING, "error creating query parser", t);
+
+      result.fail(t);
+    }
+  }
 
   @Override
   public void search(String collection,
@@ -41,6 +58,7 @@ public class LuceneReaderImpl implements LuceneReader
     }
 
     LuceneEntry[] entries = _luceneBean.search(_searcher,
+                                               _queryParser,
                                                collection,
                                                query,
                                                255);
