@@ -12,7 +12,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 @Service("/lucene-reader")
-@Workers(20)
+@Workers(1)
 public class LuceneReaderImpl implements LuceneReader
 {
   private final static Logger log

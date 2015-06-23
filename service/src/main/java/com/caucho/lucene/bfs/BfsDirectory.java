@@ -50,8 +50,8 @@ public class BfsDirectory extends BaseDirectory
   {
     String[] list = _root.list();
 
-    if (log.isLoggable(Level.FINER))
-      log.log(Level.FINER, String.format("%1$s listAll() -> %2$s", this,
+    if (log.isLoggable(Level.WARNING))
+      log.log(Level.WARNING, String.format("%1$s listAll() -> %2$s", this,
                                          Arrays.asList(list)));
 
     return list;
