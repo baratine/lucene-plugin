@@ -240,7 +240,7 @@ class BfsIndexInput extends BufferedIndexInput
   {
     long pos = _pos + _offset;
 
-    if (pos + len > _length)
+    if (len > _length)
       throw new EOFException(String.format("read past EOF %1$s %2$d %3$d %4$d",
                                            this,
                                            pos,
