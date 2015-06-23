@@ -241,12 +241,17 @@ class BfsIndexInput extends BufferedIndexInput
     long pos = _pos + _offset;
 
     if (pos + len > _length)
-      throw new EOFException("read past EOF " + this);
+      throw new EOFException(String.format("read past EOF %1$s %2$d %3$d %4$d",
+                                           this,
+                                           pos,
+                                           len,
+                                           _length);
 
     if (log.isLoggable(Level.FINER))
       log.log(Level.FINER, String.format(
-        "BfsIndexInput.readInternal %1$s read %2$d %3$d",
+        "BfsIndexInput.readInternal %1$s read %2$d %3$d %4$d",
         this,
+        pos,
         offset,
         len));
 
