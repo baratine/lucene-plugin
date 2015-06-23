@@ -210,10 +210,10 @@ class BfsIndexInput extends BufferedIndexInput
     throws IOException
   {
     long pos = _pos + _offset;
-    _pos += len;
 
     int l;
     while (len > 0 && (l = _in.read(pos, bytes, offset, len)) > 0) {
+      _pos += l;
       pos += l;
       offset += l;
       len -= l;
