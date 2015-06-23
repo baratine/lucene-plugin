@@ -245,7 +245,7 @@ class BfsIndexInput extends BufferedIndexInput
 
     if (log.isLoggable(Level.FINER))
       log.log(Level.FINER, String.format(
-        "BfsIndexInput.readInternal %1$s request %2$d %3$d",
+        "BfsIndexInput.readInternal %1$s read %2$d %3$d",
         this,
         offset,
         len));
@@ -259,10 +259,10 @@ class BfsIndexInput extends BufferedIndexInput
     }
 
     if (log.isLoggable(Level.FINER))
-    log.log(Level.FINER, String.format(
-      "BfsIndexInput.readInternal %1$s finish %2$d",
-      this,
-      len));
+      log.log(Level.FINER, String.format(
+        "BfsIndexInput.readInternal %1$s remaining %2$d",
+        this,
+        len));
 
     _pos = pos - _offset;
   }
@@ -350,7 +350,7 @@ class BfsIndexInput extends BufferedIndexInput
       _toString = this.getClass().getSimpleName()
                   + '['
                   + super.toString()
-                  + ':' + (_offset + _pos)
+                  + " at " + (_offset + _pos) + " of " + _length
                   + ']';
 
     return _toString;
