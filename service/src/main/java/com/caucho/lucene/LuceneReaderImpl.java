@@ -48,7 +48,8 @@ public class LuceneReaderImpl implements LuceneReader
   }
 
   @Override
-  public void search(String collection,
+  /*synchronized works around worker called by multiple threads*/
+  public synchronized void search(String collection,
                      String query,
                      Result<LuceneEntry[]> result)
   {

@@ -14,6 +14,7 @@ import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.OutputStreamIndexOutput;
 import org.apache.lucene.store.SingleInstanceLockFactory;
 
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Arrays;
@@ -96,7 +97,18 @@ public class BfsDirectory extends BaseDirectory
 
     OutputStream out = file.openWrite(OVERWRITE);
 
-    IndexOutput indexOut = new OutputStreamIndexOutput(s, out, bufferSize);
+    IndexOutput indexOut = new OutputStreamIndexOutput(s, out, bufferSize)
+    {
+      @Override
+      public void close() throws IOException
+      {
+        log.log(Level.FINER, String.format("close %1$s %2$s",
+                                           s,
+                                           this.getFilePointer()));
+
+        super.close();
+      }
+    };
 
     if (log.isLoggable(Level.FINER))
       log.log(Level.FINER, String.format("%1$s createOutput() -> %2$s",
@@ -205,7 +217,7 @@ class BfsIndexInput extends BufferedIndexInput
                                          length));
   }
 
-  @Override
+/*
   protected void readInternal(byte[] bytes, int offset, int len)
     throws IOException
   {
@@ -218,6 +230,38 @@ class BfsIndexInput extends BufferedIndexInput
       offset += l;
       len -= l;
     }
+  }
+*/
+
+  @Override
+  protected void readInternal(byte[] bytes, int offset, int len)
+    throws IOException
+  {
+    long pos = _pos + _offset;
+
+    if (pos + len > _length)
+      throw new EOFException("read past EOF " + this);
+
+    log.log(Level.FINER, String.format(
+      "BfsIndexInput.readInternal %1$s request %2$d %3$d",
+      this,
+      offset,
+      len));
+
+    int l;
+
+    while (len > 0 && (l = _in.read(pos, bytes, offset, len)) > 0) {
+      len -= l;
+      pos += l;
+      offset += l;
+    }
+
+    log.log(Level.FINER, String.format(
+      "BfsIndexInput.readInternal %1$s finish %2$d",
+      this,
+      len));
+
+    _pos = pos - _offset;
   }
 
   @Override
@@ -303,7 +347,7 @@ class BfsIndexInput extends BufferedIndexInput
       _toString = this.getClass().getSimpleName()
                   + '['
                   + super.toString()
-                  + ':'//_n
+                  + ':' + (_offset + _pos)
                   + ']';
 
     return _toString;
