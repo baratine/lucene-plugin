@@ -40,7 +40,7 @@ public class LuceneWriterImpl implements LuceneIndexWriter
   @OnInit
   public void init(Result<Boolean> result)
   {
-    log.log(Level.WARNING, this + " init()");
+    log.log(Level.INFO, this + " init()");
 
     _commitTask = new CommitTask(_manager.currentService()
                                          .as(Committable.class));

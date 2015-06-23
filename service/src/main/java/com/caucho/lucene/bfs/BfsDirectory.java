@@ -209,16 +209,14 @@ class BfsIndexInput extends BufferedIndexInput
   protected void readInternal(byte[] bytes, int offset, int len)
     throws IOException
   {
-    int l;
-
     long pos = _pos + _offset;
     _pos += len;
 
-    while ((l = _in.read(pos, bytes, offset, len)) > 0) {
+    while (len > 0) {
+      int l = _in.read(pos, bytes, offset, len);
       pos += l;
-
-      offset = offset + l;
-      len = len - l;
+      offset += l;
+      len -= l;
     }
   }
 
@@ -275,7 +273,7 @@ class BfsIndexInput extends BufferedIndexInput
     if (log.isLoggable(Level.FINER))
       log.log(Level.FINER, String.format("%1$s close()", this));
 
-    if (_in != null && ! _isClone)
+    if (_in != null && !_isClone)
       _in.close();
   }
 

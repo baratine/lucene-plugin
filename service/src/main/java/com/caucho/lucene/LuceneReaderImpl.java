@@ -27,7 +27,7 @@ public class LuceneReaderImpl implements LuceneReader
   @OnInit
   public void init(Result<Boolean> result)
   {
-    log.log(Level.WARNING, this + " init()");
+    log.log(Level.INFO, this + " init()");
 
     try {
       _queryParser = _luceneBean.createQueryParser();
