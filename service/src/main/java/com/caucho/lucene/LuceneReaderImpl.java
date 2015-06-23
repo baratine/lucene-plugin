@@ -12,7 +12,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 @Service("/lucene-reader")
-@Workers(1)
+@Workers(20)
 public class LuceneReaderImpl implements LuceneReader
 {
   private final static Logger log
@@ -27,6 +27,8 @@ public class LuceneReaderImpl implements LuceneReader
   @OnInit
   public void init(Result<Boolean> result)
   {
+    log.log(Level.WARNING, this + " init()");
+
     try {
       _queryParser = _luceneBean.createQueryParser();
 
@@ -53,6 +55,8 @@ public class LuceneReaderImpl implements LuceneReader
     try {
       if (_searcher == null) {
         _searcher = _luceneBean.createSearcher();
+
+        log.log(Level.WARNING, "create new searcher " + this);
       }
       else if (_searcher.getSequence() < _luceneBean.getSequence()) {
         _searcher.release();

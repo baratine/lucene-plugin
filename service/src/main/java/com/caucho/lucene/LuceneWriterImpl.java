@@ -40,6 +40,8 @@ public class LuceneWriterImpl implements LuceneIndexWriter
   @OnInit
   public void init(Result<Boolean> result)
   {
+    log.log(Level.WARNING, this + " init()");
+
     _commitTask = new CommitTask(_manager.currentService()
                                          .as(Committable.class));
 
@@ -86,7 +88,8 @@ public class LuceneWriterImpl implements LuceneIndexWriter
   @OnSave
   public void commit(Result<Boolean> result)
   {
-    if (true) { //temporary immediate commit
+/*
+    if (true) {
       try {
         _luceneBean.commit();
       } catch (IOException e) {
@@ -98,6 +101,7 @@ public class LuceneWriterImpl implements LuceneIndexWriter
       return;
     }
 
+*/
     _timerService.getTask(_commitTask, Result.make(i -> scheduleCommit(i),
                                                    e -> logWarning(e)));
 
