@@ -212,8 +212,8 @@ class BfsIndexInput extends BufferedIndexInput
     long pos = _pos + _offset;
     _pos += len;
 
-    while (len > 0) {
-      int l = _in.read(pos, bytes, offset, len);
+    int l;
+    while (len > 0 && (l = _in.read(pos, bytes, offset, len)) > 0) {
       pos += l;
       offset += l;
       len -= l;
