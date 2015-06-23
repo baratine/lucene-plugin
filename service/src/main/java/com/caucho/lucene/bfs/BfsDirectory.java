@@ -102,9 +102,10 @@ public class BfsDirectory extends BaseDirectory
       @Override
       public void close() throws IOException
       {
-        log.log(Level.FINER, String.format("close %1$s %2$s",
-                                           s,
-                                           this.getFilePointer()));
+        if (log.isLoggable(Level.FINER))
+          log.log(Level.FINER, String.format("close %1$s %2$s",
+                                             s,
+                                             this.getFilePointer()));
 
         super.close();
       }
@@ -242,11 +243,12 @@ class BfsIndexInput extends BufferedIndexInput
     if (pos + len > _length)
       throw new EOFException("read past EOF " + this);
 
-    log.log(Level.FINER, String.format(
-      "BfsIndexInput.readInternal %1$s request %2$d %3$d",
-      this,
-      offset,
-      len));
+    if (log.isLoggable(Level.FINER))
+      log.log(Level.FINER, String.format(
+        "BfsIndexInput.readInternal %1$s request %2$d %3$d",
+        this,
+        offset,
+        len));
 
     int l;
 
@@ -256,6 +258,7 @@ class BfsIndexInput extends BufferedIndexInput
       offset += l;
     }
 
+    if (log.isLoggable(Level.FINER))
     log.log(Level.FINER, String.format(
       "BfsIndexInput.readInternal %1$s finish %2$d",
       this,
