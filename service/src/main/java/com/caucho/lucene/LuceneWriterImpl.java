@@ -86,6 +86,18 @@ public class LuceneWriterImpl implements LuceneIndexWriter
   @OnSave
   public void commit(Result<Boolean> result)
   {
+    if (true) {
+      try {
+        _luceneBean.commit();
+      } catch (IOException e) {
+        e.printStackTrace();
+      }
+
+      result.complete(true);
+
+      return;
+    }
+
     _timerService.getTask(_commitTask, Result.make(i -> scheduleCommit(i),
                                                    e -> logWarning(e)));
 
