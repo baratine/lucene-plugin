@@ -50,8 +50,8 @@ public class BfsDirectory extends BaseDirectory
   {
     String[] list = _root.list();
 
-    if (log.isLoggable(Level.WARNING))
-      log.log(Level.WARNING, String.format("%1$s listAll() -> %2$s", this,
+    if (log.isLoggable(Level.FINER))
+      log.log(Level.FINER, String.format("%1$s listAll() -> %2$s", this,
                                          Arrays.asList(list)));
 
     return list;
@@ -212,6 +212,7 @@ class BfsIndexInput extends BufferedIndexInput
     int l;
 
     long pos = _pos + _offset;
+    _pos += len;
 
     while ((l = _in.read(pos, bytes, offset, len)) > 0) {
       pos += l;
@@ -219,8 +220,6 @@ class BfsIndexInput extends BufferedIndexInput
       offset = offset + l;
       len = len - l;
     }
-
-    _pos += len;
   }
 
   @Override
@@ -246,8 +245,8 @@ class BfsIndexInput extends BufferedIndexInput
   public IndexInput slice(String s, long offset, long length)
     throws IOException
   {
-    if (log.isLoggable(Level.WARNING))
-      log.log(Level.WARNING, String.format("%1$s pos: %2$d slice %3$d:%4$d %5$s",
+    if (log.isLoggable(Level.FINER))
+      log.log(Level.FINER, String.format("%1$s pos: %2$d slice %3$d:%4$d %5$s",
                                          this,
                                          _pos,
                                          offset,
@@ -283,8 +282,8 @@ class BfsIndexInput extends BufferedIndexInput
   @Override
   public BfsIndexInput clone()
   {
-    if (log.isLoggable(Level.WARNING))
-      log.log(Level.WARNING, String.format("clone %1$s pos: %2$d %3$s",
+    if (log.isLoggable(Level.FINER))
+      log.log(Level.FINER, String.format("clone %1$s pos: %2$d %3$s",
                                          this,
                                          _pos,
                                          Thread.currentThread()));
