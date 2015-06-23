@@ -86,7 +86,7 @@ public class LuceneWriterImpl implements LuceneIndexWriter
   @OnSave
   public void commit(Result<Boolean> result)
   {
-    if (true) {
+    if (true) { //temporary immediate commit
       try {
         _luceneBean.commit();
       } catch (IOException e) {
