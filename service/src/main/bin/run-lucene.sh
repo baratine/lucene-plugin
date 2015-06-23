@@ -25,7 +25,7 @@ mvn -Dmaven.test.skip=true -Dbaratine.run.skip=true -P local clean package
 
 cd service
 
-cp  target/lucene-*.bar lucene-plugin.bar
+cp  target/lucene-plugin-service*.bar lucene-plugin-service.bar
 
 exit;
 

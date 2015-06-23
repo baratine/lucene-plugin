@@ -38,6 +38,13 @@ public class LuceneReaderImpl implements LuceneReader
     }
   }
 
+  private QueryParser getQueryParser() {
+    if (_queryParser == null)
+      _queryParser = _luceneBean.createQueryParser();
+
+    return _queryParser;
+  }
+
   @Override
   public void search(String collection,
                      String query,
@@ -57,8 +64,9 @@ public class LuceneReaderImpl implements LuceneReader
       throw LuceneException.create(e);
     }
 
+    QueryParser queryParser = getQueryParser();
     LuceneEntry[] entries = _luceneBean.search(_searcher,
-                                               _queryParser,
+                                               queryParser,
                                                collection,
                                                query,
                                                255);

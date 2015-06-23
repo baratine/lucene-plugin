@@ -9,6 +9,7 @@ import io.baratine.core.Service;
 import io.baratine.core.ServiceManager;
 import io.baratine.timer.TaskInfo;
 import io.baratine.timer.TimerService;
+import org.apache.lucene.queryparser.classic.QueryParser;
 
 import javax.inject.Inject;
 import java.io.IOException;
@@ -25,6 +26,7 @@ public class LuceneWriterImpl implements LuceneIndexWriter
 
   //@Inject
   private LuceneIndexBean _luceneBean = LuceneIndexBean.getInstance();
+  private QueryParser _queryParser;
 
   private Runnable _commitTask;
 
@@ -36,10 +38,20 @@ public class LuceneWriterImpl implements LuceneIndexWriter
   private ServiceManager _manager;
 
   @OnInit
-  public void init()
+  public void init(Result<Boolean> result)
   {
     _commitTask = new CommitTask(_manager.currentService()
                                          .as(Committable.class));
+
+    try {
+      _queryParser = _luceneBean.createQueryParser();
+
+      result.complete(true);
+    } catch (Throwable t) {
+      log.log(Level.WARNING, "error creating query parser", t);
+
+      result.fail(t);
+    }
   }
 
   @Override
@@ -116,7 +128,7 @@ public class LuceneWriterImpl implements LuceneIndexWriter
   public void clear(String collection, Result<Void> result)
     throws LuceneException
   {
-    _luceneBean.clear(collection);
+    _luceneBean.clear(_queryParser, collection);
   }
 }
 
