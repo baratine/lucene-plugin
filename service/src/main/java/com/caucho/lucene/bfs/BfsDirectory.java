@@ -245,7 +245,7 @@ class BfsIndexInput extends BufferedIndexInput
                                            this,
                                            pos,
                                            len,
-                                           _length);
+                                           _length));
 
     if (log.isLoggable(Level.FINER))
       log.log(Level.FINER, String.format(
