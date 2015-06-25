@@ -301,7 +301,7 @@ public class LuceneIndexBean
 
       Query q = queryParser.parse(query);
 
-      searcher = getSearcher();
+      searcher = acquireSearcher();
 
       TopDocs docs = searcher.search(q, limit);
 
@@ -481,7 +481,7 @@ public class LuceneIndexBean
     return this.getClass().getSimpleName() + '[' + _manager + ']';
   }
 
-  private XIndexSearcher getSearcher() throws IOException
+  private XIndexSearcher acquireSearcher() throws IOException
   {
     XIndexSearcher searcher;
     synchronized (_searcherLock) {
