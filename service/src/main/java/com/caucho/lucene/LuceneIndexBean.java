@@ -45,7 +45,9 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -78,11 +80,16 @@ public class LuceneIndexBean
   private int _maxMergeAtOnce = 10;
   private double _segmentsPerTier = 10;
 
-  private AtomicLong _sequence = new AtomicLong();
+  private final AtomicReference<XIndexSearcher> _searcher
+    = new AtomicReference<>();
+
+  private final AtomicLong _version = new AtomicLong();
+  private final Object _searcherLock = new Object();
 
   public LuceneIndexBean()
   {
     init();
+
     _parser = new AutoDetectParser();
   }
 
@@ -184,7 +191,7 @@ public class LuceneIndexBean
         log.finer(String.format("indexing ('%1$s')->('%2$s') complete",
                                 pkTerm, extId.stringValue()));
 
-      _sequence.incrementAndGet();
+      _version.incrementAndGet();
 
       return true;
     } catch (IOException | SAXException e) {
@@ -263,7 +270,7 @@ public class LuceneIndexBean
       if (log.isLoggable(Level.FINER))
         log.finer(String.format("indexing ('%s') complete", extId));
 
-      _sequence.incrementAndGet();
+      _version.incrementAndGet();
 
       return true;
     } catch (IOException e) {
@@ -273,8 +280,7 @@ public class LuceneIndexBean
     }
   }
 
-  public LuceneEntry[] search(XIndexSearcher searcher,
-                              QueryParser queryParser,
+  public LuceneEntry[] search(QueryParser queryParser,
                               String collection,
                               String query,
                               int limit)
@@ -288,10 +294,14 @@ public class LuceneIndexBean
 
     collection = escape(collection);
 
+    XIndexSearcher searcher = null;
+
     try {
       query = query + " AND " + collectionKey + ':' + collection;
 
       Query q = queryParser.parse(query);
+
+      searcher = getSearcher();
 
       TopDocs docs = searcher.search(q, limit);
 
@@ -334,6 +344,15 @@ public class LuceneIndexBean
       log.log(Level.WARNING, t.getMessage(), t);
 
       throw LuceneException.create(t);
+    } finally {
+      try {
+        if (searcher != null)
+          release(searcher);
+      } catch (Throwable t) {
+        log.log(Level.WARNING, t.getMessage(), t);
+
+        throw LuceneException.create(t);
+      }
     }
   }
 
@@ -355,7 +374,7 @@ public class LuceneIndexBean
         log.finer(String.format("delete('%1$s'->'%2$s') complete",
                                 pk, id));
 
-      _sequence.incrementAndGet();
+      _version.incrementAndGet();
 
       return true;
     } catch (IOException e) {
@@ -371,7 +390,7 @@ public class LuceneIndexBean
       if (log.isLoggable(Level.FINER))
         log.finer(this + " commit()");
 
-      _sequence.incrementAndGet();
+      _version.incrementAndGet();
 
       _writer.commit();
     }
@@ -394,7 +413,7 @@ public class LuceneIndexBean
       if (log.isLoggable(Level.FINER))
         log.finer(String.format("clear('%1$s') complete", query));
 
-      _sequence.incrementAndGet();
+      _version.incrementAndGet();
 
       return true;
     } catch (IOException e) {
@@ -443,19 +462,53 @@ public class LuceneIndexBean
     return builder.toString();
   }
 
+  private void release(XIndexSearcher searcher) throws IOException
+  {
+    synchronized (_searcherLock) {
+      searcher.decUseCount();
+
+      if (_searcher.get() == searcher) {
+      }
+      else if (searcher.getUseCount() == 0) {
+        searcher.release();
+      }
+    }
+  }
+
   @Override
   public String toString()
   {
     return this.getClass().getSimpleName() + '[' + _manager + ']';
   }
 
-  public XIndexSearcher createSearcher() throws IOException
+  private XIndexSearcher getSearcher() throws IOException
   {
-    DirectoryReader directoryReader
-      = DirectoryReader.open(getIndexWriter(), false);
+    XIndexSearcher searcher;
+    synchronized (_searcherLock) {
+      searcher = _searcher.get();
 
-    XIndexSearcher searcher
-      = new XIndexSearcher(directoryReader, _sequence.get());
+      if (searcher == null || _version.get() > searcher.getVersion()) {
+        if (log.isLoggable(Level.FINER))
+          log.finer(String.format(
+            "acquiring new searcher version: [%1$d] current-searcher: %2$s",
+            _version,
+            searcher));
+
+        DirectoryReader reader = DirectoryReader.open(getIndexWriter(),
+                                                      false);
+
+        XIndexSearcher newSearcher = new XIndexSearcher(reader, _version.get());
+
+        _searcher.set(newSearcher);
+
+        if (searcher != null && searcher.getUseCount() == 0)
+          searcher.release();
+
+        searcher = newSearcher;
+      }
+
+      searcher.incUseCount();
+    }
 
     return searcher;
   }
@@ -535,12 +588,6 @@ public class LuceneIndexBean
 
     return field;
   }
-
-  public long getSequence()
-  {
-    return _sequence.get();
-  }
-
 }
 
 class LucenePluginInfoStream extends InfoStream
@@ -571,18 +618,29 @@ class XIndexSearcher extends IndexSearcher
 {
   private static Logger log = Logger.getLogger(XIndexSearcher.class.getName());
 
-  public long _sequence;
+  private final AtomicInteger _useCount = new AtomicInteger();
+  private final long _version;
 
-  public XIndexSearcher(IndexReader r, long sequence)
+  public XIndexSearcher(IndexReader r, long version)
   {
     super(r);
 
-    _sequence = sequence;
+    _version = version;
   }
 
-  public long getSequence()
+  public int incUseCount()
   {
-    return _sequence;
+    return _useCount.incrementAndGet();
+  }
+
+  public int decUseCount()
+  {
+    return _useCount.decrementAndGet();
+  }
+
+  public int getUseCount()
+  {
+    return _useCount.get();
   }
 
   public void release() throws IOException
@@ -596,13 +654,18 @@ class XIndexSearcher extends IndexSearcher
       reader.close();
   }
 
+  public long getVersion()
+  {
+    return _version;
+  }
+
   @Override
   public String toString()
   {
     IndexReader reader = getIndexReader();
     return "XIndexSearcher ["
            +
-           +_sequence
+           _useCount.get()
            + ", "
            + reader.getClass().getSimpleName()
            + '@'

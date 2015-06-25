@@ -15,23 +15,27 @@ import java.util.Map;
 public class LuceneFacadeImpl implements LuceneFacade
 {
   @Inject
-  @Lookup("pod://lucene/index")
-  private LuceneIndex _index;
+  @Lookup("pod://lucene/lucene-writer")
+  private LuceneIndexWriter _indexWriter;
 
   @Inject
-  @Lookup("pod://lucene/index")
-  private ServiceRef _indexRef;
+  @Lookup("pod://lucene/lucene-writer")
+  private ServiceRef _indexWriterRef;
 
-  private LuceneIndex getLuceneIndex(String id)
+  @Inject
+  @Lookup("pod://lucene/lucene-reader")
+  private LuceneReader _indexReader;
+
+  private LuceneIndexWriter getLuceneWriter(String id)
   {
-    return _indexRef.node(id.hashCode()).as(LuceneIndex.class);
+    return _indexWriterRef.node(id.hashCode()).as(LuceneIndexWriter.class);
   }
 
   @Override
   public void indexFile(String collection, String path, Result<Boolean> result)
     throws LuceneException
   {
-    getLuceneIndex(path).indexFile(collection, path, result);
+    getLuceneWriter(path).indexFile(collection, path, result);
   }
 
   @Override
@@ -40,7 +44,7 @@ public class LuceneFacadeImpl implements LuceneFacade
                         String text,
                         Result<Boolean> result) throws LuceneException
   {
-    getLuceneIndex(id).indexText(collection, id, text, result);
+    getLuceneWriter(id).indexText(collection, id, text, result);
   }
 
   @Override
@@ -49,7 +53,7 @@ public class LuceneFacadeImpl implements LuceneFacade
                        Map<String,Object> map,
                        Result<Boolean> result) throws LuceneException
   {
-    getLuceneIndex(id).indexMap(collection, id, map, result);
+    getLuceneWriter(id).indexMap(collection, id, map, result);
   }
 
   @Override
@@ -59,7 +63,7 @@ public class LuceneFacadeImpl implements LuceneFacade
                      Result<List<LuceneEntry>> result)
     throws LuceneException
   {
-    StreamBuilder<LuceneEntry> stream = _index.search(collection, query);
+    StreamBuilder<LuceneEntry> stream = _indexReader.search(collection, query);
 
     stream.collect(ArrayList<LuceneEntry>::new,
                    (l, e) -> l.add(e),
@@ -71,13 +75,13 @@ public class LuceneFacadeImpl implements LuceneFacade
   public void delete(String collection, String id, Result<Boolean> result)
     throws LuceneException
   {
-    getLuceneIndex(id).delete(collection, id, result);
+    getLuceneWriter(id).delete(collection, id, result);
   }
 
   @Override
   public void clear(String collection, Result<Void> result)
     throws LuceneException
   {
-    _index.clear(collection, result);
+    _indexWriter.clear(collection, result);
   }
 }

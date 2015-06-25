@@ -3,11 +3,12 @@ package com.caucho.lucene;
 import io.baratine.core.OnDestroy;
 import io.baratine.core.OnInit;
 import io.baratine.core.Result;
+import io.baratine.core.ResultSink;
 import io.baratine.core.Service;
 import io.baratine.core.Workers;
+import io.baratine.stream.StreamBuilder;
 import org.apache.lucene.queryparser.classic.QueryParser;
 
-import java.io.IOException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -21,7 +22,6 @@ public class LuceneReaderImpl implements LuceneReader
   //@Inject
   private LuceneIndexBean _luceneBean = LuceneIndexBean.getInstance();
 
-  private XIndexSearcher _searcher;
   private QueryParser _queryParser;
 
   @OnInit
@@ -40,7 +40,8 @@ public class LuceneReaderImpl implements LuceneReader
     }
   }
 
-  private QueryParser getQueryParser() {
+  private QueryParser getQueryParser()
+  {
     if (_queryParser == null)
       _queryParser = _luceneBean.createQueryParser();
 
@@ -48,53 +49,46 @@ public class LuceneReaderImpl implements LuceneReader
   }
 
   @Override
-  /*synchronized works around worker called by multiple threads*/
+  public StreamBuilder search(String collection, String query)
+  {
+    throw new AbstractMethodError();
+  }
+
   public void search(String collection,
                      String query,
-                     Result<LuceneEntry[]> result)
+                     ResultSink<LuceneEntry> results)
   {
-    try {
-      if (_searcher == null) {
-        _searcher = _luceneBean.createSearcher();
+    if (log.isLoggable(Level.FINER))
+      log.finer(String.format("search('%1$s', %2$s)", collection, query));
 
-        log.log(Level.WARNING, "create new searcher " + this);
-      }
-      else if (_searcher.getSequence() < _luceneBean.getSequence()) {
-        _searcher.release();
-        _searcher = _luceneBean.createSearcher();
-      }
-    } catch (IOException e) {
-      log.log(Level.WARNING, "error creating IndexSearcher", e);
+    LuceneEntry[] entries = searchImpl(collection, query);
 
-      throw LuceneException.create(e);
+    if (log.isLoggable(Level.FINER))
+      log.log(Level.FINER, String.format("%1$s accepting %2$d lucene entries",
+                                         results,
+                                         entries.length));
+
+    for (LuceneEntry entry : entries) {
+      results.accept(entry);
     }
 
+    results.end();
+  }
+
+  public LuceneEntry[] searchImpl(String collection,
+                                  String query)
+  {
     QueryParser queryParser = getQueryParser();
-    LuceneEntry[] entries = _luceneBean.search(_searcher,
-                                               queryParser,
+    LuceneEntry[] entries = _luceneBean.search(queryParser,
                                                collection,
                                                query,
                                                255);
 
-    result.complete(entries);
+    return entries;
   }
 
   @OnDestroy
   public void onDestroy()
   {
-    XIndexSearcher searcher = _searcher;
-
-    _searcher = null;
-
-    if (searcher == null)
-      return;
-
-    try {
-      searcher.release();
-    } catch (Throwable t) {
-      log.log(Level.WARNING,
-              String.format("error releasing %1$s", _searcher),
-              t);
-    }
   }
 }
