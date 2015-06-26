@@ -8,14 +8,12 @@ import io.baratine.core.ResultFuture;
 import io.baratine.core.ServiceManager;
 import io.baratine.files.BfsFile;
 import io.baratine.files.BfsFileSync;
-import io.baratine.stream.StreamBuilder;
 import org.junit.After;
 import org.junit.Before;
 
 import javax.inject.Inject;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -25,8 +23,9 @@ public abstract class BaseTest
   @Inject
   private ServiceManager _serviceManager;
 
-  @Inject @Lookup("pod://lucene/index")
-  private LuceneIndexSync _index;
+  @Inject
+  @Lookup("pod://lucene/service")
+  private LuceneFacadeSync _index;
 
   protected BfsFileSync lookup(String path)
   {
@@ -65,16 +64,9 @@ public abstract class BaseTest
 
   final protected LuceneEntry[] search(String collection, String query)
   {
-    throw new AbstractMethodError();
-/*
-    StreamBuilder<LuceneEntry> stream = _index.search(collection, query);
-    List<LuceneEntry> list
-      = stream.collect(ArrayList<LuceneEntry>::new,
-                       (l, e) -> l.add(e),
-                       (a, b) -> a.addAll(b));
+    List<LuceneEntry> temp = _index.search(collection, query, 255);
 
-    return list.toArray(new LuceneEntry[list.size()]);
-*/
+    return temp.toArray(new LuceneEntry[temp.size()]);
   }
 
   final protected BfsFile upload(String fileName) throws IOException
@@ -96,13 +88,10 @@ public abstract class BaseTest
 
   final protected boolean update(String fileName)
   {
-    throw new AbstractMethodError();
-/*
     ResultFuture<Boolean> future = new ResultFuture<>();
     _index.indexFile(DEFAULT, fileName, future);
 
     return future.get();
-*/
   }
 
   final protected LuceneEntry[] updateAndSearchText(String id,
@@ -116,6 +105,11 @@ public abstract class BaseTest
     return result;
   }
 
+  final protected boolean update(String id, String text)
+  {
+    return _index.indexText(DEFAULT, id, text);
+  }
+
   final protected LuceneEntry[] updateAndSearchMap(String id,
                                                    Map<String,Object> data,
                                                    String query)
@@ -127,19 +121,14 @@ public abstract class BaseTest
     return result;
   }
 
-  final protected boolean update(String id, String text)
+  final protected boolean update(String id, Map<String,Object> map)
   {
-    return _index.indexText(DEFAULT, id, text);
+    return _index.indexMap(DEFAULT, id, map);
   }
 
   final protected boolean update(String collection, String id, String text)
   {
     return _index.indexText(collection, id, text);
-  }
-
-  final protected boolean update(String id, Map<String,Object> map)
-  {
-    return _index.indexMap(DEFAULT, id, map);
   }
 
   @Before

@@ -7,8 +7,6 @@ To run the plugin:
 
 1. install maven baratine plugins https://github.com/baratine/maven-collection-baratine
   1. git clone git@github.com:baratine/maven-collection-baratine.git
-2. install Baratine™ http://baratine.io 
-3. export BARATINE_HOME (should point to baratine installation e.g. export BARATINE_HOME=~/baratine-0.8.8
-4. change to lucene-plugin/service directory and execute src/main/bin/run-lucene.sh
-5. open lucene-plugin/client/src/web/index.html in latest FireFox or Safari
-
+  2. change to maven-collection-baratine and run mnv install
+2. execute mvn -Dmaven.test.skip=true -P release package
+3. open lucene-plugin/client/src/web/index.html in latest browser

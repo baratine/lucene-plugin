@@ -4,6 +4,7 @@ import com.caucho.junit.ConfigurationBaratine;
 import com.caucho.junit.ConfigurationBaratine.Log;
 import com.caucho.junit.RunnerBaratine;
 import com.caucho.lucene.LuceneEntry;
+import com.caucho.lucene.LuceneFacadeImpl;
 import com.caucho.lucene.LuceneReaderImpl;
 import com.caucho.lucene.LuceneWriterImpl;
 import junit.framework.Assert;
@@ -20,7 +21,7 @@ import java.util.concurrent.ExecutionException;
  */
 @RunWith(RunnerBaratine.class)
 @ConfigurationBaratine(testTime = 0,
-                       services = {LuceneWriterImpl.class, LuceneReaderImpl.class},
+                       services = {LuceneWriterImpl.class, LuceneReaderImpl.class, LuceneFacadeImpl.class},
                        logLevel = "FINER",
                        logs = {@Log(name = "com.caucho", level = "FINER")},
                        pod = "lucene")

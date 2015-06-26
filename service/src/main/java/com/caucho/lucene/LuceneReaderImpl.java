@@ -99,7 +99,7 @@ public class LuceneReaderImpl implements LuceneReader
   @OnDestroy
   public void onDestroy()
   {
-    log.log(Level.INFO, String.format("%$s destroy", this));
+    log.log(Level.INFO, String.format("%1$s destroy", this));
   }
 
   @Override

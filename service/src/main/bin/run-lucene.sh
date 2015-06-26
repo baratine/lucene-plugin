@@ -27,15 +27,15 @@ cd service
 
 cp  target/lucene-plugin-service*.bar lucene-plugin-service.bar
 
-exit;
+$BARATINE_HOME/bin/baratine start $BARATINE_ARGS --deploy lucene-plugin-service.bar
 
-$BARATINE_HOME/bin/baratine start $BARATINE_ARGS --deploy lucene-plugin.bar
+sleep 2
 
 echo "index ..."
 $BARATINE_HOME/bin/baratine jamp-query $BARATINE_ARGS --pod lucene /service indexText foo bar mary
 
 echo "search ..."
-$BARATINE_HOME/bin/baratine jamp-query $BARATINE_ARGS --pod lucene /service search foo lamb 5
+$BARATINE_HOME/bin/baratine jamp-query $BARATINE_ARGS --pod lucene /service search foo mary 5
 
 $BARATINE_HOME/bin/baratine cat $BARATINE_ARGS /proc/services
 

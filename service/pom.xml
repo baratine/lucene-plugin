@@ -69,10 +69,10 @@
             <configuration>
               <verbose>false</verbose>
               <script>
-                jamp-query --pod lucene /index indexText foo foo mary
-                sleep 1;
-                jamp-query --pod lucene /index search foo mary
-
+                sleep 5
+                jamp-query --pod lucene /service indexText foo foo mary
+                sleep 1
+                jamp-query --pod lucene /service search foo mary 5
               </script>
             </configuration>
           </execution>
