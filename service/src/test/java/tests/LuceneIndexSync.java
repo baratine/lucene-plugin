@@ -1,11 +1,10 @@
 package tests;
 
 import com.caucho.lucene.LuceneException;
-import com.caucho.lucene.LuceneIndex;
 
 import java.util.Map;
 
-public interface LuceneIndexSync extends LuceneIndex
+public interface LuceneIndexSync
 {
   boolean indexFile(String collection, String path) throws LuceneException;
 

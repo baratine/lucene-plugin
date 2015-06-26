@@ -9,6 +9,7 @@ import io.baratine.core.Workers;
 import io.baratine.stream.StreamBuilder;
 import org.apache.lucene.queryparser.classic.QueryParser;
 
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -16,6 +17,8 @@ import java.util.logging.Logger;
 @Workers(20)
 public class LuceneReaderImpl implements LuceneReader
 {
+  private final static AtomicLong sequence = new AtomicLong();
+
   private final static Logger log
     = Logger.getLogger(LuceneReaderImpl.class.getName());
 
@@ -23,6 +26,12 @@ public class LuceneReaderImpl implements LuceneReader
   private LuceneIndexBean _luceneBean = LuceneIndexBean.getInstance();
 
   private QueryParser _queryParser;
+  private long _n;
+
+  public LuceneReaderImpl()
+  {
+    _n = sequence.getAndIncrement();
+  }
 
   @OnInit
   public void init(Result<Boolean> result)
@@ -90,5 +99,12 @@ public class LuceneReaderImpl implements LuceneReader
   @OnDestroy
   public void onDestroy()
   {
+    log.log(Level.INFO, String.format("%$s destroy", this));
+  }
+
+  @Override
+  public String toString()
+  {
+    return LuceneReaderImpl.class.getSimpleName() + '[' + _n + ']';
   }
 }

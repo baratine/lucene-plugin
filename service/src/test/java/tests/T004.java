@@ -4,7 +4,6 @@ import com.caucho.junit.ConfigurationBaratine;
 import com.caucho.junit.ConfigurationBaratine.Log;
 import com.caucho.junit.RunnerBaratine;
 import com.caucho.lucene.LuceneEntry;
-import com.caucho.lucene.LuceneIndexImpl;
 import com.caucho.lucene.LuceneReaderImpl;
 import com.caucho.lucene.LuceneWriterImpl;
 import junit.framework.Assert;
@@ -23,7 +22,7 @@ import java.util.stream.Stream;
 
 @RunWith(RunnerBaratine.class)
 @ConfigurationBaratine(
-  services = {LuceneWriterImpl.class, LuceneReaderImpl.class, LuceneIndexImpl.class},
+  services = {LuceneWriterImpl.class, LuceneReaderImpl.class},
   logs = {@Log(name = "com.caucho", level = "FINER")},
   logLevel = "FINER",
   testTime = 0, pod = "lucene")

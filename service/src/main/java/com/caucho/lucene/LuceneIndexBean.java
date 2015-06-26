@@ -621,9 +621,9 @@ class XIndexSearcher extends IndexSearcher
   private final AtomicInteger _useCount = new AtomicInteger();
   private final long _version;
 
-  public XIndexSearcher(IndexReader r, long version)
+  public XIndexSearcher(IndexReader reader, long version)
   {
-    super(r);
+    super(reader);
 
     _version = version;
   }

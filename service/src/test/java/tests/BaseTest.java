@@ -65,6 +65,8 @@ public abstract class BaseTest
 
   final protected LuceneEntry[] search(String collection, String query)
   {
+    throw new AbstractMethodError();
+/*
     StreamBuilder<LuceneEntry> stream = _index.search(collection, query);
     List<LuceneEntry> list
       = stream.collect(ArrayList<LuceneEntry>::new,
@@ -72,6 +74,7 @@ public abstract class BaseTest
                        (a, b) -> a.addAll(b));
 
     return list.toArray(new LuceneEntry[list.size()]);
+*/
   }
 
   final protected BfsFile upload(String fileName) throws IOException
@@ -93,10 +96,13 @@ public abstract class BaseTest
 
   final protected boolean update(String fileName)
   {
+    throw new AbstractMethodError();
+/*
     ResultFuture<Boolean> future = new ResultFuture<>();
     _index.indexFile(DEFAULT, fileName, future);
 
     return future.get();
+*/
   }
 
   final protected LuceneEntry[] updateAndSearchText(String id,
