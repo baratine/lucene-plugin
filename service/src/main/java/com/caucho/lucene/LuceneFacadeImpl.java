@@ -35,6 +35,9 @@ public class LuceneFacadeImpl implements LuceneFacade
   public void indexFile(String collection, String path, Result<Boolean> result)
     throws LuceneException
   {
+    checkCollection(collection);
+    checkId(path);
+
     getLuceneWriter(path).indexFile(collection, path, result);
   }
 
@@ -44,6 +47,9 @@ public class LuceneFacadeImpl implements LuceneFacade
                         String text,
                         Result<Boolean> result) throws LuceneException
   {
+    checkCollection(collection);
+    checkId(id);
+
     getLuceneWriter(id).indexText(collection, id, text, result);
   }
 
@@ -53,6 +59,10 @@ public class LuceneFacadeImpl implements LuceneFacade
                        Map<String,Object> map,
                        Result<Boolean> result) throws LuceneException
   {
+    checkCollection(collection);
+    checkId(id);
+    checkMap(map);
+
     getLuceneWriter(id).indexMap(collection, id, map, result);
   }
 
@@ -63,12 +73,50 @@ public class LuceneFacadeImpl implements LuceneFacade
                      Result<List<LuceneEntry>> result)
     throws LuceneException
   {
+    checkCollection(collection);
+    checkQuery(query);
+
     StreamBuilder<LuceneEntry> stream = _indexReader.search(collection, query);
 
     stream.collect(ArrayList<LuceneEntry>::new,
                    (l, e) -> l.add(e),
                    (a, b) -> a.addAll(b),
                    result.from(x -> x));
+  }
+
+  private void checkCollection(String collection)
+  {
+    if (collection == null || collection.isEmpty()) {
+      throw new LuceneException("collection should have a value");
+    }
+  }
+
+  private void checkId(String id)
+  {
+    if (id == null || id.isEmpty()) {
+      throw new LuceneException("id|path should have a value");
+    }
+  }
+
+  private void checkText(String text)
+  {
+    if (text == null) {
+      throw new LuceneException("text should not be null");
+    }
+  }
+
+  private void checkQuery(String query)
+  {
+    if (query == null || query.isEmpty()) {
+      throw new LuceneException("query should have a value");
+    }
+  }
+
+  private void checkMap(Map<String,Object> map)
+  {
+    if (map == null) {
+      throw new LuceneException("map should not be null");
+    }
   }
 
   @Override
