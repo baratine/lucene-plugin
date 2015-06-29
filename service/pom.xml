@@ -11,7 +11,7 @@
   </parent>
 
   <artifactId>lucene-plugin-service</artifactId>
-  <packaging>baratine</packaging>
+  <packaging>bar</packaging>
 
   <dependencies>
     <dependency>
