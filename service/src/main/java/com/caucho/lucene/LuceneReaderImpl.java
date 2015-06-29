@@ -3,7 +3,7 @@ package com.caucho.lucene;
 import io.baratine.core.OnDestroy;
 import io.baratine.core.OnInit;
 import io.baratine.core.Result;
-import io.baratine.core.ResultSink;
+import io.baratine.core.ResultStream;
 import io.baratine.core.Service;
 import io.baratine.core.Workers;
 import io.baratine.stream.StreamBuilder;
@@ -65,7 +65,7 @@ public class LuceneReaderImpl implements LuceneReader
 
   public void search(String collection,
                      String query,
-                     ResultSink<LuceneEntry> results)
+                     ResultStream<LuceneEntry> results)
   {
     if (log.isLoggable(Level.FINER))
       log.finer(String.format("search('%1$s', %2$s)", collection, query));
@@ -81,7 +81,7 @@ public class LuceneReaderImpl implements LuceneReader
       results.accept(entry);
     }
 
-    results.end();
+    results.complete();
   }
 
   public LuceneEntry[] searchImpl(String collection,
