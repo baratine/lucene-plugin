@@ -491,7 +491,7 @@ public class LuceneIndexBean
         if (log.isLoggable(Level.FINER))
           log.finer(String.format(
             "acquiring new searcher version: [%1$d] current-searcher: %2$s",
-            _version,
+            _version.get(),
             searcher));
 
         DirectoryReader reader = DirectoryReader.open(getIndexWriter(),
