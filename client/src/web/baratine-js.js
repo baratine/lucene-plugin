@@ -1,8 +1,8 @@
 var Jamp = {};
 
-Jamp.BaratineClient = function (url)
+Jamp.BaratineClient = function (url, rpc)
 {
-  this.client = new Jamp.Client(url);
+  this.client = new Jamp.Client(url, rpc);
 
   this.onSession;
 
@@ -507,19 +507,16 @@ function handlerMaker(obj)
   };
 };
 
-function guid() {
-  function _p8(s) {
-    var p = (Math.random().toString(16)+"000000000").substr(2,8);
-    return s ? "-" + p.substr(0,4) + "-" + p.substr(4,4) : p ;
-  }
-  return _p8() + _p8(true) + _p8(true) + _p8();
-}Jamp.Client = function (url)
+Jamp.Client = function (url, rpc)
 {
   this.transport;
 
   url = url.trim();
 
-  if (url.indexOf("http:") == 0 || url.indexOf("https:") == 0) {
+  if (true === rpc) {
+    this.transport = new Jamp.HttpRpcTransport(url, this);
+  }
+  else if (url.indexOf("http:") == 0 || url.indexOf("https:") == 0) {
     this.transport = new Jamp.HttpTransport(url, this);
   }
   else if (url.indexOf("ws:") == 0 || url.indexOf("wss:") == 0) {
@@ -726,14 +723,14 @@ Jamp.Request = function (queryId, msg, timeout)
 
   this.completed = function (client, value)
   {
-    client.remove(this.queryId);
+    client.removeRequest(this.queryId);
   };
 
-  this.error = function (client, value)
+  this.error = function (client, err)
   {
-    client.remove(queryId);
+    console.log(err);
 
-    console.log(value);
+    client.removeRequest(this.queryId);
   };
 };
 
@@ -813,7 +810,7 @@ Jamp.HttpTransport.prototype.submitRequest = function (request)
       transport.pull(client);
     }
     else {
-      request.error(this,
+      request.error(client,
                     "error submitting query "
                     + httpRequest.status
                     + " "
@@ -850,6 +847,8 @@ Jamp.HttpTransport.prototype.pull = function (client)
       var list = JSON.parse(json);
 
       client.onMessageArray(list);
+
+      transport.pull(client);
     }
     else {
       console.log(this,
@@ -862,8 +861,6 @@ Jamp.HttpTransport.prototype.pull = function (client)
     }
 
     transport.pullRequest = undefined;
-
-    transport.pull(client);
   };
 
   httpRequest.ontimeout = function ()
@@ -876,6 +873,7 @@ Jamp.HttpTransport.prototype.pull = function (client)
 Jamp.HttpTransport.prototype.initPushRequest = function ()
 {
   var httpRequest = new XMLHttpRequest();
+  httpRequest.withCredentials = true;
 
   httpRequest.open("POST", this.url, true);
   httpRequest.setRequestHeader("Content-Type", "x-application/jamp-push");
@@ -886,6 +884,7 @@ Jamp.HttpTransport.prototype.initPushRequest = function ()
 Jamp.HttpTransport.prototype.initPullRequest = function ()
 {
   var httpRequest = new XMLHttpRequest();
+  httpRequest.withCredentials = true;
 
   httpRequest.open("POST", this.url, true);
   httpRequest.setRequestHeader("Content-Type", "x-application/jamp-pull");
@@ -909,7 +908,7 @@ Jamp.HttpTransport.prototype.close = function ()
 
 Jamp.HttpTransport.prototype.toString = function ()
 {
-  return "Jamp.HttpClient[" + this.url + "]";
+  return "Jamp.HttpTransport[" + this.url + "]";
 };
 Jamp.WsTransport = function (url, client)
 {
@@ -943,9 +942,7 @@ Jamp.WsTransport.prototype.submitRequest = function (request)
 {
   this.conn.addRequest(request);
 
-  if (this.conn.isOpen) {
-    this.conn.submitRequestLoop();
-  }
+  this.conn.submitRequestLoop();
 };
 
 Jamp.WsTransport.prototype.toString = function ()
@@ -966,7 +963,11 @@ Jamp.WsConnection = function (client,
   this.isClosing = false;
   this.requestQueue = new Array();
 
-  this.reconnectIntervalMs = 5000;
+  this.initialReconnectInterval = 5000;
+  this.maxReconnectInterval = 1000 * 60 * 3;
+
+  this.reconnectIntervalMs = this.initialReconnectInterval;
+  this.reconnectDecay = 1.5;
   this.isReconnectOnClose = true;
   this.isReconnectOnError = true;
   this.isOpen = false;
@@ -999,6 +1000,8 @@ Jamp.WsConnection.prototype.init = function (conn)
 
     conn.isOpen = true;
 
+    conn.reconnectIntervalMs = conn.initialReconnectInterval;
+
     conn.submitRequestLoop();
   };
 
@@ -1020,8 +1023,6 @@ Jamp.WsConnection.prototype.init = function (conn)
     if (conn.isClosing) {
       return;
     }
-
-    conn.reconnect(conn);
   };
 
   this.socket.onmessage = function (event)
@@ -1041,9 +1042,12 @@ Jamp.WsConnection.prototype.addRequest = function (data)
 
 Jamp.WsConnection.prototype.submitRequestLoop = function ()
 {
+  if (!this.isOpen)
+    return;
+
   while (this.socket.readyState === WebSocket.OPEN
          && this.requestQueue.length > 0
-         && ! this.isClosing) {
+         && !this.isClosing) {
     var request = this.requestQueue[0];
     var msg = request.msg;
 
@@ -1063,7 +1067,15 @@ Jamp.WsConnection.prototype.reconnect = function (conn)
 
   this.isClosing = false;
 
+  console.log("reconnecting in "
+              + (this.reconnectIntervalMs / 1000)
+              + " seconds");
+
   setTimeout(conn.init(conn), this.reconnectIntervalMs);
+
+  var interval = this.reconnectIntervalMs * this.reconnectDecay;
+
+  this.reconnectIntervalMs = Math.min(interval, this.maxReconnectInterval);
 };
 
 Jamp.WsConnection.prototype.close = function ()
@@ -1072,8 +1084,82 @@ Jamp.WsConnection.prototype.close = function ()
 
   try {
     this.socket.close();
-  } catch (err ) {
+  } catch (err) {
 
   }
 };
 
+Jamp.HttpRpcTransport = function (url, client)
+{
+  this.url = url;
+  this.client = client;
+  this.isClosed = false;
+
+  return this;
+};
+
+Jamp.HttpRpcTransport.prototype.submitRequest = function (request)
+{
+  if (this.isClosed)
+    throw this.toString() + " was already closed.";
+
+  var httpRequest;
+
+  httpRequest = this.initRpcRequest();
+
+  var msg = request.msg;
+
+  var json = msg.serialize();
+  json = "[" + json + "]";
+
+  var client = this.client;
+
+  httpRequest.onreadystatechange = function ()
+  {
+    if (httpRequest.readyState != 4) {
+      return;
+    }
+
+    if (httpRequest.status == "200") {
+      var json = httpRequest.responseText;
+
+      var list = JSON.parse(json);
+
+      request.sent(client);
+
+      client.onMessageArray(list);
+    }
+    else {
+      request.error(client,
+                    "error submitting query "
+                    + httpRequest.status
+                    + " "
+                    + httpRequest.statusText
+                    + " : "
+                    + httpRequest.responseText);
+    }
+  };
+
+  httpRequest.send(json);
+};
+
+Jamp.HttpRpcTransport.prototype.initRpcRequest = function ()
+{
+  var httpRequest = new XMLHttpRequest();
+  httpRequest.withCredentials = true;
+
+  httpRequest.open("POST", this.url, true);
+  httpRequest.setRequestHeader("Content-Type", "x-application/jamp-rpc");
+
+  return httpRequest;
+};
+
+Jamp.HttpRpcTransport.prototype.close = function ()
+{
+  this.isClosed = true;
+};
+
+Jamp.HttpRpcTransport.prototype.toString = function ()
+{
+  return "Jamp.HttpRpcTransport[" + this.url + "]";
+};

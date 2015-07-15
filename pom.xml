@@ -16,6 +16,7 @@
 
   <properties>
     <baratine-home>/Users/alex/baratine</baratine-home>
+    <maven.test.skip>true</maven.test.skip>
   </properties>
 
   <repositories>
@@ -38,6 +39,14 @@
   <profiles>
     <profile>
       <id>local</id>
+
+      <activation>
+        <activeByDefault>false</activeByDefault>
+        <file>
+          <exists>${user.home}/baratine</exists>
+        </file>
+      </activation>
+
       <dependencies>
         <dependency>
           <groupId>io.baratine</groupId>
@@ -78,16 +87,21 @@
     </profile>
     <profile>
       <id>release</id>
+
+      <activation>
+        <activeByDefault>true</activeByDefault>
+      </activation>
+
       <dependencies>
         <dependency>
           <groupId>io.baratine</groupId>
           <artifactId>baratine-api</artifactId>
-          <version>[0.8,)</version>
+          <version>[1.0,)</version>
         </dependency>
         <dependency>
           <groupId>io.baratine</groupId>
           <artifactId>baratine</artifactId>
-          <version>[0.8,)</version>
+          <version>[1.0,)</version>
         </dependency>
       </dependencies>
     </profile>

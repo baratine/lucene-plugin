@@ -60,23 +60,9 @@
         <artifactId>baratine-plugin</artifactId>
         <version>1.0-SNAPSHOT</version>
         <extensions>true</extensions>
-        <executions>
-          <execution>
-            <phase>package</phase>
-            <goals>
-              <goal>run</goal>
-            </goals>
-            <configuration>
-              <verbose>false</verbose>
-              <script>
-                sleep 5
-                jamp-query --pod lucene /service indexText foo foo mary
-                sleep 1
-                jamp-query --pod lucene /service search foo mary 5
-              </script>
-            </configuration>
-          </execution>
-        </executions>
+        <configuration>
+          <external>true</external>
+        </configuration>
       </plugin>
 
     </plugins>
