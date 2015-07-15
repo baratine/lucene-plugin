@@ -15,7 +15,7 @@
   </modules>
 
   <properties>
-    <baratine-home>/Users/alex/baratine</baratine-home>
+    <baratine-home>${user.home}/baratine</baratine-home>
     <maven.test.skip>true</maven.test.skip>
   </properties>
 
