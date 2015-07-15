@@ -15,7 +15,6 @@
   </modules>
 
   <properties>
-    <baratine-home>${pom.basedir}/../baratine</baratine-home>
     <maven.test.skip>true</maven.test.skip>
   </properties>
 
@@ -43,7 +42,7 @@
       <activation>
         <activeByDefault>false</activeByDefault>
         <file>
-          <exists>${baratine-home}</exists>
+          <exists>${env.BARATINE_HOME}</exists>
         </file>
       </activation>
 
@@ -53,35 +52,35 @@
           <artifactId>baratine-api</artifactId>
           <version>SNAPSHOT</version>
           <scope>system</scope>
-          <systemPath>${baratine-home}/lib/baratine-api.jar</systemPath>
+          <systemPath>${env.BARATINE_HOME}/lib/baratine-api.jar</systemPath>
         </dependency>
         <dependency>
           <groupId>io.baratine</groupId>
           <artifactId>baratine</artifactId>
           <version>SNAPSHOT</version>
           <scope>system</scope>
-          <systemPath>${baratine-home}/lib/baratine.jar</systemPath>
+          <systemPath>${env.BARATINE_HOME}/lib/baratine.jar</systemPath>
         </dependency>
         <dependency>
           <groupId>io.baratine</groupId>
           <artifactId>baratine-junit</artifactId>
           <version>SNAPSHOT</version>
           <scope>system</scope>
-          <systemPath>${baratine-home}/lib/baratine-junit.jar</systemPath>
+          <systemPath>${env.BARATINE_HOME}/lib/baratine-junit.jar</systemPath>
         </dependency>
         <dependency>
           <groupId>io.baratine</groupId>
           <artifactId>baratine-jee</artifactId>
           <version>SNAPSHOT</version>
           <scope>system</scope>
-          <systemPath>${baratine-home}/lib/javaee-7.jar</systemPath>
+          <systemPath>${env.BARATINE_HOME}/lib/javaee-7.jar</systemPath>
         </dependency>
         <dependency>
           <groupId>io.baratine</groupId>
           <artifactId>baratine-hessian</artifactId>
           <version>SNAPSHOT</version>
           <scope>system</scope>
-          <systemPath>${baratine-home}/lib/hessian.jar</systemPath>
+          <systemPath>${env.BARATINE_HOME}/lib/hessian.jar</systemPath>
         </dependency>
       </dependencies>
     </profile>
