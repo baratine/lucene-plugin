@@ -7,7 +7,7 @@ import io.baratine.core.OnSave;
 import io.baratine.core.Result;
 import io.baratine.core.Service;
 import io.baratine.core.ServiceManager;
-import io.baratine.timer.TaskInfo;
+import io.baratine.timer.TimerHandle;
 import io.baratine.timer.TimerService;
 import org.apache.lucene.queryparser.classic.QueryParser;
 
@@ -24,11 +24,13 @@ public class LuceneWriterImpl implements LuceneIndexWriter
   private final static Logger log
     = Logger.getLogger(LuceneWriterImpl.class.getName());
 
+  private final static long commitInterval = TimeUnit.SECONDS.toMillis(5);
+
   //@Inject
   private LuceneIndexBean _luceneBean = LuceneIndexBean.getInstance();
   private QueryParser _queryParser;
 
-  private Runnable _commitTask;
+  private long _lastCommit = -1;
 
   @Inject
   @Lookup("timer:///")
@@ -41,9 +43,6 @@ public class LuceneWriterImpl implements LuceneIndexWriter
   public void init(Result<Boolean> result)
   {
     log.log(Level.INFO, this + " init()");
-
-    _commitTask = new CommitTask(_manager.currentService()
-                                         .as(Committable.class));
 
     try {
       _queryParser = _luceneBean.createQueryParser();
@@ -88,22 +87,13 @@ public class LuceneWriterImpl implements LuceneIndexWriter
   @OnSave
   public void commit(Result<Boolean> result)
   {
-/*
-    if (true) {
-      try {
-        _luceneBean.commit();
-      } catch (IOException e) {
-        e.printStackTrace();
-      }
+    long now = System.currentTimeMillis();
 
-      result.complete(true);
+    if (_lastCommit == -1 || now > (_lastCommit + commitInterval)) {
+      _lastCommit = now;
 
-      return;
+      _timerService.runAfter(h -> executeCommit(h), 5, TimeUnit.SECONDS);
     }
-
-*/
-    _timerService.getTask(_commitTask, Result.make(i -> scheduleCommit(i),
-                                                   e -> logWarning(e)));
 
     result.complete(true);
   }
@@ -113,22 +103,13 @@ public class LuceneWriterImpl implements LuceneIndexWriter
     log.log(Level.WARNING, e.getMessage(), e);
   }
 
-  private void scheduleCommit(TaskInfo task)
-  {
-    if (task == null) {
-      _timerService.runAfter(_commitTask, 5, TimeUnit.SECONDS);
-    }
-  }
-
-  public void commitInternal(Result<Boolean> result)
+  private void executeCommit(TimerHandle handle)
   {
     try {
       _luceneBean.commit();
     } catch (IOException e) {
       log.log(Level.WARNING, e.getMessage(), e);
     }
-
-    result.complete(true);
   }
 
   @Override
@@ -148,20 +129,3 @@ public class LuceneWriterImpl implements LuceneIndexWriter
   }
 }
 
-class CommitTask implements Runnable
-{
-  private static final Logger log
-    = Logger.getLogger(CommitTask.class.getName());
-  private Committable _committable;
-
-  public CommitTask(Committable committable)
-  {
-    _committable = committable;
-  }
-
-  @Override
-  public void run()
-  {
-    _committable.commitInternal(Result.ignore());
-  }
-}

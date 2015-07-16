@@ -1,6 +1,7 @@
 package tests;
 
 import com.caucho.lucene.LuceneEntry;
+import com.caucho.lucene.LuceneFacadeSync;
 import com.caucho.vfs.ReadStream;
 import com.caucho.vfs.Vfs;
 import io.baratine.core.Lookup;

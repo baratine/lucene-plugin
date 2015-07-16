@@ -1,8 +1,4 @@
-package tests;
-
-import com.caucho.lucene.LuceneEntry;
-import com.caucho.lucene.LuceneException;
-import com.caucho.lucene.LuceneFacade;
+package com.caucho.lucene;
 
 import java.util.List;
 import java.util.Map;
