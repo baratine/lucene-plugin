@@ -1,5 +1,6 @@
 package com.caucho.lucene;
 
+import io.baratine.core.CancelHandle;
 import io.baratine.core.Lookup;
 import io.baratine.core.Modify;
 import io.baratine.core.OnInit;
@@ -7,7 +8,6 @@ import io.baratine.core.OnSave;
 import io.baratine.core.Result;
 import io.baratine.core.Service;
 import io.baratine.core.ServiceManager;
-import io.baratine.timer.TimerHandle;
 import io.baratine.timer.TimerService;
 import org.apache.lucene.queryparser.classic.QueryParser;
 
@@ -103,7 +103,7 @@ public class LuceneWriterImpl implements LuceneIndexWriter
     log.log(Level.WARNING, e.getMessage(), e);
   }
 
-  private void executeCommit(TimerHandle handle)
+  private void executeCommit(CancelHandle handle)
   {
     try {
       _luceneBean.commit();
