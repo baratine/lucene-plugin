@@ -11,7 +11,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-@Service("pod://lucene/service")
+@Service("public://lucene/service")
 public class LuceneFacadeImpl implements LuceneFacade
 {
   @Inject
