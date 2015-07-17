@@ -23,7 +23,7 @@ import java.util.concurrent.ExecutionException;
   services = {LuceneWriterImpl.class, LuceneReaderImpl.class, LuceneFacadeImpl.class},
   logs = {@ConfigurationBaratine.Log(name = "com.caucho", level = "FINER")},
   testTime = 0, pod = "lucene")
-public class T200 extends BaseTest
+public class TestSearchMap extends BaseTest
 {
   @Test
   public void test()

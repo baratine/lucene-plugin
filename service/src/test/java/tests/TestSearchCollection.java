@@ -14,26 +14,39 @@ import java.io.IOException;
 import java.util.concurrent.ExecutionException;
 
 /**
- * title: tests text
+ * title: tests collection
  */
 @RunWith(RunnerBaratine.class)
 @ConfigurationBaratine(
   services = {LuceneWriterImpl.class, LuceneReaderImpl.class, LuceneFacadeImpl.class},
   logs = {@ConfigurationBaratine.Log(name = "com.caucho", level = "FINER")},
   testTime = 0, pod = "lucene")
-public class T100 extends BaseTest
+public class TestSearchCollection extends BaseTest
 {
   @Test
   public void test()
     throws InterruptedException, ExecutionException, IOException
   {
-    update("0", "mary had a little lamb");
-    update("0", "mary had a little dog");
-    update("1", "mary had a little lamb");
+    update("foo", "foo", "mary had a little lamb");
+    update("bar", "foo", "mary had a little lamb");
 
-    LuceneEntry[] result = search("lamb");
+    LuceneEntry[] fooResult = search("foo", "lamb");
+    LuceneEntry[] barResult = search("bar", "lamb");
 
-    Assert.assertEquals(1, result.length);
-    Assert.assertEquals("1", result[0].getExternalId());
+    Assert.assertEquals(1, fooResult.length);
+    Assert.assertEquals(1, barResult.length);
+
+    Assert.assertEquals("foo", fooResult[0].getExternalId());
+    Assert.assertEquals("foo", barResult[0].getExternalId());
+
+    this.clear("bar");
+
+    fooResult = search("foo", "lamb");
+    barResult = search("bar", "lamb");
+
+    Assert.assertEquals(1, fooResult.length);
+    Assert.assertEquals(0, barResult.length);
+
+    Assert.assertEquals("foo", fooResult[0].getExternalId());
   }
 }

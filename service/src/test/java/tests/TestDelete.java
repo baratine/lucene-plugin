@@ -25,7 +25,7 @@ import java.util.concurrent.ExecutionException;
                        logLevel = "FINER",
                        logs = {@Log(name = "com.caucho", level = "FINER")},
                        pod = "lucene")
-public class T002 extends BaseTest
+public class TestDelete extends BaseTest
 {
   @Test(timeout = 2000)
   public void testFile()

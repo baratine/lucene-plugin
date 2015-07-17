@@ -25,7 +25,7 @@ import java.util.concurrent.ExecutionException;
                        services = {LuceneWriterImpl.class, LuceneReaderImpl.class, LuceneFacadeImpl.class},
                        logs = {@Log(name = "com.caucho", level = "FINER")},
                        pod = "lucene")
-public class T003 extends BaseTest
+public class TestPaging extends BaseTest
 {
   @Before
   public void setUp()

@@ -20,14 +20,14 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * title: tests LuceneSession methods
+ * title: tests LuceneFacade methods
  */
 @RunWith(RunnerBaratine.class)
 @ConfigurationBaratine(
   services = {LuceneWriterImpl.class, LuceneReaderImpl.class, LuceneFacadeImpl.class},
   logs = {@ConfigurationBaratine.Log(name = "com.caucho", level = "FINER")},
   testTime = 0, pod = "lucene")
-public class T300
+public class TestLuceneFacade
 {
   @Inject
   @Lookup("session://lucene/service/foo")

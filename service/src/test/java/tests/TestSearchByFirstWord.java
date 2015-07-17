@@ -15,7 +15,7 @@ import java.io.IOException;
 import java.util.concurrent.ExecutionException;
 
 /**
- * title: test pdf, ms-word, txt, xml, json with last word
+ * title: test pdf, ms-word, txt, xml, json with first word
  */
 
 @RunWith(RunnerBaratine.class)
@@ -24,7 +24,7 @@ import java.util.concurrent.ExecutionException;
   logs = {@Log(name = "com.caucho", level = "FINER")},
   logLevel = "FINER",
   testTime = 0, pod = "lucene")
-public class T001 extends BaseTest
+public class TestSearchByFirstWord extends BaseTest
 {
   @Test(timeout = 2000)
   public void testText()
@@ -36,7 +36,7 @@ public class T001 extends BaseTest
   private void test(String fileName)
     throws InterruptedException, IOException, ExecutionException
   {
-    LuceneEntry[] result = uploadAndSearch(fileName, "versions");
+    LuceneEntry[] result = uploadAndSearch(fileName, "Lorem");
     Assert.assertEquals(1, result.length);
     Assert.assertEquals(makeBfsPath(fileName), result[0].getExternalId());
   }
