@@ -1,7 +1,6 @@
 package com.caucho.lucene.bfs;
 
 import io.baratine.core.ServiceManager;
-import io.baratine.core.Services;
 import io.baratine.db.BlobReader;
 import io.baratine.files.BfsFileSync;
 import io.baratine.files.Status;
@@ -37,7 +36,7 @@ public class BfsDirectory extends BaseDirectory
   {
     super(new SingleInstanceLockFactory());
 
-    ServiceManager manager = Services.getCurrentManager();
+    ServiceManager manager = ServiceManager.getCurrent();
 
     int pod = manager.getPodNode().getNodeIndex();
 

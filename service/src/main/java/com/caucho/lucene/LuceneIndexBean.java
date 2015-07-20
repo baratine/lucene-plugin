@@ -1,9 +1,7 @@
 package com.caucho.lucene;
 
 import com.caucho.env.system.RootDirectorySystem;
-import com.caucho.lucene.bfs.BfsDirectory;
 import io.baratine.core.ServiceManager;
-import io.baratine.core.Services;
 import io.baratine.files.BfsFileSync;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
@@ -26,6 +24,7 @@ import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.MMapDirectory;
 import org.apache.lucene.store.NRTCachingDirectory;
 import org.apache.lucene.util.InfoStream;
 import org.apache.tika.exception.TikaException;
@@ -41,6 +40,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystems;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collections;
@@ -101,7 +101,7 @@ public class LuceneIndexBean
   private ServiceManager getManager()
   {
     if (_manager == null)
-      _manager = Services.getCurrentManager();
+      _manager = ServiceManager.getCurrent();
 
     return _manager;
   }
@@ -547,9 +547,9 @@ public class LuceneIndexBean
   {
     log.log(Level.FINER, "create new BfsDirectory");
 
-    Directory directory = new BfsDirectory();
+    //Directory directory = new BfsDirectory();
     //Directory directory = new RAMDirectory();
-    //Directory directory = MMapDirectory.open(getPath());
+    Directory directory = MMapDirectory.open(getPath());
 
     directory = new NRTCachingDirectory(directory,
                                         _maxMergeSizeMb,
@@ -558,10 +558,11 @@ public class LuceneIndexBean
     return directory;
   }
 
-  private Path getPath()
+  private Path getPath() throws IOException
   {
-    return FileSystems.getDefault().getPath(_indexDirectory,
-                                            "index");
+    Path path = FileSystems.getDefault().getPath(_indexDirectory, "index");
+
+    return Files.createDirectories(path);
   }
 
   QueryParser createQueryParser()
