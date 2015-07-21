@@ -25,7 +25,7 @@ public abstract class BaseTest
   private ServiceManager _serviceManager;
 
   @Inject
-  @Lookup("pod://lucene/service")
+  @Lookup("public://lucene/service")
   private LuceneFacadeSync _index;
 
   protected BfsFileSync lookup(String path)
@@ -45,7 +45,7 @@ public abstract class BaseTest
 
   final protected String makeBfsPath(String file)
   {
-    return "bfs:///tmp/" + file;
+    return "bfs://cluster_hub/tmp/" + file;
   }
 
   final protected LuceneEntry[] uploadAndSearch(String fileName, String query)

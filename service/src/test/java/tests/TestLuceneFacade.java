@@ -30,7 +30,7 @@ import java.util.Map;
 public class TestLuceneFacade
 {
   @Inject
-  @Lookup("session://lucene/service/foo")
+  @Lookup("public://lucene/service")
   LuceneFacadeSync _lucene;
 
   @Test

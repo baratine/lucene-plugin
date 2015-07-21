@@ -495,7 +495,7 @@ public class LuceneIndexBean
             searcher));
 
         DirectoryReader reader = DirectoryReader.open(getIndexWriter(),
-                                                      false);
+                                                      true);
 
         XIndexSearcher newSearcher = new XIndexSearcher(reader, _version.get());
 
