@@ -18,9 +18,12 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TieredMergePolicy;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.queryparser.classic.QueryParser;
+import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
@@ -45,6 +48,7 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -58,6 +62,8 @@ public class LuceneIndexBean
   private static final String exteralKey = "__extKey__";
   private static final String collectionKey = "__collectionKey__";
   private static final String primaryKey = "__primary_key__";
+  private static final Set<String> fieldSet
+    = Collections.singleton(exteralKey);
 
   private static Logger log = Logger.getLogger(LuceneIndexBean.class.getName());
 
@@ -297,9 +303,15 @@ public class LuceneIndexBean
     XIndexSearcher searcher = null;
 
     try {
-      query = query + " AND " + collectionKey + ':' + collection;
+      //query = query + " AND " + collectionKey + ':' + collection;
 
-      Query q = queryParser.parse(query);
+      Query userQuery = queryParser.parse(query);
+
+      BooleanQuery q = new BooleanQuery();
+      q.add(userQuery, BooleanClause.Occur.MUST);
+
+      q.add(new TermQuery(new Term(collectionKey, collection)),
+            BooleanClause.Occur.MUST);
 
       searcher = acquireSearcher();
 
@@ -311,7 +323,7 @@ public class LuceneIndexBean
 
       for (int i = 0; i < scoreDocs.length; i++) {
         ScoreDoc doc = scoreDocs[i];
-        Document d = searcher.doc(doc.doc, Collections.singleton(exteralKey));
+        Document d = searcher.doc(doc.doc, fieldSet);
 
         LuceneEntry entry = new LuceneEntry(doc.doc,
                                             doc.score,
@@ -494,17 +506,32 @@ public class LuceneIndexBean
             _version.get(),
             searcher));
 
-        DirectoryReader reader = DirectoryReader.open(getIndexWriter(),
-                                                      true);
+        DirectoryReader oldReader = null;
 
-        XIndexSearcher newSearcher = new XIndexSearcher(reader, _version.get());
+        if (searcher != null) {
+          oldReader = (DirectoryReader) searcher.getIndexReader();
+        }
 
-        _searcher.set(newSearcher);
+        DirectoryReader newReader;
 
-        if (searcher != null && searcher.getUseCount() == 0)
-          searcher.release();
+        if (oldReader != null)
+          newReader = DirectoryReader.openIfChanged(oldReader,
+                                                    getIndexWriter(),
+                                                    true);
+        else
+          newReader = DirectoryReader.open(getIndexWriter(), true);
 
-        searcher = newSearcher;
+        if (newReader != null) {
+          XIndexSearcher newSearcher = new XIndexSearcher(newReader,
+                                                          _version.get());
+
+          _searcher.set(newSearcher);
+
+          if (searcher != null && searcher.getUseCount() == 0)
+            searcher.release();
+
+          searcher = newSearcher;
+        }
       }
 
       searcher.incUseCount();
