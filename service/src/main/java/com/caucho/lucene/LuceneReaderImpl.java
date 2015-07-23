@@ -1,5 +1,7 @@
 package com.caucho.lucene;
 
+import io.baratine.core.AfterBatch;
+import io.baratine.core.BeforeBatch;
 import io.baratine.core.OnDestroy;
 import io.baratine.core.OnInit;
 import io.baratine.core.Result;
@@ -27,6 +29,9 @@ public class LuceneReaderImpl implements LuceneReader
 
   private QueryParser _queryParser;
   private long _n;
+
+  private long _batchSize;
+  private long _maxBatchSize;
 
   public LuceneReaderImpl()
   {
@@ -67,6 +72,7 @@ public class LuceneReaderImpl implements LuceneReader
                      String query,
                      ResultStream<LuceneEntry> results)
   {
+    _batchSize++;
     if (log.isLoggable(Level.FINER))
       log.finer(String.format("search('%1$s', %2$s)", collection, query));
 
@@ -94,6 +100,19 @@ public class LuceneReaderImpl implements LuceneReader
                                                255);
 
     return entries;
+  }
+
+  @BeforeBatch
+  public void beforeBatch() {
+    _batchSize = 0;
+  }
+
+  @AfterBatch
+  public void afterBatch() {
+    if (_batchSize > _maxBatchSize)
+      log.info(this + " new max batch-size: " + _batchSize);
+
+    _maxBatchSize = Math.max(_maxBatchSize, _batchSize);
   }
 
   @OnDestroy
