@@ -83,6 +83,12 @@ public class LuceneReaderImpl implements LuceneReader
                                          results,
                                          entries.length));
 
+    if (entries.length == 0) {
+      log.log(Level.INFO, String.format(
+        "search returned no entries for query %1$s",
+        query));
+    }
+
     for (LuceneEntry entry : entries) {
       results.accept(entry);
     }
@@ -103,16 +109,20 @@ public class LuceneReaderImpl implements LuceneReader
   }
 
   @BeforeBatch
-  public void beforeBatch() {
+  public void beforeBatch()
+  {
     _batchSize = 0;
   }
 
   @AfterBatch
-  public void afterBatch() {
+  public void afterBatch()
+  {
     if (_batchSize > _maxBatchSize)
       log.info(this + " new max batch-size: " + _batchSize);
 
     _maxBatchSize = Math.max(_maxBatchSize, _batchSize);
+
+    _luceneBean.incVersion();
   }
 
   @OnDestroy

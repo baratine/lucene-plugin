@@ -197,7 +197,7 @@ public class LuceneIndexBean
         log.finer(String.format("indexing ('%1$s')->('%2$s') complete",
                                 pkTerm, extId.stringValue()));
 
-      _version.incrementAndGet();
+      //_version.incrementAndGet();
 
       return true;
     } catch (IOException | SAXException e) {
@@ -276,7 +276,7 @@ public class LuceneIndexBean
       if (log.isLoggable(Level.FINER))
         log.finer(String.format("indexing ('%s') complete", extId));
 
-      _version.incrementAndGet();
+      //_version.incrementAndGet();
 
       return true;
     } catch (IOException e) {
@@ -386,7 +386,7 @@ public class LuceneIndexBean
         log.finer(String.format("delete('%1$s'->'%2$s') complete",
                                 pk, id));
 
-      _version.incrementAndGet();
+      //_version.incrementAndGet();
 
       return true;
     } catch (IOException e) {
@@ -425,7 +425,7 @@ public class LuceneIndexBean
       if (log.isLoggable(Level.FINER))
         log.finer(String.format("clear('%1$s') complete", query));
 
-      _version.incrementAndGet();
+      //_version.incrementAndGet();
 
       return true;
     } catch (IOException e) {
@@ -615,6 +615,11 @@ public class LuceneIndexBean
     }
 
     return field;
+  }
+
+  public void incVersion()
+  {
+    _version.incrementAndGet();
   }
 }
 
