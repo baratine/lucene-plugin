@@ -30,9 +30,6 @@ public class LuceneReaderImpl implements LuceneReader
   private QueryParser _queryParser;
   private long _n;
 
-  private long _batchSize;
-  private long _maxBatchSize;
-
   public LuceneReaderImpl()
   {
     _n = sequence.getAndIncrement();
@@ -72,7 +69,6 @@ public class LuceneReaderImpl implements LuceneReader
                      String query,
                      ResultStream<LuceneEntry> results)
   {
-    _batchSize++;
     if (log.isLoggable(Level.FINER))
       log.finer(String.format("search('%1$s', %2$s)", collection, query));
 
@@ -106,23 +102,6 @@ public class LuceneReaderImpl implements LuceneReader
                                                255);
 
     return entries;
-  }
-
-  @BeforeBatch
-  public void beforeBatch()
-  {
-    _batchSize = 0;
-  }
-
-  @AfterBatch
-  public void afterBatch()
-  {
-    if (_batchSize > _maxBatchSize)
-      log.info(this + " new max batch-size: " + _batchSize);
-
-    _maxBatchSize = Math.max(_maxBatchSize, _batchSize);
-
-    _luceneBean.incVersion();
   }
 
   @OnDestroy

@@ -45,6 +45,7 @@ public class LuceneWriterImpl implements LuceneIndexWriter
     log.log(Level.INFO, this + " init()");
 
     try {
+      _luceneBean.init();
       _queryParser = _luceneBean.createQueryParser();
 
       result.complete(true);

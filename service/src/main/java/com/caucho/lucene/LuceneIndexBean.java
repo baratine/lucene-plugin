@@ -1,6 +1,7 @@
 package com.caucho.lucene;
 
 import com.caucho.env.system.RootDirectorySystem;
+import com.caucho.util.LruCache;
 import io.baratine.core.ServiceManager;
 import io.baratine.files.BfsFileSync;
 import org.apache.lucene.analysis.Analyzer;
@@ -14,6 +15,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.index.SimpleMergedSegmentWarmer;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TieredMergePolicy;
 import org.apache.lucene.queryparser.classic.ParseException;
@@ -49,6 +51,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -65,19 +68,21 @@ public class LuceneIndexBean
   private static final Set<String> fieldSet
     = Collections.singleton(exteralKey);
 
+  private final static LuceneIndexBean bean = new LuceneIndexBean();
+
   private static Logger log = Logger.getLogger(LuceneIndexBean.class.getName());
 
   private Directory _directory;
+
   private IndexWriter _writer;
 
   private AutoDetectParser _parser;
 
   private String _indexDirectory;
 
-  private final static LuceneIndexBean bean = new LuceneIndexBean();
-
   @Inject
   ServiceManager _manager;
+
   private StandardAnalyzer _analyzer;
 
   private double _maxMergeSizeMb = 4;
@@ -89,13 +94,23 @@ public class LuceneIndexBean
   private final AtomicReference<XIndexSearcher> _searcher
     = new AtomicReference<>();
 
+  private final AtomicReference<XIndexSearcher> _coldSearcher
+    = new AtomicReference<>();
+
+  private AtomicBoolean _isInitialized = new AtomicBoolean(false);
+
+  private AtomicBoolean _isSpawningSearcher = new AtomicBoolean();
+
   private final AtomicLong _version = new AtomicLong();
+
   private final Object _searcherLock = new Object();
+
+  private LruCache<String,Query> _queryCache = new LruCache<>(1024);
+
+  private LruCache<String,LuceneEntry[]> _resultsCache = new LruCache<>(512);
 
   public LuceneIndexBean()
   {
-    init();
-
     _parser = new AutoDetectParser();
   }
 
@@ -113,12 +128,17 @@ public class LuceneIndexBean
   }
 
   @PostConstruct
-  public void init()
+  public void init() throws IOException
   {
+    if (!_isInitialized.compareAndSet(false, true))
+      return;
+
     String baratineData
       = RootDirectorySystem.getCurrentDataDirectory().getFullPath();
 
     _indexDirectory = baratineData + File.separatorChar + "lucene";
+
+    initIndexWriter();
 
     log.finer("creating new " + this);
   }
@@ -197,7 +217,7 @@ public class LuceneIndexBean
         log.finer(String.format("indexing ('%1$s')->('%2$s') complete",
                                 pkTerm, extId.stringValue()));
 
-      //_version.incrementAndGet();
+      _version.incrementAndGet();
 
       return true;
     } catch (IOException | SAXException e) {
@@ -276,7 +296,7 @@ public class LuceneIndexBean
       if (log.isLoggable(Level.FINER))
         log.finer(String.format("indexing ('%s') complete", extId));
 
-      //_version.incrementAndGet();
+      _version.incrementAndGet();
 
       return true;
     } catch (IOException e) {
@@ -298,20 +318,36 @@ public class LuceneIndexBean
                       query,
                       limit));
 
-    collection = escape(collection);
+    final String cacheKey = query + "::" + collection;
+
+    LuceneEntry[] results = null;
+
+    if (_coldSearcher.get() != null)
+      results = _resultsCache.get(cacheKey);
+
+    if (results != null)
+      return results;
 
     XIndexSearcher searcher = null;
 
     try {
-      //query = query + " AND " + collectionKey + ':' + collection;
+      Query q = _queryCache.get(cacheKey);
 
-      Query userQuery = queryParser.parse(query);
+      if (q == null) {
+        Query userQuery = queryParser.parse(query);
 
-      BooleanQuery q = new BooleanQuery();
-      q.add(userQuery, BooleanClause.Occur.MUST);
+        BooleanQuery bq = new BooleanQuery();
+        bq.add(userQuery, BooleanClause.Occur.MUST);
 
-      q.add(new TermQuery(new Term(collectionKey, collection)),
-            BooleanClause.Occur.MUST);
+        collection = escape(collection);
+
+        bq.add(new TermQuery(new Term(collectionKey, collection)),
+               BooleanClause.Occur.MUST);
+
+        q = bq;
+
+        _queryCache.put(cacheKey, q);
+      }
 
       searcher = acquireSearcher();
 
@@ -319,7 +355,7 @@ public class LuceneIndexBean
 
       ScoreDoc[] scoreDocs = docs.scoreDocs;
 
-      LuceneEntry[] results = new LuceneEntry[scoreDocs.length];
+      results = new LuceneEntry[scoreDocs.length];
 
       for (int i = 0; i < scoreDocs.length; i++) {
         ScoreDoc doc = scoreDocs[i];
@@ -331,6 +367,9 @@ public class LuceneIndexBean
 
         results[i] = entry;
       }
+
+      if (results.length > 0)
+        _resultsCache.put(cacheKey, results);
 
       if (log.isLoggable(Level.FINER))
         log.finer(
@@ -386,7 +425,7 @@ public class LuceneIndexBean
         log.finer(String.format("delete('%1$s'->'%2$s') complete",
                                 pk, id));
 
-      //_version.incrementAndGet();
+      _version.incrementAndGet();
 
       return true;
     } catch (IOException e) {
@@ -401,8 +440,6 @@ public class LuceneIndexBean
     if (_writer != null && _writer.hasUncommittedChanges()) {
       if (log.isLoggable(Level.FINER))
         log.finer(this + " commit()");
-
-      _version.incrementAndGet();
 
       _writer.commit();
     }
@@ -425,7 +462,7 @@ public class LuceneIndexBean
       if (log.isLoggable(Level.FINER))
         log.finer(String.format("clear('%1$s') complete", query));
 
-      //_version.incrementAndGet();
+      _version.incrementAndGet();
 
       return true;
     } catch (IOException e) {
@@ -476,15 +513,29 @@ public class LuceneIndexBean
 
   private void release(XIndexSearcher searcher) throws IOException
   {
-    synchronized (_searcherLock) {
-      searcher.decUseCount();
+    XIndexSearcher oldSearcher = null;
 
-      if (_searcher.get() == searcher) {
+    synchronized (_searcherLock) {
+      if (searcher.isCold()) {
+        searcher.setCold(false);
+
+        oldSearcher = _searcher.getAndSet(searcher);
+
+        _resultsCache.clear();
+
+        if (!_isSpawningSearcher.compareAndSet(true, false))
+          throw new IllegalStateException();
       }
-      else if (searcher.getUseCount() == 0) {
-        searcher.release();
+      else if (_searcher.get() == searcher) {
+        searcher.decUseCount();
+      }
+      else if (searcher.decUseCount() == 0) {
+        oldSearcher = searcher;
       }
     }
+
+    if (oldSearcher != null && oldSearcher.getUseCount() == 0)
+      oldSearcher.release();
   }
 
   @Override
@@ -496,42 +547,29 @@ public class LuceneIndexBean
   private XIndexSearcher acquireSearcher() throws IOException
   {
     XIndexSearcher searcher;
+
     synchronized (_searcherLock) {
+      searcher = _coldSearcher.get();
+
+      if (searcher != null) {
+        _coldSearcher.set(null);
+
+        return searcher;
+      }
+
       searcher = _searcher.get();
 
-      if (searcher == null || _version.get() > searcher.getVersion()) {
-        if (log.isLoggable(Level.FINER))
-          log.finer(String.format(
-            "acquiring new searcher version: [%1$d] current-searcher: %2$s",
-            _version.get(),
-            searcher));
+      if (searcher == null) {
+        searcher = createIndexSearcher(false);
 
-        DirectoryReader oldReader = null;
-
-        if (searcher != null) {
-          oldReader = (DirectoryReader) searcher.getIndexReader();
-        }
-
-        DirectoryReader newReader;
-
-        if (oldReader != null)
-          newReader = DirectoryReader.openIfChanged(oldReader,
-                                                    getIndexWriter(),
-                                                    true);
-        else
-          newReader = DirectoryReader.open(getIndexWriter(), true);
-
-        if (newReader != null) {
-          XIndexSearcher newSearcher = new XIndexSearcher(newReader,
-                                                          _version.get());
-
-          _searcher.set(newSearcher);
-
-          if (searcher != null && searcher.getUseCount() == 0)
-            searcher.release();
-
-          searcher = newSearcher;
-        }
+        _searcher.set(searcher);
+      }
+      else if (_version.get() < searcher.getVersion() + 16) {
+      }
+      else if (_isSpawningSearcher.compareAndSet(false, true)) {
+        spawnNewIndexSearcher();
+      }
+      else {
       }
 
       searcher.incUseCount();
@@ -540,15 +578,51 @@ public class LuceneIndexBean
     return searcher;
   }
 
+  private void spawnNewIndexSearcher()
+  {
+    Thread t = new Thread(() -> spawnNewIndexSearcherImpl());
+    t.start();
+  }
+
+  private void spawnNewIndexSearcherImpl()
+  {
+    try {
+      XIndexSearcher searcher = createIndexSearcher(true);
+
+      synchronized (_searcherLock) {
+        if (!_coldSearcher.compareAndSet(null, searcher))
+          throw new IllegalStateException();
+      }
+    } catch (IOException e) {
+      log.warning(e.getMessage());
+    }
+  }
+
+  private XIndexSearcher createIndexSearcher(boolean isCold)
+    throws IOException
+  {
+    DirectoryReader reader;
+
+    long version = _version.get();
+
+    reader = DirectoryReader.open(getIndexWriter(), true);
+
+    return new XIndexSearcher(reader, version, isCold);
+  }
+
   private IndexWriter getIndexWriter() throws IOException
   {
-    if (_writer != null)
-      return _writer;
+    return _writer;
+  }
 
+  private void initIndexWriter() throws IOException
+  {
     Analyzer analyzer = new StandardAnalyzer();
     IndexWriterConfig iwc = new IndexWriterConfig(analyzer);
 
     iwc.setOpenMode(IndexWriterConfig.OpenMode.CREATE_OR_APPEND);
+    iwc.setMergedSegmentWarmer(new SimpleMergedSegmentWarmer(new LoggingInfoStream()));
+    iwc.setReaderPooling(true);
 
     TieredMergePolicy mergePolicy = new TieredMergePolicy();
 
@@ -558,8 +632,6 @@ public class LuceneIndexBean
     iwc.setMergePolicy(mergePolicy);
 
     _writer = new IndexWriter(getDirectory(), iwc);
-
-    return _writer;
   }
 
   private Directory getDirectory() throws IOException
@@ -616,22 +688,18 @@ public class LuceneIndexBean
 
     return field;
   }
-
-  public void incVersion()
-  {
-    _version.incrementAndGet();
-  }
 }
 
-class LucenePluginInfoStream extends InfoStream
+class LoggingInfoStream extends InfoStream
 {
   private final static Logger log
-    = Logger.getLogger(LucenePluginInfoStream.class.getName());
+    = Logger.getLogger(LoggingInfoStream.class.getName());
 
   @Override
   public void message(String component, String message)
   {
-    log.log(Level.FINEST, component + ": " + message);
+    if (log.isLoggable(Level.FINEST))
+      log.log(Level.FINEST, component + ": " + message);
   }
 
   @Override
@@ -649,16 +717,19 @@ class LucenePluginInfoStream extends InfoStream
 
 class XIndexSearcher extends IndexSearcher
 {
-  private static Logger log = Logger.getLogger(XIndexSearcher.class.getName());
+  private final static Logger log
+    = Logger.getLogger(XIndexSearcher.class.getName());
 
   private final AtomicInteger _useCount = new AtomicInteger();
   private final long _version;
+  private boolean _isCold;
 
-  public XIndexSearcher(IndexReader reader, long version)
+  public XIndexSearcher(IndexReader reader, long version, boolean isCold)
   {
     super(reader);
 
     _version = version;
+    _isCold = isCold;
   }
 
   public int incUseCount()
@@ -692,6 +763,16 @@ class XIndexSearcher extends IndexSearcher
     return _version;
   }
 
+  public boolean isCold()
+  {
+    return _isCold;
+  }
+
+  public void setCold(boolean isCold)
+  {
+    _isCold = isCold;
+  }
+
   @Override
   public String toString()
   {
@@ -699,6 +780,10 @@ class XIndexSearcher extends IndexSearcher
     return "XIndexSearcher ["
            +
            _useCount.get()
+           + ", "
+           + _version
+           + ", "
+           + (_isCold ? "cold" : "hot")
            + ", "
            + reader.getClass().getSimpleName()
            + '@'
