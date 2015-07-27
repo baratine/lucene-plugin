@@ -76,7 +76,7 @@ public class LuceneIndexBean
   private static Logger log = Logger.getLogger(LuceneIndexBean.class.getName());
 
   private final static int _softCommitMaxDocs = 16;
-  private final static long _softCommitMaxTime = TimeUnit.SECONDS.toMillis(1);
+  private final static long _softCommitMaxAge = TimeUnit.SECONDS.toMillis(1);
 
   private Directory _directory;
 
@@ -571,25 +571,30 @@ public class LuceneIndexBean
   private void updateVersion()
   {
     _version.incrementAndGet();
+
+    updateSearcher();
   }
 
-/*
   void updateSearcher()
   {
     synchronized (_searcherLock) {
       XIndexSearcher searcher = _searcher.get();
 
-      if (searcher == null) {
-      }
-      else if (_version.get() < searcher.getVersion() + 8) {
+      if (searcher == null)
+        return;
 
-      }
-      else if (_isSpawningSearcher.compareAndSet(false, true)) {
+      boolean isSpawnNewSearcher = searcher.isExpired(_softCommitMaxAge);
+
+      isSpawnNewSearcher |= (_version.get() - _softCommitMaxDocs)
+                            >= searcher.getVersion();
+
+      if (!isSpawnNewSearcher)
+        return;
+
+      if (_isSpawningSearcher.compareAndSet(false, true))
         spawnNewIndexSearcher(searcher);
-      }
     }
   }
-*/
 
   private XIndexSearcher acquireSearcher() throws IOException
   {
@@ -610,16 +615,6 @@ public class LuceneIndexBean
         searcher = createIndexSearcher(null, false);
 
         _searcher.set(searcher);
-      }
-      else if (_version.get() < searcher.getVersion() + _softCommitMaxDocs) {
-      }
-      else if (! searcher.isOlder(_softCommitMaxTime)
-               && _version.get() > searcher.getVersion()) {
-      }
-      else if (_isSpawningSearcher.compareAndSet(false, true)) {
-        spawnNewIndexSearcher(searcher);
-      }
-      else {
       }
 
       searcher.incUseCount();
@@ -857,9 +852,9 @@ class XIndexSearcher extends IndexSearcher
     _keysCache.put(key, value);
   }
 
-  public boolean isOlder(long timeout)
+  public boolean isExpired(long maxAge)
   {
-    return _createTime + timeout > System.currentTimeMillis();
+    return (System.currentTimeMillis() - _createTime) > maxAge;
   }
 
   @Override
