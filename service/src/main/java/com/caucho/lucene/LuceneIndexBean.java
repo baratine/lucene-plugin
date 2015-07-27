@@ -51,6 +51,9 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -62,15 +65,18 @@ import java.util.logging.Logger;
 //@ApplicationScoped
 public class LuceneIndexBean
 {
-  private static final String exteralKey = "__extKey__";
+  private static final String externalKey = "__extKey__";
   private static final String collectionKey = "__collectionKey__";
   private static final String primaryKey = "__primary_key__";
   private static final Set<String> fieldSet
-    = Collections.singleton(exteralKey);
+    = Collections.singleton(externalKey);
 
   private final static LuceneIndexBean bean = new LuceneIndexBean();
 
   private static Logger log = Logger.getLogger(LuceneIndexBean.class.getName());
+
+  private final static int _softCommitMaxDocs = 16;
+  private final static long _softCommitMaxTime = TimeUnit.SECONDS.toMillis(1);
 
   private Directory _directory;
 
@@ -83,6 +89,9 @@ public class LuceneIndexBean
   @Inject
   ServiceManager _manager;
 
+  //@Inject
+  ExecutorService _executorService;
+
   private StandardAnalyzer _analyzer;
 
   private double _maxMergeSizeMb = 4;
@@ -94,7 +103,7 @@ public class LuceneIndexBean
   private final AtomicReference<XIndexSearcher> _searcher
     = new AtomicReference<>();
 
-  private final AtomicReference<XIndexSearcher> _coldSearcher
+  private final AtomicReference<XIndexSearcher> _warmingSearcher
     = new AtomicReference<>();
 
   private AtomicBoolean _isInitialized = new AtomicBoolean(false);
@@ -125,6 +134,14 @@ public class LuceneIndexBean
       _manager = ServiceManager.getCurrent();
 
     return _manager;
+  }
+
+  private ExecutorService getExecutorService()
+  {
+    if (_executorService == null)
+      _executorService = Executors.newFixedThreadPool(1);
+
+    return _executorService;
   }
 
   @PostConstruct
@@ -165,7 +182,7 @@ public class LuceneIndexBean
 
     BfsFileSync file = getManager().lookup(path).as(BfsFileSync.class);
 
-    Field extId = new StringField(exteralKey, path, Field.Store.YES);
+    Field extId = new StringField(externalKey, path, Field.Store.YES);
 
     StringField pkField = createPkField(collection, path);
 
@@ -217,7 +234,7 @@ public class LuceneIndexBean
         log.finer(String.format("indexing ('%1$s')->('%2$s') complete",
                                 pkTerm, extId.stringValue()));
 
-      _version.incrementAndGet();
+      updateVersion();
 
       return true;
     } catch (IOException | SAXException e) {
@@ -243,7 +260,7 @@ public class LuceneIndexBean
 
     collection = escape(collection);
 
-    Field extId = new StringField(exteralKey, id, Field.Store.YES);
+    Field extId = new StringField(externalKey, id, Field.Store.YES);
 
     Field pkField = createPkField(collection, id);
 
@@ -272,7 +289,7 @@ public class LuceneIndexBean
     if (log.isLoggable(Level.FINER))
       log.finer(String.format("indexMap('%1$s') %2$s", id, map));
 
-    Field extId = new StringField(exteralKey, id, Field.Store.YES);
+    Field extId = new StringField(externalKey, id, Field.Store.YES);
 
     Field pkField = createPkField(collection, id);
 
@@ -296,7 +313,7 @@ public class LuceneIndexBean
       if (log.isLoggable(Level.FINER))
         log.finer(String.format("indexing ('%s') complete", extId));
 
-      _version.incrementAndGet();
+      updateVersion();
 
       return true;
     } catch (IOException e) {
@@ -322,7 +339,7 @@ public class LuceneIndexBean
 
     LuceneEntry[] results = null;
 
-    if (_coldSearcher.get() != null)
+    if (_warmingSearcher.get() == null)
       results = _resultsCache.get(cacheKey);
 
     if (results != null)
@@ -359,11 +376,19 @@ public class LuceneIndexBean
 
       for (int i = 0; i < scoreDocs.length; i++) {
         ScoreDoc doc = scoreDocs[i];
-        Document d = searcher.doc(doc.doc, fieldSet);
+
+        String key = searcher.externalId(doc.doc);
+
+        if (key == null) {
+          Document d = searcher.doc(doc.doc, fieldSet);
+          key = d.get(externalKey);
+
+          searcher.cacheExternalId(doc.doc, key);
+        }
 
         LuceneEntry entry = new LuceneEntry(doc.doc,
                                             doc.score,
-                                            d.get(exteralKey));
+                                            key);
 
         results[i] = entry;
       }
@@ -425,7 +450,7 @@ public class LuceneIndexBean
         log.finer(String.format("delete('%1$s'->'%2$s') complete",
                                 pk, id));
 
-      _version.incrementAndGet();
+      updateVersion();
 
       return true;
     } catch (IOException e) {
@@ -462,7 +487,7 @@ public class LuceneIndexBean
       if (log.isLoggable(Level.FINER))
         log.finer(String.format("clear('%1$s') complete", query));
 
-      _version.incrementAndGet();
+      updateVersion();
 
       return true;
     } catch (IOException e) {
@@ -516,12 +541,10 @@ public class LuceneIndexBean
     XIndexSearcher oldSearcher = null;
 
     synchronized (_searcherLock) {
-      if (searcher.isCold()) {
-        searcher.setCold(false);
+      if (searcher.isWarming()) {
+        searcher.setWarming(false);
 
         oldSearcher = _searcher.getAndSet(searcher);
-
-        _resultsCache.clear();
 
         if (!_isSpawningSearcher.compareAndSet(true, false))
           throw new IllegalStateException();
@@ -544,15 +567,38 @@ public class LuceneIndexBean
     return this.getClass().getSimpleName() + '[' + _manager + ']';
   }
 
+  private void updateVersion()
+  {
+    _version.incrementAndGet();
+  }
+
+/*
+  void updateSearcher()
+  {
+    synchronized (_searcherLock) {
+      XIndexSearcher searcher = _searcher.get();
+
+      if (searcher == null) {
+      }
+      else if (_version.get() < searcher.getVersion() + 8) {
+
+      }
+      else if (_isSpawningSearcher.compareAndSet(false, true)) {
+        spawnNewIndexSearcher(searcher);
+      }
+    }
+  }
+*/
+
   private XIndexSearcher acquireSearcher() throws IOException
   {
     XIndexSearcher searcher;
 
     synchronized (_searcherLock) {
-      searcher = _coldSearcher.get();
+      searcher = _warmingSearcher.get();
 
       if (searcher != null) {
-        _coldSearcher.set(null);
+        _warmingSearcher.set(null);
 
         return searcher;
       }
@@ -560,14 +606,17 @@ public class LuceneIndexBean
       searcher = _searcher.get();
 
       if (searcher == null) {
-        searcher = createIndexSearcher(false);
+        searcher = createIndexSearcher(null, false);
 
         _searcher.set(searcher);
       }
-      else if (_version.get() < searcher.getVersion() + 16) {
+      else if (_version.get() < searcher.getVersion() + _softCommitMaxDocs) {
+      }
+      else if (! searcher.isOlder(_softCommitMaxTime)
+               && _version.get() > searcher.getVersion()) {
       }
       else if (_isSpawningSearcher.compareAndSet(false, true)) {
-        spawnNewIndexSearcher();
+        spawnNewIndexSearcher(searcher);
       }
       else {
       }
@@ -578,19 +627,18 @@ public class LuceneIndexBean
     return searcher;
   }
 
-  private void spawnNewIndexSearcher()
+  private void spawnNewIndexSearcher(XIndexSearcher latestSearcher)
   {
-    Thread t = new Thread(() -> spawnNewIndexSearcherImpl());
-    t.start();
+    getExecutorService().submit(() -> spawnNewIndexSearcherImpl(latestSearcher));
   }
 
-  private void spawnNewIndexSearcherImpl()
+  private void spawnNewIndexSearcherImpl(XIndexSearcher latestSearcher)
   {
     try {
-      XIndexSearcher searcher = createIndexSearcher(true);
+      XIndexSearcher searcher = createIndexSearcher(latestSearcher, true);
 
       synchronized (_searcherLock) {
-        if (!_coldSearcher.compareAndSet(null, searcher))
+        if (!_warmingSearcher.compareAndSet(null, searcher))
           throw new IllegalStateException();
       }
     } catch (IOException e) {
@@ -598,16 +646,26 @@ public class LuceneIndexBean
     }
   }
 
-  private XIndexSearcher createIndexSearcher(boolean isCold)
+  private XIndexSearcher createIndexSearcher(XIndexSearcher latestSearcher,
+                                             boolean isWarming)
     throws IOException
   {
     DirectoryReader reader;
 
     long version = _version.get();
 
-    reader = DirectoryReader.open(getIndexWriter(), true);
+    IndexWriter writer = getIndexWriter();
 
-    return new XIndexSearcher(reader, version, isCold);
+    if (latestSearcher == null)
+      reader = DirectoryReader.open(writer, true);
+    else {
+      reader
+        = DirectoryReader.openIfChanged((DirectoryReader) latestSearcher.getIndexReader(),
+                                        writer,
+                                        true);
+    }
+
+    return new XIndexSearcher(reader, version, isWarming);
   }
 
   private IndexWriter getIndexWriter() throws IOException
@@ -628,6 +686,8 @@ public class LuceneIndexBean
 
     mergePolicy.setMaxMergeAtOnce(_maxMergeAtOnce);
     mergePolicy.setSegmentsPerTier(_segmentsPerTier);
+
+    mergePolicy.setNoCFSRatio(0d);
 
     iwc.setMergePolicy(mergePolicy);
 
@@ -722,14 +782,22 @@ class XIndexSearcher extends IndexSearcher
 
   private final AtomicInteger _useCount = new AtomicInteger();
   private final long _version;
-  private boolean _isCold;
+  private boolean _isWarming;
+  private final long _createTime;
 
-  public XIndexSearcher(IndexReader reader, long version, boolean isCold)
+  private LruCache<Integer,String> _keysCache
+    = new LruCache<>(8 * 1024);
+
+  public XIndexSearcher(IndexReader reader, long version, boolean isWarming)
   {
     super(reader);
 
     _version = version;
-    _isCold = isCold;
+    _isWarming = isWarming;
+
+    setQueryCache(null);
+
+    _createTime = System.currentTimeMillis();
   }
 
   public int incUseCount()
@@ -745,6 +813,11 @@ class XIndexSearcher extends IndexSearcher
   public int getUseCount()
   {
     return _useCount.get();
+  }
+
+  public long getCreateTime()
+  {
+    return _createTime;
   }
 
   public void release() throws IOException
@@ -763,14 +836,29 @@ class XIndexSearcher extends IndexSearcher
     return _version;
   }
 
-  public boolean isCold()
+  public boolean isWarming()
   {
-    return _isCold;
+    return _isWarming;
   }
 
-  public void setCold(boolean isCold)
+  public void setWarming(boolean isWarming)
   {
-    _isCold = isCold;
+    _isWarming = isWarming;
+  }
+
+  public String externalId(Integer key)
+  {
+    return _keysCache.get(key);
+  }
+
+  public void cacheExternalId(Integer key, String value)
+  {
+    _keysCache.put(key, value);
+  }
+
+  public boolean isOlder(long timeout)
+  {
+    return _createTime + timeout > System.currentTimeMillis();
   }
 
   @Override
@@ -783,7 +871,7 @@ class XIndexSearcher extends IndexSearcher
            + ", "
            + _version
            + ", "
-           + (_isCold ? "cold" : "hot")
+           + (_isWarming ? "cold" : "hot")
            + ", "
            + reader.getClass().getSimpleName()
            + '@'
@@ -791,4 +879,5 @@ class XIndexSearcher extends IndexSearcher
            +
            ']';
   }
+
 }

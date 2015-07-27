@@ -1,5 +1,6 @@
 package com.caucho.lucene;
 
+import io.baratine.core.AfterBatch;
 import io.baratine.core.CancelHandle;
 import io.baratine.core.Lookup;
 import io.baratine.core.Modify;
@@ -7,7 +8,6 @@ import io.baratine.core.OnInit;
 import io.baratine.core.OnSave;
 import io.baratine.core.Result;
 import io.baratine.core.Service;
-import io.baratine.core.ServiceManager;
 import io.baratine.timer.TimerService;
 import org.apache.lucene.queryparser.classic.QueryParser;
 
@@ -24,7 +24,7 @@ public class LuceneWriterImpl implements LuceneIndexWriter
   private final static Logger log
     = Logger.getLogger(LuceneWriterImpl.class.getName());
 
-  private final static long commitInterval = TimeUnit.SECONDS.toMillis(5);
+  private final static long commitInterval = TimeUnit.SECONDS.toMillis(15);
 
   //@Inject
   private LuceneIndexBean _luceneBean = LuceneIndexBean.getInstance();
@@ -35,9 +35,6 @@ public class LuceneWriterImpl implements LuceneIndexWriter
   @Inject
   @Lookup("timer:///")
   private TimerService _timerService;
-
-  @Inject
-  private ServiceManager _manager;
 
   @OnInit
   public void init(Result<Boolean> result)
@@ -93,7 +90,9 @@ public class LuceneWriterImpl implements LuceneIndexWriter
     if (_lastCommit == -1 || now > (_lastCommit + commitInterval)) {
       _lastCommit = now;
 
-      _timerService.runAfter(h -> executeCommit(h), 5, TimeUnit.SECONDS);
+      _timerService.runAfter(h -> executeCommit(h),
+                             commitInterval,
+                             TimeUnit.MILLISECONDS);
     }
 
     result.complete(true);
