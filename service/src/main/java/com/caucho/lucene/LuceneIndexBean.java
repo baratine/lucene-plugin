@@ -138,8 +138,9 @@ public class LuceneIndexBean
 
   private ExecutorService getExecutorService()
   {
-    if (_executorService == null)
+    if (_executorService == null) {
       _executorService = Executors.newFixedThreadPool(1);
+    }
 
     return _executorService;
   }
