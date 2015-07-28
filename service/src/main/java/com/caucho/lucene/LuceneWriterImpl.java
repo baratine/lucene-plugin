@@ -1,5 +1,6 @@
 package com.caucho.lucene;
 
+import io.baratine.core.AfterBatch;
 import io.baratine.core.CancelHandle;
 import io.baratine.core.Lookup;
 import io.baratine.core.Modify;
@@ -95,11 +96,6 @@ public class LuceneWriterImpl implements LuceneIndexWriter
     }
 
     result.complete(true);
-  }
-
-  void logWarning(Throwable e)
-  {
-    log.log(Level.WARNING, e.getMessage(), e);
   }
 
   private void executeCommit(CancelHandle handle)

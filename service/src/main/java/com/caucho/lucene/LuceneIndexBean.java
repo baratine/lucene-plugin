@@ -10,7 +10,6 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -25,6 +24,8 @@ import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.SearcherFactory;
+import org.apache.lucene.search.SearcherManager;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.AlreadyClosedException;
@@ -61,7 +62,7 @@ import java.util.logging.Logger;
 
 //@Startup
 //@ApplicationScoped
-public class LuceneIndexBean
+public class LuceneIndexBean extends SearcherFactory
 {
   private static final String externalKey = "__extKey__";
   private static final String collectionKey = "__collectionKey__";
@@ -95,19 +96,14 @@ public class LuceneIndexBean
   private int _maxMergeAtOnce = 10;
   private double _segmentsPerTier = 10;
 
-  private final AtomicReference<XIndexSearcher> _searcher
-    = new AtomicReference<>();
-
-  private final AtomicReference<XIndexSearcher> _warmingSearcher
-    = new AtomicReference<>();
-
-  private AtomicBoolean _isSpawningSearcher = new AtomicBoolean();
+  private SearcherManager _searcherManager;
 
   private AtomicBoolean _isInitialized = new AtomicBoolean(false);
 
   private final AtomicLong _version = new AtomicLong();
 
-  private final Object _searcherLock = new Object();
+  private final AtomicReference<BaratineIndexSearcher> _searcher
+    = new AtomicReference<>();
 
   private LruCache<String,Query> _queryCache = new LruCache<>(1024);
 
@@ -144,7 +140,22 @@ public class LuceneIndexBean
 
     initIndexWriter();
 
+    _searcherManager = new SearcherManager(getIndexWriter(),
+                                           true, this);
+
     log.finer("creating new " + this);
+  }
+
+  @Override
+  public IndexSearcher newSearcher(IndexReader reader,
+                                   IndexReader previousReader)
+    throws IOException
+  {
+    BaratineIndexSearcher searcher = new BaratineIndexSearcher(reader, _version.get());
+
+    _searcher.set(searcher);
+
+    return searcher;
   }
 
   private Term createPkTerm(String collection, String externalId)
@@ -310,7 +321,8 @@ public class LuceneIndexBean
     }
   }
 
-  public LuceneEntry[] search(QueryParser queryParser,
+  public LuceneEntry[] search(BaratineIndexSearcher searcher,
+                              QueryParser queryParser,
                               String collection,
                               String query,
                               int limit)
@@ -322,19 +334,14 @@ public class LuceneIndexBean
                       query,
                       limit));
 
-    final String cacheKey = query + "::" + collection;
-
-    LuceneEntry[] results = null;
-
-    if (_warmingSearcher.get() == null)
-      results = _resultsCache.get(cacheKey);
-
-    if (results != null)
-      return results;
-
-    XIndexSearcher searcher = null;
-
     try {
+      final String cacheKey = query + "::" + collection;
+
+      LuceneEntry[] results = _resultsCache.get(cacheKey);
+
+      if (results != null)
+        return results;
+
       Query q = _queryCache.get(cacheKey);
 
       if (q == null) {
@@ -352,8 +359,6 @@ public class LuceneIndexBean
 
         _queryCache.put(cacheKey, q);
       }
-
-      searcher = acquireSearcher();
 
       TopDocs docs = searcher.search(q, limit);
 
@@ -408,14 +413,6 @@ public class LuceneIndexBean
 
       throw LuceneException.create(t);
     } finally {
-      try {
-        if (searcher != null)
-          release(searcher);
-      } catch (Throwable t) {
-        log.log(Level.WARNING, t.getMessage(), t);
-
-        throw LuceneException.create(t);
-      }
     }
   }
 
@@ -529,121 +526,37 @@ public class LuceneIndexBean
     return builder.toString();
   }
 
-  private void release(XIndexSearcher searcher) throws IOException
+  void release(BaratineIndexSearcher searcher) throws IOException
   {
-    XIndexSearcher oldSearcher = null;
-
-    synchronized (_searcherLock) {
-      if (searcher.isWarming()) {
-        searcher.setWarming(false);
-
-        oldSearcher = _searcher.getAndSet(searcher);
-
-        if (!_isSpawningSearcher.compareAndSet(true, false))
-          throw new IllegalStateException();
-      }
-      else if (_searcher.get() == searcher) {
-        searcher.decUseCount();
-      }
-      else if (searcher.decUseCount() == 0) {
-        oldSearcher = searcher;
-      }
-    }
-
-    if (oldSearcher != null && oldSearcher.getUseCount() == 0)
-      oldSearcher.release();
+    _searcherManager.release(searcher);
   }
 
   private void updateVersion()
   {
     _version.incrementAndGet();
+
+    updateSearcher();
   }
 
-  private XIndexSearcher acquireSearcher() throws IOException
+  public BaratineIndexSearcher acquireSearcher() throws IOException
   {
-    XIndexSearcher searcher;
-
-    synchronized (_searcherLock) {
-      searcher = _warmingSearcher.get();
-
-      if (searcher != null) {
-        _warmingSearcher.set(null);
-
-        return searcher;
-      }
-
-      searcher = _searcher.get();
-
-      if (searcher == null) {
-        searcher = createIndexSearcher(null, false);
-
-        _searcher.set(searcher);
-      }
-      else if (_version.get() == searcher.getVersion()) {
-
-      }
-      else {
-        boolean isSpawnNewSearcher
-          = (_version.get() - searcher.getVersion()) >= _softCommitMaxDocs;
-
-        isSpawnNewSearcher |= searcher.isExpired(_softCommitMaxAge);
-
-        if (isSpawnNewSearcher
-            && _isSpawningSearcher.compareAndSet(false, true)) {
-          searcher.incUseCount();
-          spawnNewIndexSearcher(searcher);
-        }
-      }
-
-      searcher.incUseCount();
-
-      return searcher;
-    }
+    return (BaratineIndexSearcher) _searcherManager.acquire();
   }
 
-  private void spawnNewIndexSearcher(XIndexSearcher latestSearcher)
+  public void updateSearcher()
   {
-    Thread thread = new Thread(() -> spawnNewIndexSearcherImpl(latestSearcher));
-    thread.start();
-  }
+    BaratineIndexSearcher searcher = _searcher.get();
 
-  private void spawnNewIndexSearcherImpl(XIndexSearcher latestSearcher)
-  {
     try {
-      XIndexSearcher searcher = createIndexSearcher(latestSearcher, true);
+      if (_version.get() - searcher.getVersion() >= _softCommitMaxDocs)
+        _searcherManager.maybeRefresh();
+      else if (System.currentTimeMillis() - searcher.getCreateTime()
+               > _softCommitMaxAge)
+        _searcherManager.maybeRefresh();
 
-      latestSearcher.decUseCount();
-      synchronized (_searcherLock) {
-
-        if (!_warmingSearcher.compareAndSet(null, searcher))
-          throw new IllegalStateException();
-      }
-    } catch (IOException e) {
-      log.warning(e.getMessage());
-    } finally {
+    } catch (Throwable e) {
+      log.log(Level.WARNING, e.getMessage(), e);
     }
-  }
-
-  private XIndexSearcher createIndexSearcher(XIndexSearcher latestSearcher,
-                                             boolean isWarming)
-    throws IOException
-  {
-    DirectoryReader reader;
-
-    long version = _version.get();
-
-    IndexWriter writer = getIndexWriter();
-
-    if (latestSearcher == null)
-      reader = DirectoryReader.open(writer, true);
-    else {
-      reader
-        = DirectoryReader.openIfChanged((DirectoryReader) latestSearcher.getIndexReader(),
-                                        writer,
-                                        true);
-    }
-
-    return new XIndexSearcher(reader, version, isWarming);
   }
 
   private IndexWriter getIndexWriter() throws IOException
@@ -685,7 +598,6 @@ public class LuceneIndexBean
     log.log(Level.FINER, "create new BfsDirectory");
 
     //Directory directory = new BfsDirectory();
-    //Directory directory = new RAMDirectory();
     Directory directory = MMapDirectory.open(getPath());
 
     directory = new NRTCachingDirectory(directory,
@@ -753,44 +665,28 @@ class LoggingInfoStream extends InfoStream
   }
 }
 
-class XIndexSearcher extends IndexSearcher
+class BaratineIndexSearcher extends IndexSearcher
 {
   private final static Logger log
-    = Logger.getLogger(XIndexSearcher.class.getName());
+    = Logger.getLogger(BaratineIndexSearcher.class.getName());
 
   private final AtomicInteger _useCount = new AtomicInteger();
   private final long _version;
-  private boolean _isWarming;
   private final long _createTime;
 
   private LruCache<Integer,String> _keysCache
     = new LruCache<>(8 * 1024);
 
-  public XIndexSearcher(IndexReader reader, long version, boolean isWarming)
+  public BaratineIndexSearcher(IndexReader reader,
+                               long version)
   {
     super(reader);
 
     _version = version;
-    _isWarming = isWarming;
 
     setQueryCache(null);
 
     _createTime = System.currentTimeMillis();
-  }
-
-  public int incUseCount()
-  {
-    return _useCount.incrementAndGet();
-  }
-
-  public int decUseCount()
-  {
-    return _useCount.decrementAndGet();
-  }
-
-  public int getUseCount()
-  {
-    return _useCount.get();
   }
 
   public long getCreateTime()
@@ -798,30 +694,9 @@ class XIndexSearcher extends IndexSearcher
     return _createTime;
   }
 
-  public void release() throws IOException
-  {
-    if (log.isLoggable(Level.FINER))
-      log.finer(this + " release ");
-
-    IndexReader reader = getIndexReader();
-
-    if (reader != null)
-      reader.close();
-  }
-
   public long getVersion()
   {
     return _version;
-  }
-
-  public boolean isWarming()
-  {
-    return _isWarming;
-  }
-
-  public void setWarming(boolean isWarming)
-  {
-    _isWarming = isWarming;
   }
 
   public String externalId(Integer key)
@@ -834,11 +709,6 @@ class XIndexSearcher extends IndexSearcher
     _keysCache.put(key, value);
   }
 
-  public boolean isExpired(long maxAge)
-  {
-    return (System.currentTimeMillis() - _createTime) > maxAge;
-  }
-
   @Override
   public String toString()
   {
@@ -849,7 +719,6 @@ class XIndexSearcher extends IndexSearcher
            + ", "
            + _version
            + ", "
-           + (_isWarming ? "cold" : "hot")
            + ", "
            + reader.getClass().getSimpleName()
            + '@'
@@ -857,5 +726,4 @@ class XIndexSearcher extends IndexSearcher
            +
            ']';
   }
-
 }

@@ -11,6 +11,7 @@ import io.baratine.core.Workers;
 import io.baratine.stream.StreamBuilder;
 import org.apache.lucene.queryparser.classic.QueryParser;
 
+import java.io.IOException;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -26,6 +27,8 @@ public class LuceneReaderImpl implements LuceneReader
 
   //@Inject
   private LuceneIndexBean _luceneBean = LuceneIndexBean.getInstance();
+
+  private BaratineIndexSearcher _searcher;
 
   private QueryParser _queryParser;
   private long _n;
@@ -65,6 +68,14 @@ public class LuceneReaderImpl implements LuceneReader
     throw new AbstractMethodError();
   }
 
+  @BeforeBatch
+  public void beforeBatch(Result<Boolean> result) throws IOException
+  {
+    _searcher = _luceneBean.acquireSearcher();
+
+    result.complete(true);
+  }
+
   public void search(String collection,
                      String query,
                      ResultStream<LuceneEntry> results)
@@ -96,12 +107,28 @@ public class LuceneReaderImpl implements LuceneReader
                                   String query)
   {
     QueryParser queryParser = getQueryParser();
-    LuceneEntry[] entries = _luceneBean.search(queryParser,
+    LuceneEntry[] entries = _luceneBean.search(_searcher,
+                                               queryParser,
                                                collection,
                                                query,
                                                255);
 
     return entries;
+  }
+
+  @AfterBatch
+  public void afterBatch(Result<Boolean> result) throws IOException
+  {
+    try {
+      if (_searcher != null) {
+        _luceneBean.release(_searcher);
+      }
+    } catch (IOException e) {
+      log.log(Level.WARNING, e.getMessage(), e);
+    } finally {
+      _searcher = null;
+      result.complete(true);
+    }
   }
 
   @OnDestroy
