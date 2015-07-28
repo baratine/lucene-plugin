@@ -2,8 +2,10 @@ package com.caucho.lucene;
 
 import com.caucho.env.system.RootDirectorySystem;
 import com.caucho.util.LruCache;
+import io.baratine.core.Result;
 import io.baratine.core.ServiceManager;
 import io.baratine.files.BfsFileSync;
+import io.baratine.timer.TimerService;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
@@ -54,7 +56,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
@@ -109,6 +110,8 @@ public class LuceneIndexBean extends SearcherFactory
 
   private LruCache<String,LuceneEntry[]> _resultsCache = new LruCache<>(512);
 
+  private TimerService _timer;
+
   public LuceneIndexBean()
   {
     _parser = new AutoDetectParser();
@@ -127,6 +130,15 @@ public class LuceneIndexBean extends SearcherFactory
     return _manager;
   }
 
+  private TimerService getTimer()
+  {
+    if (_timer == null) {
+      _timer = getManager().lookup("timer:///").as(TimerService.class);
+    }
+
+    return _timer;
+  }
+
   @PostConstruct
   public void init() throws IOException
   {
@@ -143,6 +155,10 @@ public class LuceneIndexBean extends SearcherFactory
     _searcherManager = new SearcherManager(getIndexWriter(),
                                            true, this);
 
+    getTimer().schedule(x -> updateSearcherOnTimer(),
+                        t -> nextTime(t),
+                        Result.ignore());
+
     log.finer("creating new " + this);
   }
 
@@ -151,7 +167,8 @@ public class LuceneIndexBean extends SearcherFactory
                                    IndexReader previousReader)
     throws IOException
   {
-    BaratineIndexSearcher searcher = new BaratineIndexSearcher(reader, _version.get());
+    BaratineIndexSearcher searcher = new BaratineIndexSearcher(reader,
+                                                               _version.get());
 
     _searcher.set(searcher);
 
@@ -535,7 +552,7 @@ public class LuceneIndexBean extends SearcherFactory
   {
     _version.incrementAndGet();
 
-    updateSearcher();
+    updateSearcher(false);
   }
 
   public BaratineIndexSearcher acquireSearcher() throws IOException
@@ -543,17 +560,27 @@ public class LuceneIndexBean extends SearcherFactory
     return (BaratineIndexSearcher) _searcherManager.acquire();
   }
 
-  public void updateSearcher()
+  void updateSearcherOnTimer()
+  {
+    updateSearcher(true);
+  }
+
+  public long nextTime(long now)
+  {
+    return now + _softCommitMaxAge;
+  }
+
+  public void updateSearcher(boolean isTimer)
   {
     BaratineIndexSearcher searcher = _searcher.get();
 
     try {
-      if (_version.get() - searcher.getVersion() >= _softCommitMaxDocs)
+      if (_version.get() - searcher.getVersion() >= _softCommitMaxDocs) {
         _searcherManager.maybeRefresh();
-      else if (System.currentTimeMillis() - searcher.getCreateTime()
-               > _softCommitMaxAge)
+      }
+      else if (isTimer && _version.get() > searcher.getVersion()) {
         _searcherManager.maybeRefresh();
-
+      }
     } catch (Throwable e) {
       log.log(Level.WARNING, e.getMessage(), e);
     }
@@ -670,9 +697,7 @@ class BaratineIndexSearcher extends IndexSearcher
   private final static Logger log
     = Logger.getLogger(BaratineIndexSearcher.class.getName());
 
-  private final AtomicInteger _useCount = new AtomicInteger();
   private final long _version;
-  private final long _createTime;
 
   private LruCache<Integer,String> _keysCache
     = new LruCache<>(8 * 1024);
@@ -685,13 +710,6 @@ class BaratineIndexSearcher extends IndexSearcher
     _version = version;
 
     setQueryCache(null);
-
-    _createTime = System.currentTimeMillis();
-  }
-
-  public long getCreateTime()
-  {
-    return _createTime;
   }
 
   public long getVersion()
@@ -714,11 +732,7 @@ class BaratineIndexSearcher extends IndexSearcher
   {
     IndexReader reader = getIndexReader();
     return "XIndexSearcher ["
-           +
-           _useCount.get()
-           + ", "
            + _version
-           + ", "
            + ", "
            + reader.getClass().getSimpleName()
            + '@'
