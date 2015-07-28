@@ -51,8 +51,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -89,9 +87,6 @@ public class LuceneIndexBean
   @Inject
   ServiceManager _manager;
 
-  //@Inject
-  ExecutorService _executorService;
-
   private StandardAnalyzer _analyzer;
 
   private double _maxMergeSizeMb = 4;
@@ -106,9 +101,9 @@ public class LuceneIndexBean
   private final AtomicReference<XIndexSearcher> _warmingSearcher
     = new AtomicReference<>();
 
-  private AtomicBoolean _isInitialized = new AtomicBoolean(false);
-
   private AtomicBoolean _isSpawningSearcher = new AtomicBoolean();
+
+  private AtomicBoolean _isInitialized = new AtomicBoolean(false);
 
   private final AtomicLong _version = new AtomicLong();
 
@@ -134,15 +129,6 @@ public class LuceneIndexBean
       _manager = ServiceManager.getCurrent();
 
     return _manager;
-  }
-
-  private ExecutorService getExecutorService()
-  {
-    if (_executorService == null) {
-      _executorService = Executors.newFixedThreadPool(1);
-    }
-
-    return _executorService;
   }
 
   @PostConstruct
@@ -502,6 +488,12 @@ public class LuceneIndexBean
     }
   }
 
+  @Override
+  public String toString()
+  {
+    return this.getClass().getSimpleName() + '[' + _manager + ']';
+  }
+
   private String escape(String collection)
   {
     StringBuilder builder = new StringBuilder();
@@ -562,38 +554,9 @@ public class LuceneIndexBean
       oldSearcher.release();
   }
 
-  @Override
-  public String toString()
-  {
-    return this.getClass().getSimpleName() + '[' + _manager + ']';
-  }
-
   private void updateVersion()
   {
     _version.incrementAndGet();
-
-    updateSearcher();
-  }
-
-  void updateSearcher()
-  {
-    synchronized (_searcherLock) {
-      XIndexSearcher searcher = _searcher.get();
-
-      if (searcher == null)
-        return;
-
-      boolean isSpawnNewSearcher = searcher.isExpired(_softCommitMaxAge);
-
-      isSpawnNewSearcher |= (_version.get() - _softCommitMaxDocs)
-                            >= searcher.getVersion();
-
-      if (!isSpawnNewSearcher)
-        return;
-
-      if (_isSpawningSearcher.compareAndSet(false, true))
-        spawnNewIndexSearcher(searcher);
-    }
   }
 
   private XIndexSearcher acquireSearcher() throws IOException
@@ -616,16 +579,32 @@ public class LuceneIndexBean
 
         _searcher.set(searcher);
       }
+      else if (_version.get() == searcher.getVersion()) {
+
+      }
+      else {
+        boolean isSpawnNewSearcher
+          = (_version.get() - searcher.getVersion()) >= _softCommitMaxDocs;
+
+        isSpawnNewSearcher |= searcher.isExpired(_softCommitMaxAge);
+
+        if (isSpawnNewSearcher
+            && _isSpawningSearcher.compareAndSet(false, true)) {
+          searcher.incUseCount();
+          spawnNewIndexSearcher(searcher);
+        }
+      }
 
       searcher.incUseCount();
-    }
 
-    return searcher;
+      return searcher;
+    }
   }
 
   private void spawnNewIndexSearcher(XIndexSearcher latestSearcher)
   {
-    getExecutorService().submit(() -> spawnNewIndexSearcherImpl(latestSearcher));
+    Thread thread = new Thread(() -> spawnNewIndexSearcherImpl(latestSearcher));
+    thread.start();
   }
 
   private void spawnNewIndexSearcherImpl(XIndexSearcher latestSearcher)
@@ -633,12 +612,15 @@ public class LuceneIndexBean
     try {
       XIndexSearcher searcher = createIndexSearcher(latestSearcher, true);
 
+      latestSearcher.decUseCount();
       synchronized (_searcherLock) {
+
         if (!_warmingSearcher.compareAndSet(null, searcher))
           throw new IllegalStateException();
       }
     } catch (IOException e) {
       log.warning(e.getMessage());
+    } finally {
     }
   }
 

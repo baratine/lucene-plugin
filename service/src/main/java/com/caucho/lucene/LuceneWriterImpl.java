@@ -1,6 +1,5 @@
 package com.caucho.lucene;
 
-import io.baratine.core.AfterBatch;
 import io.baratine.core.CancelHandle;
 import io.baratine.core.Lookup;
 import io.baratine.core.Modify;
