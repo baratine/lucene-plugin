@@ -57,6 +57,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -114,6 +115,8 @@ public class LuceneIndexBean extends SearcherFactory
   private boolean _isRunRefresh = false;
 
   private LuceneIndexWriter _indexWriter;
+
+  private AtomicLong _notFoundCounter = new AtomicLong();
 
   public LuceneIndexBean()
   {
@@ -401,8 +404,16 @@ public class LuceneIndexBean extends SearcherFactory
         results[i] = entry;
       }
 
-      if (results.length > 0)
+      if (results.length > 0) {
         _resultsCache.put(cacheKey, results);
+      }
+      else {
+        long notFound = _notFoundCounter.incrementAndGet();
+
+        if (notFound % 100 == 0) { //XXX: debug
+          log.warning(String.format("search not found %1$d", notFound));
+        }
+      }
 
       if (log.isLoggable(Level.FINER))
         log.finer(
