@@ -108,6 +108,20 @@ public class LuceneWriterImpl implements LuceneIndexWriter
   }
 
   @Override
+  public void touch(Result<Boolean> result)
+  {
+    result.complete(true);
+  }
+
+  @AfterBatch
+  public void afterBatch(Result<Boolean> result)
+  {
+    _luceneBean.updateSearcher();
+
+    result.complete(true);
+  }
+
+  @Override
   @Modify
   public void delete(String collection, String id, Result<Boolean> result)
     throws LuceneException

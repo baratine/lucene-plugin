@@ -2,6 +2,7 @@ package com.caucho.lucene;
 
 import com.caucho.env.system.RootDirectorySystem;
 import com.caucho.util.LruCache;
+import io.baratine.core.CancelHandle;
 import io.baratine.core.Result;
 import io.baratine.core.ServiceManager;
 import io.baratine.files.BfsFileSync;
@@ -56,8 +57,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -101,16 +101,19 @@ public class LuceneIndexBean extends SearcherFactory
 
   private AtomicBoolean _isInitialized = new AtomicBoolean(false);
 
-  private final AtomicLong _version = new AtomicLong();
-
-  private final AtomicReference<BaratineIndexSearcher> _searcher
-    = new AtomicReference<>();
-
   private LruCache<String,Query> _queryCache = new LruCache<>(1024);
 
   private LruCache<String,LuceneEntry[]> _resultsCache = new LruCache<>(512);
 
   private TimerService _timer;
+
+  private int _updatesCounter = 0;
+
+  private Consumer<CancelHandle> _updateEventConsumer;
+
+  private boolean _isRunRefresh = false;
+
+  private LuceneIndexWriter _indexWriter;
 
   public LuceneIndexBean()
   {
@@ -155,9 +158,8 @@ public class LuceneIndexBean extends SearcherFactory
     _searcherManager = new SearcherManager(getIndexWriter(),
                                            true, this);
 
-    getTimer().schedule(x -> updateSearcherOnTimer(),
-                        t -> nextTime(t),
-                        Result.ignore());
+    _indexWriter
+      = getManager().lookup("/lucene-writer").as(LuceneIndexWriter.class);
 
     log.finer("creating new " + this);
   }
@@ -167,10 +169,7 @@ public class LuceneIndexBean extends SearcherFactory
                                    IndexReader previousReader)
     throws IOException
   {
-    BaratineIndexSearcher searcher = new BaratineIndexSearcher(reader,
-                                                               _version.get());
-
-    _searcher.set(searcher);
+    BaratineIndexSearcher searcher = new BaratineIndexSearcher(reader);
 
     return searcher;
   }
@@ -550,9 +549,25 @@ public class LuceneIndexBean extends SearcherFactory
 
   private void updateVersion()
   {
-    _version.incrementAndGet();
+    _updatesCounter++;
 
-    updateSearcher(false);
+    if (_isRunRefresh) {
+    }
+    else if (_updatesCounter >= _softCommitMaxDocs) {
+      _isRunRefresh = true;
+      log.warning(String.format("set isRunRefresh to true %1$d",
+                                _updatesCounter));
+    }
+    else if (_updateEventConsumer == null) {
+      _updateEventConsumer = cancelHandle -> updateSearcherOnTimer();
+
+      log.warning(String.format("timer schedule %1$d",
+                                _updatesCounter));
+
+      getTimer().runAfter(_updateEventConsumer,
+                          _softCommitMaxAge,
+                          TimeUnit.MILLISECONDS);
+    }
   }
 
   public BaratineIndexSearcher acquireSearcher() throws IOException
@@ -562,24 +577,33 @@ public class LuceneIndexBean extends SearcherFactory
 
   void updateSearcherOnTimer()
   {
-    updateSearcher(true);
+    _isRunRefresh = true;
+    _updateEventConsumer = null;
+    _indexWriter.touch(Result.ignore());
+
+    log.warning(String.format("timer touch IndexWriter %1$d", _updatesCounter));
   }
 
-  public long nextTime(long now)
+  public void updateSearcher()
   {
-    return now + _softCommitMaxAge;
-  }
-
-  public void updateSearcher(boolean isTimer)
-  {
-    BaratineIndexSearcher searcher = _searcher.get();
-
     try {
-      if (_version.get() - searcher.getVersion() >= _softCommitMaxDocs) {
-        _searcherManager.maybeRefresh();
-      }
-      else if (isTimer && _version.get() > searcher.getVersion()) {
-        _searcherManager.maybeRefresh();
+      log.warning(String.format(
+        "update searcher isRunRefresh: %1$s, _updateCounter: %2$d",
+        _isRunRefresh,
+        _updatesCounter));
+
+      if (!_isRunRefresh)
+        return;
+
+      boolean isRefreshed = _searcherManager.maybeRefresh();
+
+      log.warning(String.format("update searcher %1$d %2$s",
+                                _updatesCounter,
+                                isRefreshed));
+
+      if (isRefreshed) {
+        _updatesCounter = 0;
+        _isRunRefresh = false;
       }
     } catch (Throwable e) {
       log.log(Level.WARNING, e.getMessage(), e);
@@ -697,24 +721,13 @@ class BaratineIndexSearcher extends IndexSearcher
   private final static Logger log
     = Logger.getLogger(BaratineIndexSearcher.class.getName());
 
-  private final long _version;
-
   private LruCache<Integer,String> _keysCache
     = new LruCache<>(8 * 1024);
 
-  public BaratineIndexSearcher(IndexReader reader,
-                               long version)
+  public BaratineIndexSearcher(IndexReader reader)
   {
     super(reader);
-
-    _version = version;
-
     setQueryCache(null);
-  }
-
-  public long getVersion()
-  {
-    return _version;
   }
 
   public String externalId(Integer key)
@@ -732,8 +745,6 @@ class BaratineIndexSearcher extends IndexSearcher
   {
     IndexReader reader = getIndexReader();
     return "XIndexSearcher ["
-           + _version
-           + ", "
            + reader.getClass().getSimpleName()
            + '@'
            + System.identityHashCode(reader)
