@@ -120,9 +120,7 @@ public class LuceneWriterImpl implements LuceneIndexWriter
   @AfterBatch
   public void afterBatch(Result<Boolean> result)
   {
-    _searcherUpdateService.updateSearcher(Result.<Boolean>ignore());
-
-    result.complete(true);
+    _searcherUpdateService.updateSearcher(result);
   }
 
   @Override
