@@ -33,6 +33,10 @@ public class LuceneWriterImpl implements LuceneIndexWriter
   private long _lastCommit = -1;
 
   @Inject
+  @Lookup("/searcher-update-service")
+  private SearcherUpdateService _searcherUpdateService;
+
+  @Inject
   @Lookup("timer:///")
   private TimerService _timerService;
 
@@ -116,7 +120,7 @@ public class LuceneWriterImpl implements LuceneIndexWriter
   @AfterBatch
   public void afterBatch(Result<Boolean> result)
   {
-    _luceneBean.updateSearcher();
+    _searcherUpdateService.updateSearcher(Result.<Boolean>ignore());
 
     result.complete(true);
   }

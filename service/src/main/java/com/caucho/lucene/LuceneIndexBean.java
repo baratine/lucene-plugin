@@ -3,7 +3,6 @@ package com.caucho.lucene;
 import com.caucho.env.system.RootDirectorySystem;
 import com.caucho.util.LruCache;
 import io.baratine.core.CancelHandle;
-import io.baratine.core.Result;
 import io.baratine.core.ServiceManager;
 import io.baratine.files.BfsFileSync;
 import io.baratine.timer.TimerService;
@@ -108,11 +107,11 @@ public class LuceneIndexBean extends SearcherFactory
 
   private TimerService _timer;
 
-  private int _updatesCounter = 0;
+  private AtomicLong _updatesCounter = new AtomicLong();
 
   private Consumer<CancelHandle> _updateEventConsumer;
 
-  private boolean _isRunRefresh = false;
+//  private boolean _isRunRefresh = false;
 
   private LuceneIndexWriter _indexWriter;
 
@@ -560,7 +559,8 @@ public class LuceneIndexBean extends SearcherFactory
 
   private void updateVersion()
   {
-    _updatesCounter++;
+    _updatesCounter.incrementAndGet();
+/*
 
     if (_isRunRefresh) {
     }
@@ -579,6 +579,7 @@ public class LuceneIndexBean extends SearcherFactory
                           _softCommitMaxAge,
                           TimeUnit.MILLISECONDS);
     }
+*/
   }
 
   public BaratineIndexSearcher acquireSearcher() throws IOException
@@ -586,6 +587,7 @@ public class LuceneIndexBean extends SearcherFactory
     return (BaratineIndexSearcher) _searcherManager.acquire();
   }
 
+/*
   void updateSearcherOnTimer()
   {
     _isRunRefresh = true;
@@ -594,27 +596,33 @@ public class LuceneIndexBean extends SearcherFactory
 
     log.warning(String.format("timer touch IndexWriter %1$d", _updatesCounter));
   }
+*/
 
   public void updateSearcher()
   {
     try {
-      log.warning(String.format(
+/*      log.warning(String.format(
         "update searcher isRunRefresh: %1$s, _updateCounter: %2$d",
         _isRunRefresh,
         _updatesCounter));
 
       if (!_isRunRefresh)
         return;
+*/
+
+      long counter = _updatesCounter.get();
+      if (counter < 16)
+        return;
 
       boolean isRefreshed = _searcherManager.maybeRefresh();
 
-      log.warning(String.format("update searcher %1$d %2$s",
+      log.warning(String.format("update searcher %1$s %2$s",
                                 _updatesCounter,
                                 isRefreshed));
 
       if (isRefreshed) {
-        _updatesCounter = 0;
-        _isRunRefresh = false;
+        _updatesCounter.addAndGet(-counter);
+//        _isRunRefresh = false;
       }
     } catch (Throwable e) {
       log.log(Level.WARNING, e.getMessage(), e);

@@ -1,7 +1,5 @@
 package com.caucho.lucene;
 
-import io.baratine.core.AfterBatch;
-import io.baratine.core.BeforeBatch;
 import io.baratine.core.OnDestroy;
 import io.baratine.core.OnInit;
 import io.baratine.core.Result;
@@ -68,7 +66,7 @@ public class LuceneReaderImpl implements LuceneReader
     throw new AbstractMethodError();
   }
 
-  @BeforeBatch
+  //@BeforeBatch
   public void beforeBatch(Result<Boolean> result) throws IOException
   {
     _searcher = _luceneBean.acquireSearcher();
@@ -78,7 +76,7 @@ public class LuceneReaderImpl implements LuceneReader
 
   public void search(String collection,
                      String query,
-                     ResultStream<LuceneEntry> results)
+                     ResultStream<LuceneEntry> results) throws IOException
   {
     if (log.isLoggable(Level.FINER))
       log.finer(String.format("search('%1$s', %2$s)", collection, query));
@@ -90,12 +88,6 @@ public class LuceneReaderImpl implements LuceneReader
                                          results,
                                          entries.length));
 
-    if (entries.length == 0) {
-      log.log(Level.INFO, String.format(
-        "search returned no entries for query %1$s",
-        query));
-    }
-
     for (LuceneEntry entry : entries) {
       results.accept(entry);
     }
@@ -104,19 +96,36 @@ public class LuceneReaderImpl implements LuceneReader
   }
 
   public LuceneEntry[] searchImpl(String collection,
-                                  String query)
+                                  String query) throws IOException
   {
     QueryParser queryParser = getQueryParser();
-    LuceneEntry[] entries = _luceneBean.search(_searcher,
-                                               queryParser,
-                                               collection,
-                                               query,
-                                               255);
 
-    return entries;
+    BaratineIndexSearcher searcher = null;
+
+    try {
+      searcher = _luceneBean.acquireSearcher();
+      LuceneEntry[] entries = _luceneBean.search(searcher,
+                                                 queryParser,
+                                                 collection,
+                                                 query,
+                                                 255);
+
+      return entries;
+    } catch (Throwable e) {
+      log.log(Level.WARNING, e.getMessage(), e);
+
+      throw e;
+    } finally {
+      if (searcher != null)
+        try {
+          _luceneBean.release(searcher);
+        } catch (Exception e) {
+          log.log(Level.WARNING, e.getMessage(), e);
+        }
+    }
   }
 
-  @AfterBatch
+  //@AfterBatch
   public void afterBatch(Result<Boolean> result) throws IOException
   {
     try {
