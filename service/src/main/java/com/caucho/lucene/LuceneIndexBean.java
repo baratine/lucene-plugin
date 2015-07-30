@@ -52,6 +52,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Date;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -116,6 +117,8 @@ public class LuceneIndexBean extends SearcherFactory
   private LuceneIndexWriter _indexWriter;
 
   private AtomicLong _notFoundCounter = new AtomicLong();
+
+  private Date _lastRejectedSearcherUpdate;
 
   public LuceneIndexBean()
   {
@@ -571,10 +574,14 @@ public class LuceneIndexBean extends SearcherFactory
     try {
       long counter = _updatesCounter.get();
 
-      if (counter < _softCommitMaxDocs)
-        return;
+      if (counter < _softCommitMaxDocs) {
+        _lastRejectedSearcherUpdate = new Date();
 
-      log.warning(String.format("update searcher %1$s", _updatesCounter));
+        return;
+      }
+
+      log.warning(String.format("update searcher %1$s %2$s", _updatesCounter,
+                                _lastRejectedSearcherUpdate));
 
       boolean isRefreshed = _searcherManager.maybeRefresh();
 
