@@ -5,6 +5,7 @@ import io.baratine.core.OnInit;
 import io.baratine.core.Result;
 import io.baratine.core.Service;
 
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -16,9 +17,12 @@ public class SearcherUpdateServiceImpl implements SearcherUpdateService
 
   LuceneIndexBean _luceneIndexBean;
 
+  private AtomicLong _counter = new AtomicLong();
+
   @OnInit
   public void init()
   {
+    _luceneIndexBean = LuceneIndexBean.getInstance();
   }
 
   @Override
@@ -33,7 +37,5 @@ public class SearcherUpdateServiceImpl implements SearcherUpdateService
     _luceneIndexBean.updateSearcher();
 
     result.complete(true);
-
-    log.log(Level.WARNING, "afterBatch SearcherUpdateServiceImpl");
   }
 }

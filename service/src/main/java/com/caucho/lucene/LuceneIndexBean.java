@@ -242,7 +242,7 @@ public class LuceneIndexBean extends SearcherFactory
           document.add(new TextField(name, value, Field.Store.NO));
         }
       }
-      log.warning(String.format("indexing ('%1$s') ",pkTerm));
+      log.warning(String.format("indexing ('%1$s') ", pkTerm));
       writer.updateDocument(pkTerm, document);
 
       if (log.isLoggable(Level.FINER))
@@ -570,6 +570,9 @@ public class LuceneIndexBean extends SearcherFactory
   {
     try {
       long counter = _updatesCounter.get();
+
+      if (counter < _softCommitMaxDocs)
+        return;
 
       log.warning(String.format("update searcher %1$s", _updatesCounter));
 
