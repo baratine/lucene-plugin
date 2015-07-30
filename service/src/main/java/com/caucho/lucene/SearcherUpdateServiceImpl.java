@@ -1,12 +1,14 @@
 package com.caucho.lucene;
 
 import io.baratine.core.AfterBatch;
+import io.baratine.core.Lookup;
 import io.baratine.core.OnInit;
 import io.baratine.core.Result;
 import io.baratine.core.Service;
+import io.baratine.timer.TimerService;
 
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.logging.Level;
+import javax.inject.Inject;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
 @Service("/searcher-update-service")
@@ -17,12 +19,17 @@ public class SearcherUpdateServiceImpl implements SearcherUpdateService
 
   LuceneIndexBean _luceneIndexBean;
 
-  private AtomicLong _counter = new AtomicLong();
+  @Inject
+  @Lookup("timer:///")
+  private TimerService _timerService;
 
   @OnInit
   public void init()
   {
     _luceneIndexBean = LuceneIndexBean.getInstance();
+
+    _timerService.runEvery(x -> updateSearcher(Result.ignore()), 100,
+                           TimeUnit.MILLISECONDS, Result.ignore());
   }
 
   @Override

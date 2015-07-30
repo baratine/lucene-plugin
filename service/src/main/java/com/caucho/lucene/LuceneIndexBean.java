@@ -245,7 +245,7 @@ public class LuceneIndexBean extends SearcherFactory
           document.add(new TextField(name, value, Field.Store.NO));
         }
       }
-      log.warning(String.format("indexing ('%1$s') ", pkTerm));
+      //log.warning(String.format("indexing ('%1$s') ", pkTerm));
       writer.updateDocument(pkTerm, document);
 
       if (log.isLoggable(Level.FINER))
@@ -412,7 +412,7 @@ public class LuceneIndexBean extends SearcherFactory
         long notFound = _notFoundCounter.incrementAndGet();
 
         if (notFound % 100 == 0) { //XXX: debug
-          log.warning(String.format("search not found %1$d", notFound));
+          //log.warning(String.format("search not found %1$d", notFound));
         }
       }
 
@@ -580,18 +580,22 @@ public class LuceneIndexBean extends SearcherFactory
         return;
       }
 
+/*
       log.warning(String.format(
         "update searcher %1$s last-searcher-update-request-time: %2$tH:%2$tM:%2$tS,%2$tL",
         _updatesCounter,
         _searcherUpdateRequestTime));
+*/
 
       _searcherUpdateRequestTime = new Date();
 
       boolean isRefreshed = _searcherManager.maybeRefresh();
 
+/*
       log.warning(String.format("update searcher %1$d %2$s",
                                 counter,
                                 isRefreshed));
+*/
 
       if (isRefreshed) {
         _updatesCounter.addAndGet(-counter);
@@ -614,7 +618,7 @@ public class LuceneIndexBean extends SearcherFactory
     iwc.setOpenMode(IndexWriterConfig.OpenMode.CREATE_OR_APPEND);
     iwc.setMergedSegmentWarmer(new SimpleMergedSegmentWarmer(new LoggingInfoStream()));
     iwc.setReaderPooling(true);
-
+/*
     iwc.setInfoStream(new InfoStream()
     {
       @Override
@@ -634,7 +638,7 @@ public class LuceneIndexBean extends SearcherFactory
       {
 
       }
-    });
+    });*/
 
     TieredMergePolicy mergePolicy = new TieredMergePolicy();
 
