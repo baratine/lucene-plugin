@@ -574,11 +574,13 @@ public class LuceneIndexBean extends SearcherFactory
     try {
       long counter = _updatesCounter.get();
 
+/*
       if (counter < _softCommitMaxDocs) {
         _searcherUpdateRequestTime = new Date();
 
         return;
       }
+*/
 
 /*
       log.warning(String.format(
