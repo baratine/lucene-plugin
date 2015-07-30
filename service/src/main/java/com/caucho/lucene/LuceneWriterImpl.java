@@ -111,12 +111,6 @@ public class LuceneWriterImpl implements LuceneIndexWriter
     }
   }
 
-  @Override
-  public void touch(Result<Boolean> result)
-  {
-    result.complete(true);
-  }
-
   @AfterBatch
   public void afterBatch(Result<Boolean> result)
   {

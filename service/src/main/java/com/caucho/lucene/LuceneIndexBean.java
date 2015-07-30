@@ -157,8 +157,7 @@ public class LuceneIndexBean extends SearcherFactory
 
     initIndexWriter();
 
-    _searcherManager = new SearcherManager(getIndexWriter(),
-                                           true, this);
+    _searcherManager = new SearcherManager(getIndexWriter(), true, this);
 
     _indexWriter
       = getManager().lookup("/lucene-writer").as(LuceneIndexWriter.class);
@@ -243,7 +242,7 @@ public class LuceneIndexBean extends SearcherFactory
           document.add(new TextField(name, value, Field.Store.NO));
         }
       }
-
+      log.warning(String.format("indexing ('%1$s') ",pkTerm));
       writer.updateDocument(pkTerm, document);
 
       if (log.isLoggable(Level.FINER))
@@ -560,26 +559,6 @@ public class LuceneIndexBean extends SearcherFactory
   private void updateVersion()
   {
     _updatesCounter.incrementAndGet();
-/*
-
-    if (_isRunRefresh) {
-    }
-    else if (_updatesCounter >= _softCommitMaxDocs) {
-      _isRunRefresh = true;
-      log.warning(String.format("set isRunRefresh to true %1$d",
-                                _updatesCounter));
-    }
-    else if (_updateEventConsumer == null) {
-      _updateEventConsumer = cancelHandle -> updateSearcherOnTimer();
-
-      log.warning(String.format("timer schedule %1$d",
-                                _updatesCounter));
-
-      getTimer().runAfter(_updateEventConsumer,
-                          _softCommitMaxAge,
-                          TimeUnit.MILLISECONDS);
-    }
-*/
   }
 
   public BaratineIndexSearcher acquireSearcher() throws IOException
@@ -587,32 +566,12 @@ public class LuceneIndexBean extends SearcherFactory
     return (BaratineIndexSearcher) _searcherManager.acquire();
   }
 
-/*
-  void updateSearcherOnTimer()
-  {
-    _isRunRefresh = true;
-    _updateEventConsumer = null;
-    _indexWriter.touch(Result.ignore());
-
-    log.warning(String.format("timer touch IndexWriter %1$d", _updatesCounter));
-  }
-*/
-
   public void updateSearcher()
   {
     try {
-/*      log.warning(String.format(
-        "update searcher isRunRefresh: %1$s, _updateCounter: %2$d",
-        _isRunRefresh,
-        _updatesCounter));
-
-      if (!_isRunRefresh)
-        return;
-*/
-
       long counter = _updatesCounter.get();
-      if (counter < 16)
-        return;
+
+      log.warning(String.format("update searcher %1$s", _updatesCounter));
 
       boolean isRefreshed = _searcherManager.maybeRefresh();
 
@@ -622,7 +581,6 @@ public class LuceneIndexBean extends SearcherFactory
 
       if (isRefreshed) {
         _updatesCounter.addAndGet(-counter);
-//        _isRunRefresh = false;
       }
     } catch (Throwable e) {
       log.log(Level.WARNING, e.getMessage(), e);
@@ -642,6 +600,27 @@ public class LuceneIndexBean extends SearcherFactory
     iwc.setOpenMode(IndexWriterConfig.OpenMode.CREATE_OR_APPEND);
     iwc.setMergedSegmentWarmer(new SimpleMergedSegmentWarmer(new LoggingInfoStream()));
     iwc.setReaderPooling(true);
+
+    iwc.setInfoStream(new InfoStream()
+    {
+      @Override
+      public void message(String s, String s1)
+      {
+        log.warning(s + ": " + s1);
+      }
+
+      @Override
+      public boolean isEnabled(String s)
+      {
+        return true;
+      }
+
+      @Override
+      public void close() throws IOException
+      {
+
+      }
+    });
 
     TieredMergePolicy mergePolicy = new TieredMergePolicy();
 
