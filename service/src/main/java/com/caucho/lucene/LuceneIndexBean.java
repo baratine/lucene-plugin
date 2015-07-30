@@ -118,7 +118,7 @@ public class LuceneIndexBean extends SearcherFactory
 
   private AtomicLong _notFoundCounter = new AtomicLong();
 
-  private Date _lastRejectedSearcherUpdate;
+  private Date _searcherUpdateRequestTime;
 
   public LuceneIndexBean()
   {
@@ -575,18 +575,22 @@ public class LuceneIndexBean extends SearcherFactory
       long counter = _updatesCounter.get();
 
       if (counter < _softCommitMaxDocs) {
-        _lastRejectedSearcherUpdate = new Date();
+        _searcherUpdateRequestTime = new Date();
 
         return;
       }
 
-      log.warning(String.format("update searcher %1$s %2$s", _updatesCounter,
-                                _lastRejectedSearcherUpdate));
+      log.warning(String.format(
+        "update searcher %1$s last-searcher-update-request-time: %2$tH:%2$tM:%2$tS,%2$tL",
+        _updatesCounter,
+        _searcherUpdateRequestTime));
+
+      _searcherUpdateRequestTime = new Date();
 
       boolean isRefreshed = _searcherManager.maybeRefresh();
 
-      log.warning(String.format("update searcher %1$s %2$s",
-                                _updatesCounter,
+      log.warning(String.format("update searcher %1$d %2$s",
+                                counter,
                                 isRefreshed));
 
       if (isRefreshed) {
