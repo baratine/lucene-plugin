@@ -1,7 +1,6 @@
 package com.caucho.lucene;
 
 import io.baratine.core.AfterBatch;
-import io.baratine.core.CancelHandle;
 import io.baratine.core.Lookup;
 import io.baratine.core.Modify;
 import io.baratine.core.OnInit;
@@ -94,15 +93,16 @@ public class LuceneWriterImpl implements LuceneIndexWriter
     if (_lastCommit == -1 || now > (_lastCommit + commitInterval)) {
       _lastCommit = now;
 
-      _timerService.runAfter(h -> executeCommit(h),
+      _timerService.runAfter(h -> executeCommit(),
                              commitInterval,
-                             TimeUnit.MILLISECONDS);
+                             TimeUnit.MILLISECONDS,
+                             Result.ignore());
     }
 
     result.complete(true);
   }
 
-  private void executeCommit(CancelHandle handle)
+  private void executeCommit()
   {
     try {
       _luceneBean.commit();

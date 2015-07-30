@@ -4,7 +4,7 @@ import io.baratine.core.Lookup;
 import io.baratine.core.Result;
 import io.baratine.core.Service;
 import io.baratine.core.ServiceRef;
-import io.baratine.stream.StreamBuilder;
+import io.baratine.stream.ResultStreamBuilder;
 
 import javax.inject.Inject;
 import java.util.ArrayList;
@@ -76,14 +76,6 @@ public class LuceneFacadeImpl implements LuceneFacade
     checkCollection(collection);
     checkQuery(query);
 
-    StreamBuilder<LuceneEntry> stream = _indexReader.search(collection, query);
-
-    stream.collect(ArrayList<LuceneEntry>::new,
-                   (l, e) -> l.add(e),
-                   (a, b) -> a.addAll(b),
-                   result.from(x -> x));
-
-/*
     ResultStreamBuilder<LuceneEntry> stream = _indexReader.search(collection,
                                                                   query);
 
@@ -98,8 +90,7 @@ public class LuceneFacadeImpl implements LuceneFacade
       entries.addAll(luceneEntries);
     }
 
-*/
-
+    result.complete(entries);
   }
 
   private void checkCollection(String collection)

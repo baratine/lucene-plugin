@@ -6,7 +6,7 @@ import io.baratine.core.Result;
 import io.baratine.core.ResultStream;
 import io.baratine.core.Service;
 import io.baratine.core.Workers;
-import io.baratine.stream.StreamBuilder;
+import io.baratine.stream.ResultStreamBuilder;
 import org.apache.lucene.queryparser.classic.QueryParser;
 
 import java.io.IOException;
@@ -61,7 +61,7 @@ public class LuceneReaderImpl implements LuceneReader
   }
 
   @Override
-  public StreamBuilder search(String collection, String query)
+  public ResultStreamBuilder search(String collection, String query)
   {
     throw new AbstractMethodError();
   }
