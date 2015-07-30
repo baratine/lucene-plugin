@@ -589,7 +589,7 @@ public class LuceneIndexBean extends SearcherFactory
         _searcherUpdateRequestTime));
 */
 
-      _searcherUpdateRequestTime = new Date();
+      //_searcherUpdateRequestTime = new Date();
 
       boolean isRefreshed = _searcherManager.maybeRefresh();
 
