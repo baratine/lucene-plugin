@@ -106,12 +106,6 @@ public class LuceneWriterImpl implements LuceneIndexWriter
     _isCommitTimer = null;
   }
 
-  @AfterBatch
-  public void afterBatch(Result<Boolean> result)
-  {
-    _searcherUpdateService.updateSearcher(result);
-  }
-
   @Override
   @Modify
   public void delete(String collection, String id, Result<Boolean> result)
