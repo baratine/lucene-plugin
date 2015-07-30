@@ -16,8 +16,6 @@ public class SearcherUpdateServiceImpl implements SearcherUpdateService
 
   LuceneIndexBean _luceneIndexBean;
 
-  private AtomicLong _updateRequestCounter = new AtomicLong();
-
   @OnInit
   public void init()
   {
