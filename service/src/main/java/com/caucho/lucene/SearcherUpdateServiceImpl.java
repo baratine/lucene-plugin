@@ -5,7 +5,6 @@ import io.baratine.core.OnInit;
 import io.baratine.core.Result;
 import io.baratine.core.Service;
 
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Logger;
 
 @Service("/searcher-update-service")
