@@ -110,8 +110,6 @@ public class LuceneIndexBean extends SearcherFactory
 
   private AtomicLong _updatesCounter = new AtomicLong();
 
-  private Consumer<CancelHandle> _updateEventConsumer;
-
 //  private boolean _isRunRefresh = false;
 
   private LuceneIndexWriter _indexWriter;

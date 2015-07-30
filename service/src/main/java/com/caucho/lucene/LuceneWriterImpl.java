@@ -1,6 +1,7 @@
 package com.caucho.lucene;
 
 import io.baratine.core.AfterBatch;
+import io.baratine.core.CancelHandle;
 import io.baratine.core.Lookup;
 import io.baratine.core.Modify;
 import io.baratine.core.OnInit;
@@ -11,9 +12,9 @@ import io.baratine.timer.TimerService;
 import org.apache.lucene.queryparser.classic.QueryParser;
 
 import javax.inject.Inject;
-import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -29,7 +30,7 @@ public class LuceneWriterImpl implements LuceneIndexWriter
   private LuceneIndexBean _luceneBean = LuceneIndexBean.getInstance();
   private QueryParser _queryParser;
 
-  private long _lastCommit = -1;
+  private Consumer<CancelHandle> _isCommitTimer;
 
   @Inject
   @Lookup("/searcher-update-service")
@@ -46,6 +47,7 @@ public class LuceneWriterImpl implements LuceneIndexWriter
 
     try {
       _luceneBean.init();
+
       _queryParser = _luceneBean.createQueryParser();
 
       result.complete(true);
@@ -88,13 +90,9 @@ public class LuceneWriterImpl implements LuceneIndexWriter
   @OnSave
   public void commit(Result<Boolean> result)
   {
-    long now = System.currentTimeMillis();
-
-    if (_lastCommit == -1 || now > (_lastCommit + commitInterval)) {
-      _lastCommit = now;
-
-      _timerService.runAfter(h -> executeCommit(),
-                             commitInterval,
+    if (_isCommitTimer == null) {
+      _timerService.runAfter(_isCommitTimer = h -> executeCommit(),
+                             100,
                              TimeUnit.MILLISECONDS,
                              Result.ignore());
     }
@@ -104,11 +102,8 @@ public class LuceneWriterImpl implements LuceneIndexWriter
 
   private void executeCommit()
   {
-    try {
-      _luceneBean.commit();
-    } catch (IOException e) {
-      log.log(Level.WARNING, e.getMessage(), e);
-    }
+    _searcherUpdateService.updateSearcher(Result.<Boolean>ignore());
+    _isCommitTimer = null;
   }
 
   @AfterBatch
