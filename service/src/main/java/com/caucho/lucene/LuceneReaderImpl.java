@@ -106,7 +106,6 @@ public class LuceneReaderImpl implements LuceneReader
       }
       else if (_searcher.getVersion()
                < _luceneBean.getSearcherSequence().get()) {
-        log.log(Level.WARNING, "acquireSearcher");
         _luceneBean.release(_searcher);
 
         _searcher = _luceneBean.acquireSearcher();
