@@ -104,8 +104,11 @@ public class LuceneReaderImpl implements LuceneReader
       if (_searcher == null) {
         _searcher = _luceneBean.acquireSearcher();
       }
-      else if (_searcher.getVersion() < _luceneBean.getUpdateSequence().get()) {
+      else if (_searcher.getVersion()
+               < _luceneBean.getSearcherSequence().get()) {
+
         _luceneBean.release(_searcher);
+
         _searcher = _luceneBean.acquireSearcher();
       }
 

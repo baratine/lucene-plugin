@@ -4,7 +4,6 @@ import com.caucho.env.system.RootDirectorySystem;
 import com.caucho.util.LruCache;
 import io.baratine.core.ServiceManager;
 import io.baratine.files.BfsFileSync;
-import io.baratine.timer.TimerService;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
@@ -103,13 +102,8 @@ public class LuceneIndexBean extends SearcherFactory
 
   private LruCache<String,LuceneEntry[]> _resultsCache = new LruCache<>(512);
 
-  private TimerService _timer;
-
   private AtomicLong _updateSequence = new AtomicLong();
-
-//  private boolean _isRunRefresh = false;
-
-  private LuceneIndexWriter _indexWriter;
+  private AtomicLong _searcherSequence = new AtomicLong();
 
   private AtomicLong _notFoundCounter = new AtomicLong();
 
@@ -146,9 +140,6 @@ public class LuceneIndexBean extends SearcherFactory
 
     _searcherManager = new SearcherManager(getIndexWriter(), true, this);
 
-    _indexWriter
-      = getManager().lookup("/lucene-writer").as(LuceneIndexWriter.class);
-
     log.finer("creating new " + this);
   }
 
@@ -157,10 +148,16 @@ public class LuceneIndexBean extends SearcherFactory
                                    IndexReader previousReader)
     throws IOException
   {
-    BaratineIndexSearcher searcher
-      = new BaratineIndexSearcher(reader, _updateSequence.get());
+    long v = _searcherSequence.incrementAndGet();
+
+    BaratineIndexSearcher searcher = new BaratineIndexSearcher(reader, v);
 
     return searcher;
+  }
+
+  public AtomicLong getSearcherSequence()
+  {
+    return _searcherSequence;
   }
 
   private Term createPkTerm(String collection, String externalId)
