@@ -553,7 +553,8 @@ public class LuceneIndexBean extends SearcherFactory
 
   public BaratineIndexSearcher acquireSearcher() throws IOException
   {
-    log.log(Level.WARNING, "acquireSearcher: " + _searcherSequence.get());
+    if (_searcherSequence.get() % 10 == 0)
+      log.log(Level.WARNING, "acquireSearcher: " + _searcherSequence.get());
 
     return (BaratineIndexSearcher) _searcherManager.acquire();
   }

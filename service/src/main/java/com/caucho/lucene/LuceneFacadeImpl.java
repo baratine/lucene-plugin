@@ -78,19 +78,9 @@ public class LuceneFacadeImpl implements LuceneFacade
 
     ResultStreamBuilder<LuceneEntry> stream = _indexReader.search(collection,
                                                                   query);
-
-    Iterable<ArrayList<LuceneEntry>> i
-      = stream.collect(ArrayList<LuceneEntry>::new,
-                       (l, e) -> l.add(e),
-                       (a, b) -> a.addAll(b)).iter().result();
-
-    List<LuceneEntry> entries = new ArrayList<>();
-
-    for (ArrayList<LuceneEntry> luceneEntries : i) {
-      entries.addAll(luceneEntries);
-    }
-
-    result.complete(entries);
+    stream.collect(ArrayList<LuceneEntry>::new,
+                   (l, e) -> l.add(e),
+                   (a, b) -> a.addAll(b)).result(result);
   }
 
   private void checkCollection(String collection)

@@ -54,9 +54,6 @@ public class LuceneReaderImpl implements LuceneReader
 
   private QueryParser getQueryParser()
   {
-    if (_queryParser == null)
-      _queryParser = _luceneBean.createQueryParser();
-
     return _queryParser;
   }
 
