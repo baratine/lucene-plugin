@@ -92,7 +92,8 @@ public class LuceneWriterImpl implements LuceneIndexWriter
   {
     if (_isCommitTimer == null) {
       _timerService.runAfter(_isCommitTimer = h -> executeCommit(),
-                             100,
+                             //100,
+                             2000,
                              TimeUnit.MILLISECONDS,
                              Result.ignore());
     }
