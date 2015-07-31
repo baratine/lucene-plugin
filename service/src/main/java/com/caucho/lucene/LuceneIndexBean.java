@@ -237,7 +237,7 @@ public class LuceneIndexBean extends SearcherFactory
         log.finer(String.format("indexing ('%1$s')->('%2$s') complete",
                                 pkTerm, extId.stringValue()));
 
-      updateVersion();
+      updateSequence();
 
       return true;
     } catch (IOException | SAXException e) {
@@ -316,7 +316,7 @@ public class LuceneIndexBean extends SearcherFactory
       if (log.isLoggable(Level.FINER))
         log.finer(String.format("indexing ('%s') complete", extId));
 
-      updateVersion();
+      updateSequence();
 
       return true;
     } catch (IOException e) {
@@ -447,7 +447,7 @@ public class LuceneIndexBean extends SearcherFactory
         log.finer(String.format("delete('%1$s'->'%2$s') complete",
                                 pk, id));
 
-      updateVersion();
+      updateSequence();
 
       return true;
     } catch (IOException e) {
@@ -484,7 +484,7 @@ public class LuceneIndexBean extends SearcherFactory
       if (log.isLoggable(Level.FINER))
         log.finer(String.format("clear('%1$s') complete", query));
 
-      updateVersion();
+      updateSequence();
 
       return true;
     } catch (IOException e) {
@@ -544,7 +544,7 @@ public class LuceneIndexBean extends SearcherFactory
     _searcherManager.release(searcher);
   }
 
-  private void updateVersion()
+  private void updateSequence()
   {
     _updateSequence.incrementAndGet();
   }
@@ -703,7 +703,7 @@ class BaratineIndexSearcher extends IndexSearcher
   private LruCache<Integer,String> _keysCache
     = new LruCache<>(8 * 1024);
 
-  private long _version;
+  private final long _version;
 
   public BaratineIndexSearcher(IndexReader reader, long version)
   {
