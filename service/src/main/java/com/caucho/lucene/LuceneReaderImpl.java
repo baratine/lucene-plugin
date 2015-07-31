@@ -100,11 +100,16 @@ public class LuceneReaderImpl implements LuceneReader
   {
     QueryParser queryParser = getQueryParser();
 
-    BaratineIndexSearcher searcher = null;
-
     try {
-      searcher = _luceneBean.acquireSearcher();
-      LuceneEntry[] entries = _luceneBean.search(searcher,
+      if (_searcher == null) {
+        _searcher = _luceneBean.acquireSearcher();
+      }
+      else if (_searcher.getVersion() < _luceneBean.getUpdateSequence().get()) {
+        _luceneBean.release(_searcher);
+        _searcher = _luceneBean.acquireSearcher();
+      }
+
+      LuceneEntry[] entries = _luceneBean.search(_searcher,
                                                  queryParser,
                                                  collection,
                                                  query,
@@ -115,13 +120,6 @@ public class LuceneReaderImpl implements LuceneReader
       log.log(Level.WARNING, e.getMessage(), e);
 
       throw e;
-    } finally {
-      if (searcher != null)
-        try {
-          _luceneBean.release(searcher);
-        } catch (Exception e) {
-          log.log(Level.WARNING, e.getMessage(), e);
-        }
     }
   }
 

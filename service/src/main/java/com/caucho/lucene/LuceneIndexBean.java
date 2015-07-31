@@ -2,7 +2,6 @@ package com.caucho.lucene;
 
 import com.caucho.env.system.RootDirectorySystem;
 import com.caucho.util.LruCache;
-import io.baratine.core.CancelHandle;
 import io.baratine.core.ServiceManager;
 import io.baratine.files.BfsFileSync;
 import io.baratine.timer.TimerService;
@@ -52,13 +51,11 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Date;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -108,15 +105,13 @@ public class LuceneIndexBean extends SearcherFactory
 
   private TimerService _timer;
 
-  private AtomicLong _updatesCounter = new AtomicLong();
+  private AtomicLong _updateSequence = new AtomicLong();
 
 //  private boolean _isRunRefresh = false;
 
   private LuceneIndexWriter _indexWriter;
 
   private AtomicLong _notFoundCounter = new AtomicLong();
-
-  private Date _searcherUpdateRequestTime;
 
   public LuceneIndexBean()
   {
@@ -134,15 +129,6 @@ public class LuceneIndexBean extends SearcherFactory
       _manager = ServiceManager.getCurrent();
 
     return _manager;
-  }
-
-  private TimerService getTimer()
-  {
-    if (_timer == null) {
-      _timer = getManager().lookup("timer:///").as(TimerService.class);
-    }
-
-    return _timer;
   }
 
   @PostConstruct
@@ -171,7 +157,8 @@ public class LuceneIndexBean extends SearcherFactory
                                    IndexReader previousReader)
     throws IOException
   {
-    BaratineIndexSearcher searcher = new BaratineIndexSearcher(reader);
+    BaratineIndexSearcher searcher
+      = new BaratineIndexSearcher(reader, _updateSequence.get());
 
     return searcher;
   }
@@ -559,7 +546,12 @@ public class LuceneIndexBean extends SearcherFactory
 
   private void updateVersion()
   {
-    _updatesCounter.incrementAndGet();
+    _updateSequence.incrementAndGet();
+  }
+
+  public AtomicLong getUpdateSequence()
+  {
+    return _updateSequence;
   }
 
   public BaratineIndexSearcher acquireSearcher() throws IOException
@@ -570,36 +562,7 @@ public class LuceneIndexBean extends SearcherFactory
   public void updateSearcher()
   {
     try {
-      long counter = _updatesCounter.get();
-
-/*
-      if (counter < _softCommitMaxDocs) {
-        _searcherUpdateRequestTime = new Date();
-
-        return;
-      }
-*/
-
-/*
-      log.warning(String.format(
-        "update searcher %1$s last-searcher-update-request-time: %2$tH:%2$tM:%2$tS,%2$tL",
-        _updatesCounter,
-        _searcherUpdateRequestTime));
-*/
-
-      //_searcherUpdateRequestTime = new Date();
-
-      boolean isRefreshed = _searcherManager.maybeRefresh();
-
-/*
-      log.warning(String.format("update searcher %1$d %2$s",
-                                counter,
-                                isRefreshed));
-*/
-
-      if (isRefreshed) {
-        _updatesCounter.addAndGet(-counter);
-      }
+      _searcherManager.maybeRefresh();
     } catch (Throwable e) {
       log.log(Level.WARNING, e.getMessage(), e);
     }
@@ -740,10 +703,18 @@ class BaratineIndexSearcher extends IndexSearcher
   private LruCache<Integer,String> _keysCache
     = new LruCache<>(8 * 1024);
 
-  public BaratineIndexSearcher(IndexReader reader)
+  private long _version;
+
+  public BaratineIndexSearcher(IndexReader reader, long version)
   {
     super(reader);
     setQueryCache(null);
+    _version = version;
+  }
+
+  public long getVersion()
+  {
+    return _version;
   }
 
   public String externalId(Integer key)
