@@ -40,8 +40,6 @@ public class LuceneWriterImpl implements LuceneIndexWriter
   @Lookup("timer:///")
   private TimerService _timerService;
 
-  private ServiceRef _self;
-
   @OnInit
   public void init(Result<Boolean> result)
   {
@@ -51,8 +49,6 @@ public class LuceneWriterImpl implements LuceneIndexWriter
       _luceneBean.init();
 
       _queryParser = _luceneBean.createQueryParser();
-
-      _self = ServiceRef.getCurrent();
 
       result.complete(true);
     } catch (Throwable t) {
@@ -109,7 +105,7 @@ public class LuceneWriterImpl implements LuceneIndexWriter
   private void executeCommit()
   {
     log.warning(String.format("executeCommit() self: %1$s, timer %2$s",
-                              _self,
+                              ServiceRef.getCurrent(),
                               _isCommitTimer));
 
     _searcherUpdateService.updateSearcher(Result.<Boolean>ignore());
@@ -117,7 +113,7 @@ public class LuceneWriterImpl implements LuceneIndexWriter
     ServiceRef.flushOutbox();
 
     log.warning(String.format("executeCommit(): after-flushOutbox self: %1$s",
-                              _self));
+                              ServiceRef.getCurrent()));
 
     _isCommitTimer = null;
   }
