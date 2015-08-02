@@ -90,13 +90,14 @@ public class LuceneWriterImpl implements LuceneIndexWriter
   public void commit(Result<Boolean> result)
   {
     if (_isCommitTimer == null) {
-      log.warning("setting new timer");
       _timerService.runAfter(_isCommitTimer = h -> executeCommit(),
                              100,
                              //2000,
                              TimeUnit.MILLISECONDS,
                              Result.ignore());
     }
+
+    log.warning("LuceneWriterImpl.commit: " + _isCommitTimer);
 
     result.complete(true);
   }

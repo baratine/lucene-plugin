@@ -454,6 +454,7 @@ public class LuceneIndexBean extends SearcherFactory
     }
   }
 
+  long x;
   public void commit() throws IOException
   {
     if (_writer != null && _writer.hasUncommittedChanges()) {
@@ -466,6 +467,12 @@ public class LuceneIndexBean extends SearcherFactory
         _searcherSequence));
 
       _writer.commit();
+
+      if (_updateSequence.get() - x > 500) {
+        log.warning("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx: " + (_updateSequence.get() - x));
+      }
+      x = _updateSequence.get();
+
     }
   }
 
