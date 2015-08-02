@@ -460,6 +460,11 @@ public class LuceneIndexBean extends SearcherFactory
       if (log.isLoggable(Level.FINER))
         log.finer(this + " commit()");
 
+      log.log(Level.WARNING, String.format(
+        "commit _updateSequence: [%1$s] _searcherSequence: [%2$s]",
+        _updateSequence,
+        _searcherSequence));
+
       _writer.commit();
     }
   }

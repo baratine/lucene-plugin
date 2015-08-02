@@ -25,6 +25,7 @@ public class SearcherUpdateServiceImpl implements SearcherUpdateService
   @Override
   public void updateSearcher(Result<Boolean> result)
   {
+    log.log(Level.WARNING, "update searcher");
     result.complete(true);
   }
 
