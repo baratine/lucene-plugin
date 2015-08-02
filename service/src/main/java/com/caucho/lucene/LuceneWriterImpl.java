@@ -7,6 +7,7 @@ import io.baratine.core.OnInit;
 import io.baratine.core.OnSave;
 import io.baratine.core.Result;
 import io.baratine.core.Service;
+import io.baratine.core.ServiceRef;
 import io.baratine.timer.TimerService;
 import org.apache.lucene.queryparser.classic.QueryParser;
 
@@ -39,6 +40,8 @@ public class LuceneWriterImpl implements LuceneIndexWriter
   @Lookup("timer:///")
   private TimerService _timerService;
 
+  private ServiceRef _self;
+
   @OnInit
   public void init(Result<Boolean> result)
   {
@@ -48,6 +51,8 @@ public class LuceneWriterImpl implements LuceneIndexWriter
       _luceneBean.init();
 
       _queryParser = _luceneBean.createQueryParser();
+
+      _self = ServiceRef.getCurrent();
 
       result.complete(true);
     } catch (Throwable t) {
@@ -95,17 +100,25 @@ public class LuceneWriterImpl implements LuceneIndexWriter
                              //2000,
                              TimeUnit.MILLISECONDS,
                              Result.ignore());
+      log.warning("LuceneWriterImpl.commit: " + _isCommitTimer);
     }
-
-    log.warning("LuceneWriterImpl.commit: " + _isCommitTimer);
 
     result.complete(true);
   }
 
   private void executeCommit()
   {
-    log.warning("LuceneWriterImpl.executeCommit: " + _isCommitTimer);
+    log.warning(String.format("executeCommit() self: %1$s, timer %2$s",
+                              _self,
+                              _isCommitTimer));
+
     _searcherUpdateService.updateSearcher(Result.<Boolean>ignore());
+
+    ServiceRef.flushOutbox();
+
+    log.warning(String.format("executeCommit(): after-flushOutbox self: %1$s",
+                              _self));
+
     _isCommitTimer = null;
   }
 
