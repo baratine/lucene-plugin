@@ -104,6 +104,7 @@ public class LuceneWriterImpl implements LuceneIndexWriter
 
   private void executeCommit()
   {
+    log.warning("LuceneWriterImpl.executeCommit: " + _isCommitTimer);
     _searcherUpdateService.updateSearcher(Result.<Boolean>ignore());
     _isCommitTimer = null;
   }
