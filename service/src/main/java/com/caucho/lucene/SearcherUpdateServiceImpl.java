@@ -32,9 +32,12 @@ public class SearcherUpdateServiceImpl implements SearcherUpdateService
   @AfterBatch
   public void afterBatch(Result<Boolean> result)
   {
+    log.log(Level.WARNING, "afterBatch enter");
     try {
       _luceneIndexBean.commit();
+      log.log(Level.WARNING, "commit finished");
       _luceneIndexBean.updateSearcher();
+      log.log(Level.WARNING, "update searcher finished");
     } catch (Throwable t) {
       log.log(Level.WARNING, t.getMessage(), t);
     }
