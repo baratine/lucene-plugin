@@ -594,7 +594,7 @@ public class LuceneIndexBean extends SearcherFactory
     iwc.setOpenMode(IndexWriterConfig.OpenMode.CREATE_OR_APPEND);
     iwc.setMergedSegmentWarmer(new SimpleMergedSegmentWarmer(new LoggingInfoStream()));
     iwc.setReaderPooling(true);
-    //iwc.setMergeScheduler(new SerialMergeScheduler());
+    iwc.setMergeScheduler(new SerialMergeScheduler());
 /*
     iwc.setInfoStream(new InfoStream()
     {
