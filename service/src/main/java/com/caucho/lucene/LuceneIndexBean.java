@@ -14,6 +14,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.index.SerialMergeScheduler;
 import org.apache.lucene.index.SimpleMergedSegmentWarmer;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TieredMergePolicy;
@@ -593,6 +594,7 @@ public class LuceneIndexBean extends SearcherFactory
     iwc.setOpenMode(IndexWriterConfig.OpenMode.CREATE_OR_APPEND);
     iwc.setMergedSegmentWarmer(new SimpleMergedSegmentWarmer(new LoggingInfoStream()));
     iwc.setReaderPooling(true);
+    iwc.setMergeScheduler(new SerialMergeScheduler());
 /*
     iwc.setInfoStream(new InfoStream()
     {
