@@ -574,10 +574,19 @@ public class LuceneIndexBean extends SearcherFactory
 
   public void updateSearcher()
   {
+    BaratineIndexSearcher searcher = null;
     try {
       _searcherManager.maybeRefresh();
+      searcher = (BaratineIndexSearcher) _searcherManager.acquire();
     } catch (Throwable e) {
       log.log(Level.WARNING, e.getMessage(), e);
+    } finally {
+      if (searcher != null)
+        try {
+          _searcherManager.release(searcher);
+        } catch (IOException e) {
+          log.log(Level.WARNING, e.getMessage(), e);
+        }
     }
   }
 
