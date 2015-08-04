@@ -105,7 +105,7 @@ public class LuceneWriterImpl implements LuceneIndexWriter
   {
     _searcherUpdateService.sync(Result.<Boolean>ignore());
 
-    ServiceRef.flushOutbox();
+    //ServiceRef.flushOutbox();
 
     _isCommitTimer = null;
   }
