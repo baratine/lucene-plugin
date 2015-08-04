@@ -4,5 +4,5 @@ import io.baratine.core.Result;
 
 public interface SearcherUpdateService
 {
-  void updateSearcher(Result<Boolean> result);
+  void sync(Result<Boolean> result);
 }

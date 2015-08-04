@@ -96,7 +96,6 @@ public class LuceneWriterImpl implements LuceneIndexWriter
                              //2000,
                              TimeUnit.MILLISECONDS,
                              Result.ignore());
-      log.warning("LuceneWriterImpl.commit: " + _isCommitTimer);
     }
 
     result.complete(true);
@@ -104,16 +103,9 @@ public class LuceneWriterImpl implements LuceneIndexWriter
 
   private void executeCommit()
   {
-    log.warning(String.format("executeCommit() self: %1$s, timer %2$s",
-                              ServiceRef.getCurrent(),
-                              _isCommitTimer));
-
-    _searcherUpdateService.updateSearcher(Result.<Boolean>ignore());
+    _searcherUpdateService.sync(Result.<Boolean>ignore());
 
     ServiceRef.flushOutbox();
-
-    log.warning(String.format("executeCommit(): after-flushOutbox self: %1$s",
-                              ServiceRef.getCurrent()));
 
     _isCommitTimer = null;
   }
