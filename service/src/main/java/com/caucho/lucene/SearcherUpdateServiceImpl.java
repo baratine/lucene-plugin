@@ -29,15 +29,16 @@ public class SearcherUpdateServiceImpl implements SearcherUpdateService
   }
 
   @AfterBatch
-  public void afterBatch(Result<Boolean> result)
+  public void afterBatch()
   {
+    if (_luceneIndexBean.getUpdatesCount() < 256)
+      return;
+
     try {
       _luceneIndexBean.commit();
       _luceneIndexBean.updateSearcher();
     } catch (Throwable t) {
       log.log(Level.WARNING, t.getMessage(), t);
     }
-
-    result.complete(true);
   }
 }

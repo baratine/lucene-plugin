@@ -107,6 +107,7 @@ public class LuceneIndexBean extends SearcherFactory
   private AtomicLong _searcherSequence = new AtomicLong();
 
   private AtomicLong _notFoundCounter = new AtomicLong();
+  private long _lastUpdateSequence;
 
   public LuceneIndexBean()
   {
@@ -458,6 +459,8 @@ public class LuceneIndexBean extends SearcherFactory
   public void commit() throws IOException
   {
     if (_writer != null && _writer.hasUncommittedChanges()) {
+      _lastUpdateSequence = _updateSequence.get();
+
       if (log.isLoggable(Level.FINER))
         log.finer(String.format("commit [%1$s], [%2$s]",
                                 _updateSequence,
@@ -554,6 +557,11 @@ public class LuceneIndexBean extends SearcherFactory
     return _updateSequence;
   }
 
+  public long getUpdatesCount()
+  {
+    return _updateSequence.get() - _lastUpdateSequence;
+  }
+
   public BaratineIndexSearcher acquireSearcher() throws IOException
   {
     if (_searcherSequence.get() % 10 == 0)
@@ -584,35 +592,19 @@ public class LuceneIndexBean extends SearcherFactory
     iwc.setOpenMode(IndexWriterConfig.OpenMode.CREATE_OR_APPEND);
     iwc.setMergedSegmentWarmer(new SimpleMergedSegmentWarmer(new LoggingInfoStream()));
     iwc.setReaderPooling(true);
+
     iwc.setMergeScheduler(new SerialMergeScheduler());
+
 /*
-    iwc.setInfoStream(new InfoStream()
-    {
-      @Override
-      public void message(String s, String s1)
-      {
-        log.warning(s + ": " + s1);
-      }
-
-      @Override
-      public boolean isEnabled(String s)
-      {
-        return true;
-      }
-
-      @Override
-      public void close() throws IOException
-      {
-
-      }
-    });*/
+    ConcurrentMergeScheduler mergeScheduler = new ConcurrentMergeScheduler();
+    mergeScheduler.disableAutoIOThrottle();
+    iwc.setMergeScheduler(mergeScheduler);
+*/
 
     TieredMergePolicy mergePolicy = new TieredMergePolicy();
 
     mergePolicy.setMaxMergeAtOnce(_maxMergeAtOnce);
     mergePolicy.setSegmentsPerTier(_segmentsPerTier);
-
-    mergePolicy.setNoCFSRatio(0d);
 
     iwc.setMergePolicy(mergePolicy);
 
@@ -632,12 +624,14 @@ public class LuceneIndexBean extends SearcherFactory
     log.log(Level.FINER, "create new BfsDirectory");
 
     //Directory directory = new BfsDirectory();
+
+    //Directory directory = new RAMDirectory();
+
     Directory directory = MMapDirectory.open(getPath());
 
     directory = new NRTCachingDirectory(directory,
                                         _maxMergeSizeMb,
                                         _maxCacheMb);
-
     return directory;
   }
 
@@ -679,17 +673,18 @@ class LoggingInfoStream extends InfoStream
   private final static Logger log
     = Logger.getLogger(LoggingInfoStream.class.getName());
 
+  private static Level level = Level.FINEST;
+
   @Override
   public void message(String component, String message)
   {
-    if (log.isLoggable(Level.FINEST))
-      log.log(Level.FINEST, component + ": " + message);
+    log.log(level, component + ": " + message);
   }
 
   @Override
   public boolean isEnabled(String component)
   {
-    return true;
+    return log.isLoggable(level);
   }
 
   @Override

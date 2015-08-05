@@ -90,13 +90,16 @@ public class LuceneWriterImpl implements LuceneIndexWriter
   @OnSave
   public void commit(Result<Boolean> result)
   {
+    /*
     if (_isCommitTimer == null) {
       _timerService.runAfter(_isCommitTimer = h -> executeCommit(),
                              100,
-                             //2000,
                              TimeUnit.MILLISECONDS,
                              Result.ignore());
     }
+    */
+
+    executeCommit();
 
     result.complete(true);
   }
