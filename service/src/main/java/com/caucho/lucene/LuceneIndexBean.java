@@ -463,13 +463,15 @@ public class LuceneIndexBean extends SearcherFactory
 
       _lastUpdateSequence = _updateSequence.get();
 
-      delta = delta - _lastUpdateSequence;
+      delta = _lastUpdateSequence - delta;
 
       if (log.isLoggable(Level.INFO))
-        log.log(Level.INFO, String.format("commit [%1$s]:[%2$d], [%3$s]",
-                                          _updateSequence,
-                                          delta,
-                                          _searcherSequence));
+        log.log(Level.INFO,
+                String.format(
+                  "commit delta: [%1$d], updateSequence [%2$s], searcherSequence [%3$s]",
+                  delta,
+                  _updateSequence,
+                  _searcherSequence));
 
       _writer.commit();
     }
@@ -595,14 +597,16 @@ public class LuceneIndexBean extends SearcherFactory
     IndexWriterConfig iwc = new IndexWriterConfig(analyzer);
 
     iwc.setOpenMode(IndexWriterConfig.OpenMode.CREATE_OR_APPEND);
-    iwc.setMergedSegmentWarmer(new SimpleMergedSegmentWarmer(new LoggingInfoStream()));
+
+    iwc.setMergedSegmentWarmer(
+      new SimpleMergedSegmentWarmer(new LoggingInfoStream(Level.INFO)));
+
     iwc.setReaderPooling(true);
 
     iwc.setMergeScheduler(new SerialMergeScheduler());
 
 /*
     ConcurrentMergeScheduler mergeScheduler = new ConcurrentMergeScheduler();
-    mergeScheduler.disableAutoIOThrottle();
     iwc.setMergeScheduler(mergeScheduler);
 */
 
@@ -612,6 +616,8 @@ public class LuceneIndexBean extends SearcherFactory
     mergePolicy.setSegmentsPerTier(_segmentsPerTier);
 
     iwc.setMergePolicy(mergePolicy);
+
+    iwc.setInfoStream(new LoggingInfoStream(Level.INFO));
 
     _writer = new IndexWriter(getDirectory(), iwc);
   }
@@ -678,7 +684,12 @@ class LoggingInfoStream extends InfoStream
   private final static Logger log
     = Logger.getLogger(LoggingInfoStream.class.getName());
 
-  private static Level level = Level.FINEST;
+  private final Level level;
+
+  public LoggingInfoStream(Level level)
+  {
+    this.level = level;
+  }
 
   @Override
   public void message(String component, String message)

@@ -14,7 +14,9 @@ public class SearcherUpdateServiceImpl implements SearcherUpdateService
   private static final Logger log
     = Logger.getLogger(SearcherUpdateServiceImpl.class.getName());
 
-  LuceneIndexBean _luceneIndexBean;
+  private LuceneIndexBean _luceneIndexBean;
+  private long _syncCallsCounter = 0;
+  private long _afterBatchSequence = 0;
 
   @OnInit
   public void init()
@@ -25,6 +27,7 @@ public class SearcherUpdateServiceImpl implements SearcherUpdateService
   @Override
   public void sync(Result<Boolean> result)
   {
+    _syncCallsCounter++;
     result.complete(true);
   }
 
@@ -33,12 +36,22 @@ public class SearcherUpdateServiceImpl implements SearcherUpdateService
   {
     try {
       long start = System.currentTimeMillis();
+
+      log.warning(String.format(
+        "update-searcher-after-batch: %1$d sync-calls: %2$d",
+        _afterBatchSequence,
+        _syncCallsCounter));
+
       _luceneIndexBean.commit();
       _luceneIndexBean.updateSearcher();
 
       float time = (float) (System.currentTimeMillis() - start) / 1000;
 
-      log.warning(String.format("commit + updateSearcher took: %1$fs", time));
+      log.warning(String.format("update-searcher-after-batch: %1$d took: %2$f",
+                                _afterBatchSequence,
+                                time));
+
+      _syncCallsCounter = 0;
     } catch (Throwable t) {
       log.log(Level.WARNING, t.getMessage(), t);
     }

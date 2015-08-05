@@ -26,5 +26,5 @@ public interface LuceneIndexWriter
 
   void clear(String collection, Result<Void> result) throws LuceneException;
 
-  void commit(Result<Boolean> result);
+  void save(Result<Boolean> result);
 }

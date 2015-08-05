@@ -74,9 +74,6 @@ public class LuceneWriterImpl implements LuceneIndexWriter
   {
     boolean isSuccess = _luceneBean.indexText(collection, id, text);
 
-    if (_luceneBean.getUpdatesCount() >= 16)
-      executeCommit();
-
     result.complete(isSuccess);
   }
 
@@ -92,23 +89,23 @@ public class LuceneWriterImpl implements LuceneIndexWriter
 
   @Override
   @OnSave
-  public void commit(Result<Boolean> result)
+  public void save(Result<Boolean> result)
   {
     /*
     if (_isCommitTimer == null) {
-      _timerService.runAfter(_isCommitTimer = h -> executeCommit(),
+      _timerService.runAfter(_isCommitTimer = h -> sync(),
                              100,
                              TimeUnit.MILLISECONDS,
                              Result.ignore());
     }
     */
 
-    executeCommit();
+    sync();
 
     result.complete(true);
   }
 
-  private void executeCommit()
+  private void sync()
   {
     _searcherUpdateService.sync(Result.<Boolean>ignore());
 

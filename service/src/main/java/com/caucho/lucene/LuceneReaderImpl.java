@@ -63,14 +63,6 @@ public class LuceneReaderImpl implements LuceneReader
     throw new AbstractMethodError();
   }
 
-  //@BeforeBatch
-  public void beforeBatch(Result<Boolean> result) throws IOException
-  {
-    _searcher = _luceneBean.acquireSearcher();
-
-    result.complete(true);
-  }
-
   public void search(String collection,
                      String query,
                      ResultStream<LuceneEntry> results) throws IOException
