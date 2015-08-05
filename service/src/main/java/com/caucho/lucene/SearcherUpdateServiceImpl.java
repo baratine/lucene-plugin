@@ -31,12 +31,14 @@ public class SearcherUpdateServiceImpl implements SearcherUpdateService
   @AfterBatch
   public void afterBatch()
   {
-    if (_luceneIndexBean.getUpdatesCount() < 16)
-      return;
-
     try {
+      long start = System.currentTimeMillis();
       _luceneIndexBean.commit();
       _luceneIndexBean.updateSearcher();
+
+      float time = (float) (System.currentTimeMillis() - start) / 1000;
+
+      log.warning(String.format("commit + updateSearcher took: %1$fs", time));
     } catch (Throwable t) {
       log.log(Level.WARNING, t.getMessage(), t);
     }

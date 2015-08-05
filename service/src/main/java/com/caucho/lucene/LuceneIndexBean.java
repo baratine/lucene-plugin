@@ -459,12 +459,17 @@ public class LuceneIndexBean extends SearcherFactory
   public void commit() throws IOException
   {
     if (_writer != null && _writer.hasUncommittedChanges()) {
+      long delta = _lastUpdateSequence;
+
       _lastUpdateSequence = _updateSequence.get();
 
-      if (log.isLoggable(Level.FINER))
-        log.finer(String.format("commit [%1$s], [%2$s]",
-                                _updateSequence,
-                                _searcherSequence));
+      delta = delta - _lastUpdateSequence;
+
+      if (log.isLoggable(Level.INFO))
+        log.log(Level.INFO, String.format("commit [%1$s]:[%2$d], [%3$s]",
+                                          _updateSequence,
+                                          delta,
+                                          _searcherSequence));
 
       _writer.commit();
     }

@@ -7,7 +7,6 @@ import io.baratine.core.OnInit;
 import io.baratine.core.OnSave;
 import io.baratine.core.Result;
 import io.baratine.core.Service;
-import io.baratine.core.ServiceRef;
 import io.baratine.timer.TimerService;
 import org.apache.lucene.queryparser.classic.QueryParser;
 
@@ -73,7 +72,12 @@ public class LuceneWriterImpl implements LuceneIndexWriter
                         String text,
                         Result<Boolean> result) throws LuceneException
   {
-    result.complete(_luceneBean.indexText(collection, id, text));
+    boolean isSuccess = _luceneBean.indexText(collection, id, text);
+
+    if (_luceneBean.getUpdatesCount() >= 16)
+      executeCommit();
+
+    result.complete(isSuccess);
   }
 
   @Override
