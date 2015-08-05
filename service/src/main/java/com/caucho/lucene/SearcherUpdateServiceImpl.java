@@ -31,7 +31,7 @@ public class SearcherUpdateServiceImpl implements SearcherUpdateService
   @AfterBatch
   public void afterBatch()
   {
-    if (_luceneIndexBean.getUpdatesCount() < 256)
+    if (_luceneIndexBean.getUpdatesCount() < 16)
       return;
 
     try {
