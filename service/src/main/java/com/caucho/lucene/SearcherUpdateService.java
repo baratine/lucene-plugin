@@ -5,4 +5,6 @@ import io.baratine.core.Result;
 public interface SearcherUpdateService
 {
   void sync(Result<Boolean> result);
+
+  void refresh(boolean isTimer);
 }

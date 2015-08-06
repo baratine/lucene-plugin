@@ -10,6 +10,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
+import org.apache.lucene.index.ConcurrentMergeScheduler;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -603,12 +604,10 @@ public class LuceneIndexBean extends SearcherFactory
 
     iwc.setReaderPooling(true);
 
-    iwc.setMergeScheduler(new SerialMergeScheduler());
+    //iwc.setMergeScheduler(new SerialMergeScheduler());
 
-/*
     ConcurrentMergeScheduler mergeScheduler = new ConcurrentMergeScheduler();
     iwc.setMergeScheduler(mergeScheduler);
-*/
 
     TieredMergePolicy mergePolicy = new TieredMergePolicy();
 

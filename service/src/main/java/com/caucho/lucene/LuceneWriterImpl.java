@@ -1,19 +1,15 @@
 package com.caucho.lucene;
 
-import io.baratine.core.CancelHandle;
 import io.baratine.core.Lookup;
 import io.baratine.core.Modify;
 import io.baratine.core.OnInit;
 import io.baratine.core.OnSave;
 import io.baratine.core.Result;
 import io.baratine.core.Service;
-import io.baratine.timer.TimerService;
 import org.apache.lucene.queryparser.classic.QueryParser;
 
 import javax.inject.Inject;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
-import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -23,21 +19,13 @@ public class LuceneWriterImpl implements LuceneIndexWriter
   private final static Logger log
     = Logger.getLogger(LuceneWriterImpl.class.getName());
 
-  private final static long commitInterval = TimeUnit.SECONDS.toMillis(15);
-
   //@Inject
   private LuceneIndexBean _luceneBean = LuceneIndexBean.getInstance();
   private QueryParser _queryParser;
 
-  private Consumer<CancelHandle> _isCommitTimer;
-
   @Inject
   @Lookup("/searcher-update-service")
   private SearcherUpdateService _searcherUpdateService;
-
-  @Inject
-  @Lookup("timer:///")
-  private TimerService _timerService;
 
   @OnInit
   public void init(Result<Boolean> result)
@@ -91,15 +79,6 @@ public class LuceneWriterImpl implements LuceneIndexWriter
   @OnSave
   public void save(Result<Boolean> result)
   {
-    /*
-    if (_isCommitTimer == null) {
-      _timerService.runAfter(_isCommitTimer = h -> sync(),
-                             100,
-                             TimeUnit.MILLISECONDS,
-                             Result.ignore());
-    }
-    */
-
     sync();
 
     result.complete(true);
@@ -108,10 +87,6 @@ public class LuceneWriterImpl implements LuceneIndexWriter
   private void sync()
   {
     _searcherUpdateService.sync(Result.<Boolean>ignore());
-
-    //ServiceRef.flushOutbox();
-
-    _isCommitTimer = null;
   }
 
   @Override
