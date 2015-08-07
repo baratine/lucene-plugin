@@ -11,6 +11,7 @@ import io.baratine.timer.TimerService;
 
 import javax.inject.Inject;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -22,9 +23,7 @@ public class SearcherUpdateServiceImpl implements SearcherUpdateService
     = Logger.getLogger(SearcherUpdateServiceImpl.class.getName());
 
   private LuceneIndexBean _luceneIndexBean;
-  private long _syncCallsCounter = 0;
-  private long _afterBatchSequence = 0;
-  private boolean _isRefreshing = false;
+  private AtomicLong _refreshSequence = new AtomicLong();
 
   @Inject
   @Lookup("timer:///")
@@ -43,7 +42,6 @@ public class SearcherUpdateServiceImpl implements SearcherUpdateService
   @Override
   public void sync(Result<Boolean> result)
   {
-    _syncCallsCounter++;
     result.complete(true);
   }
 
@@ -60,7 +58,7 @@ public class SearcherUpdateServiceImpl implements SearcherUpdateService
 
   private void setTimer()
   {
-    _timer.runAfter(_alarm = h -> onTimer(),
+    _timer.runAfter(_alarm = h -> onTimer(_refreshSequence.get()),
                     1000,
                     TimeUnit.MILLISECONDS,
                     Result.<CancelHandle>ignore());
@@ -71,18 +69,19 @@ public class SearcherUpdateServiceImpl implements SearcherUpdateService
     _alarm = null;
   }
 
-  public void onTimer()
+  public void onTimer(long seq)
   {
-    if (_alarm != null) {
+    if (seq == _refreshSequence.get()) {
       _self.refresh(true);
+    }
+    else {
+      setTimer();
     }
   }
 
   public void refresh(boolean isTimer)
   {
-    if (_isRefreshing) {
-    }
-    else if (isTimer) {
+    if (isTimer) {
       clearTimer();
 
       refreshImpl();
@@ -97,34 +96,13 @@ public class SearcherUpdateServiceImpl implements SearcherUpdateService
 
   public void refreshImpl()
   {
-    _isRefreshing = true;
-
     try {
-      long start = System.currentTimeMillis();
-
-/*
-      log.warning(String.format(
-        "update-searcher-after-batch: %1$d sync-calls: %2$d",
-        _afterBatchSequence,
-        _syncCallsCounter));
-*/
+      _refreshSequence.incrementAndGet();
 
       _luceneIndexBean.commit();
       _luceneIndexBean.updateSearcher();
-
-      float time = (float) (System.currentTimeMillis() - start) / 1000;
-
-      if (log.isLoggable(Level.FINER))
-        log.finer(String.format("update-searcher-after-batch: %1$d took: %2$f",
-                                _afterBatchSequence,
-                                time));
-
-      _syncCallsCounter = 0;
     } catch (Throwable t) {
       log.log(Level.WARNING, t.getMessage(), t);
-    } finally {
-      _afterBatchSequence++;
-      _isRefreshing = false;
     }
   }
 }

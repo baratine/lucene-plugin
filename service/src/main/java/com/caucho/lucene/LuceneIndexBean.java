@@ -615,7 +615,7 @@ public class LuceneIndexBean extends SearcherFactory
 
     iwc.setMergePolicy(mergePolicy);
 
-    iwc.setInfoStream(new LoggingInfoStream(Level.INFO));
+    iwc.setInfoStream(new LoggingInfoStream(Level.FINER));
 
     _writer = new IndexWriter(getDirectory(), iwc);
   }
