@@ -79,7 +79,7 @@ public class LuceneWriterImpl implements LuceneIndexWriter
   @OnSave
   public void save(Result<Boolean> result)
   {
-    sync();
+    //sync();
 
     result.complete(true);
   }
