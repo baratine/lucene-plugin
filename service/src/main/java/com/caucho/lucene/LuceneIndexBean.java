@@ -15,7 +15,6 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.IndexableField;
-import org.apache.lucene.index.SerialMergeScheduler;
 import org.apache.lucene.index.SimpleMergedSegmentWarmer;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TieredMergePolicy;
@@ -572,8 +571,8 @@ public class LuceneIndexBean extends SearcherFactory
 
   public BaratineIndexSearcher acquireSearcher() throws IOException
   {
-    if (_searcherSequence.get() % 10 == 0)
-      log.log(Level.WARNING, "acquireSearcher: " + _searcherSequence.get());
+    if (_searcherSequence.get() % 100 == 0)
+      log.log(Level.INFO, "acquireSearcher: " + _searcherSequence.get());
 
     return (BaratineIndexSearcher) _searcherManager.acquire();
   }
@@ -600,7 +599,7 @@ public class LuceneIndexBean extends SearcherFactory
     iwc.setOpenMode(IndexWriterConfig.OpenMode.CREATE_OR_APPEND);
 
     iwc.setMergedSegmentWarmer(
-      new SimpleMergedSegmentWarmer(new LoggingInfoStream(Level.INFO)));
+      new SimpleMergedSegmentWarmer(new LoggingInfoStream(Level.FINER)));
 
     iwc.setReaderPooling(true);
 

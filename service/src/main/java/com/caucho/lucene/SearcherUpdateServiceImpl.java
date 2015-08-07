@@ -102,17 +102,20 @@ public class SearcherUpdateServiceImpl implements SearcherUpdateService
     try {
       long start = System.currentTimeMillis();
 
+/*
       log.warning(String.format(
         "update-searcher-after-batch: %1$d sync-calls: %2$d",
         _afterBatchSequence,
         _syncCallsCounter));
+*/
 
       _luceneIndexBean.commit();
       _luceneIndexBean.updateSearcher();
 
       float time = (float) (System.currentTimeMillis() - start) / 1000;
 
-      log.warning(String.format("update-searcher-after-batch: %1$d took: %2$f",
+      if (log.isLoggable(Level.FINER))
+        log.finer(String.format("update-searcher-after-batch: %1$d took: %2$f",
                                 _afterBatchSequence,
                                 time));
 
