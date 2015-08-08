@@ -15,7 +15,6 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.IndexableField;
-import org.apache.lucene.index.SerialMergeScheduler;
 import org.apache.lucene.index.SimpleMergedSegmentWarmer;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TieredMergePolicy;
@@ -558,26 +557,9 @@ public class LuceneIndexBean extends SearcherFactory
   private void updateSequence()
   {
     _updateSequence.incrementAndGet();
-
-    if (getUpdatesCount() >= 16 && _isUpdating.compareAndSet(false, true)) {
-      new Thread(() -> rrrrr()).start();
-    }
-
   }
 
   AtomicBoolean _isUpdating = new AtomicBoolean();
-
-  private void rrrrr()
-  {
-    try {
-      commit();
-      updateSearcher();
-    } catch (IOException e) {
-      e.printStackTrace();
-    } finally {
-      _isUpdating.compareAndSet(true, false);
-    }
-  }
 
   public AtomicLong getUpdateSequence()
   {
@@ -625,10 +607,8 @@ public class LuceneIndexBean extends SearcherFactory
 
 //    iwc.setMergeScheduler(new SerialMergeScheduler());
 
-
     ConcurrentMergeScheduler mergeScheduler = new ConcurrentMergeScheduler();
     iwc.setMergeScheduler(mergeScheduler);
-
 
     TieredMergePolicy mergePolicy = new TieredMergePolicy();
 
