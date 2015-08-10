@@ -101,8 +101,6 @@ public class LuceneIndexBean extends SearcherFactory
 
   private LruCache<String,Query> _queryCache = new LruCache<>(1024);
 
-  private LruCache<String,LuceneEntry[]> _resultsCache = new LruCache<>(512);
-
   private AtomicLong _updateSequence = new AtomicLong();
   private AtomicLong _searcherSequence = new AtomicLong();
 
@@ -344,7 +342,7 @@ public class LuceneIndexBean extends SearcherFactory
     try {
       final String cacheKey = query + "::" + collection;
 
-      LuceneEntry[] results = _resultsCache.get(cacheKey);
+      LuceneEntry[] results = searcher.get(cacheKey);
 
       if (results != null)
         return results;
@@ -393,7 +391,7 @@ public class LuceneIndexBean extends SearcherFactory
       }
 
       if (results.length > 0) {
-        _resultsCache.put(cacheKey, results);
+        searcher.put(cacheKey, results);
       }
       else {
         long notFound = _notFoundCounter.incrementAndGet();
@@ -477,8 +475,6 @@ public class LuceneIndexBean extends SearcherFactory
                   _searcherSequence));
 
       _writer.commit();
-
-      _resultsCache.clear();
     }
   }
 
@@ -743,6 +739,8 @@ class BaratineIndexSearcher extends IndexSearcher
   private LruCache<Integer,String> _keysCache
     = new LruCache<>(8 * 1024);
 
+  private LruCache<String,LuceneEntry[]> _resultsCache = new LruCache<>(512);
+
   private final long _version;
 
   public BaratineIndexSearcher(IndexReader reader, long version)
@@ -777,5 +775,15 @@ class BaratineIndexSearcher extends IndexSearcher
            + System.identityHashCode(reader)
            +
            ']';
+  }
+
+  public LuceneEntry[] get(String cacheKey)
+  {
+    return _resultsCache.get(cacheKey);
+  }
+
+  public void put(String cacheKey, LuceneEntry[] results)
+  {
+    _resultsCache.put(cacheKey, results);
   }
 }
