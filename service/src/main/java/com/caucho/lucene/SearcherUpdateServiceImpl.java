@@ -59,7 +59,7 @@ public class SearcherUpdateServiceImpl implements SearcherUpdateService
   private void setTimer()
   {
     _timer.runAfter(_alarm = h -> onTimer(_refreshSequence.get()),
-                    1000,
+                    _luceneIndexBean.getSoftCommitMaxAge(),
                     TimeUnit.MILLISECONDS,
                     Result.<CancelHandle>ignore());
   }
@@ -86,7 +86,8 @@ public class SearcherUpdateServiceImpl implements SearcherUpdateService
 
       refreshImpl();
     }
-    else if (_luceneIndexBean.getUpdatesCount() >= 16) {
+    else if (_luceneIndexBean.getUpdatesCount()
+             >= _luceneIndexBean.getSoftCommitMaxDocs()) {
       refreshImpl();
     }
     else if (!isTimerSet()) {

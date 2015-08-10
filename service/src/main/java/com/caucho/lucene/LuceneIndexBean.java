@@ -73,8 +73,8 @@ public class LuceneIndexBean extends SearcherFactory
 
   private static Logger log = Logger.getLogger(LuceneIndexBean.class.getName());
 
-  private final static int _softCommitMaxDocs = 16;
-  private final static long _softCommitMaxAge = TimeUnit.SECONDS.toMillis(1);
+  private final static long softCommitMaxDocs = 16;
+  private final static long softCommitMaxAge = TimeUnit.SECONDS.toMillis(1);
 
   private Directory _directory;
 
@@ -108,6 +108,9 @@ public class LuceneIndexBean extends SearcherFactory
 
   private AtomicLong _notFoundCounter = new AtomicLong();
   private long _lastUpdateSequence;
+
+  private long _softCommitMaxDocs = softCommitMaxDocs;
+  private long _softCommitMaxAge = softCommitMaxAge;
 
   public LuceneIndexBean()
   {
@@ -465,8 +468,8 @@ public class LuceneIndexBean extends SearcherFactory
 
       delta = _lastUpdateSequence - delta;
 
-      if (log.isLoggable(Level.INFO))
-        log.log(Level.INFO,
+      if (log.isLoggable(Level.FINER))
+        log.log(Level.FINER,
                 String.format(
                   "commit delta: [%1$d], updateSequence [%2$s], searcherSequence [%3$s]",
                   delta,
@@ -586,6 +589,26 @@ public class LuceneIndexBean extends SearcherFactory
     } catch (Throwable e) {
       log.log(Level.WARNING, e.getMessage(), e);
     }
+  }
+
+  public long getSoftCommitMaxDocs()
+  {
+    return _softCommitMaxDocs;
+  }
+
+  public void setSoftCommitMaxDocs(long softCommitMaxDocs)
+  {
+    _softCommitMaxDocs = softCommitMaxDocs;
+  }
+
+  public long getSoftCommitMaxAge()
+  {
+    return _softCommitMaxAge;
+  }
+
+  public void setSoftCommitMaxAge(long softCommitMaxAge)
+  {
+    _softCommitMaxAge = softCommitMaxAge;
   }
 
   private IndexWriter getIndexWriter() throws IOException
