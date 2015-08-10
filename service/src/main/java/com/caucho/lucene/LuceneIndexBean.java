@@ -477,6 +477,8 @@ public class LuceneIndexBean extends SearcherFactory
                   _searcherSequence));
 
       _writer.commit();
+
+      _resultsCache.clear();
     }
   }
 
