@@ -69,12 +69,12 @@ public class LuceneIndexBean extends SearcherFactory
   private static final Set<String> fieldSet
     = Collections.singleton(externalKey);
 
-  private final static LuceneIndexBean bean = new LuceneIndexBean();
-
   private static Logger log = Logger.getLogger(LuceneIndexBean.class.getName());
 
   private final static long softCommitMaxDocs = 16;
   private final static long softCommitMaxAge = TimeUnit.SECONDS.toMillis(1);
+
+  private final static LuceneIndexBean bean = new LuceneIndexBean();
 
   private Directory _directory;
 

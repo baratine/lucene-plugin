@@ -48,6 +48,8 @@ public class SearcherUpdateServiceImpl implements SearcherUpdateService
   @AfterBatch
   public void afterBatch()
   {
+    log.finer("@AfterBatch received");
+
     refresh(false);
   }
 
@@ -58,10 +60,18 @@ public class SearcherUpdateServiceImpl implements SearcherUpdateService
 
   private void setTimer()
   {
-    _timer.runAfter(_alarm = h -> onTimer(_refreshSequence.get()),
-                    _luceneIndexBean.getSoftCommitMaxAge(),
-                    TimeUnit.MILLISECONDS,
-                    Result.<CancelHandle>ignore());
+    try {
+      if (log.isLoggable(Level.FINER))
+        log.finer(String.format("setting timer for %1$d ms",
+                                _luceneIndexBean.getSoftCommitMaxAge()));
+
+      _timer.runAfter(_alarm = h -> onTimer(_refreshSequence.get()),
+                      _luceneIndexBean.getSoftCommitMaxAge(),
+                      TimeUnit.MILLISECONDS,
+                      Result.<CancelHandle>ignore());
+    } catch (Throwable t) {
+      log.log(Level.WARNING, t.getMessage(), t);
+    }
   }
 
   private void clearTimer()
@@ -71,6 +81,8 @@ public class SearcherUpdateServiceImpl implements SearcherUpdateService
 
   public void onTimer(long seq)
   {
+    log.finer("on timer");
+
     if (seq == _refreshSequence.get()) {
       _self.refresh(true);
     }
