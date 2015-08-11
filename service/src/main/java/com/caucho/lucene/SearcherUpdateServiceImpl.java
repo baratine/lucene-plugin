@@ -88,7 +88,7 @@ public class SearcherUpdateServiceImpl implements SearcherUpdateService
     if (seq == _refreshSequence.get()) {
       _self.refresh(true);
     }
-    else {
+    else if (_luceneIndexBean.getUpdatesCount() > 0) {
       setTimer();
     }
   }
