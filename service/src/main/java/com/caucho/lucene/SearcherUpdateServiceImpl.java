@@ -83,13 +83,16 @@ public class SearcherUpdateServiceImpl implements SearcherUpdateService
 
   public void onTimer(long seq)
   {
-    log.finer("on timer");
+    log.finer("on timer, updates-count: " + _luceneIndexBean.getUpdatesCount());
 
     if (seq == _refreshSequence.get()) {
       _self.refresh(true);
     }
     else if (_luceneIndexBean.getUpdatesCount() > 0) {
       setTimer();
+    }
+    else {
+      clearTimer();
     }
   }
 
@@ -104,7 +107,7 @@ public class SearcherUpdateServiceImpl implements SearcherUpdateService
              >= _luceneIndexBean.getSoftCommitMaxDocs()) {
       refreshImpl();
     }
-    else if (!isTimerSet()) {
+    else if (!isTimerSet() && _luceneIndexBean.getUpdatesCount() > 0) {
       setTimer();
     }
   }
