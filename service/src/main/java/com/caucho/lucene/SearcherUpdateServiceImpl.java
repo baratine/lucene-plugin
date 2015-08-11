@@ -69,8 +69,10 @@ public class SearcherUpdateServiceImpl implements SearcherUpdateService
                       _luceneIndexBean.getSoftCommitMaxAge(),
                       TimeUnit.MILLISECONDS,
                       Result.<CancelHandle>ignore());
-    } catch (Throwable t) {
-      log.log(Level.WARNING, t.getMessage(), t);
+    } catch (RuntimeException e) {
+      log.log(Level.WARNING, e.getMessage(), e);
+
+      throw e;
     }
   }
 
