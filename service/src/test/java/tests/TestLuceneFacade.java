@@ -7,6 +7,7 @@ import com.caucho.lucene.LuceneFacadeImpl;
 import com.caucho.lucene.LuceneFacadeSync;
 import com.caucho.lucene.LuceneReaderImpl;
 import com.caucho.lucene.LuceneWriterImpl;
+import com.caucho.lucene.SearcherUpdateServiceImpl;
 import io.baratine.core.Lookup;
 import junit.framework.Assert;
 import org.junit.After;
@@ -24,10 +25,10 @@ import java.util.Map;
  */
 @RunWith(RunnerBaratine.class)
 @ConfigurationBaratine(
-  services = {LuceneWriterImpl.class, LuceneReaderImpl.class, LuceneFacadeImpl.class},
+  services = {LuceneWriterImpl.class, LuceneReaderImpl.class, LuceneFacadeImpl.class, SearcherUpdateServiceImpl.class},
   logs = {@ConfigurationBaratine.Log(name = "com.caucho", level = "FINER")},
   testTime = 0, pod = "lucene")
-public class TestLuceneFacade
+public class TestLuceneFacade extends Base
 {
   @Inject
   @Lookup("public://lucene/service")
@@ -37,6 +38,8 @@ public class TestLuceneFacade
   public void testText()
   {
     _lucene.indexText("foo", "foo", "mary had a little lamb");
+
+    applyChanges();
 
     List<LuceneEntry> result = _lucene.search("foo", "mary", 255);
 
@@ -49,6 +52,8 @@ public class TestLuceneFacade
   {
     _lucene.indexText("foo", "foo", "mary had a little lamb");
     _lucene.delete("foo", "foo");
+
+    applyChanges();
 
     List<LuceneEntry> result = _lucene.search("foo", "mary", 255);
 
@@ -69,6 +74,8 @@ public class TestLuceneFacade
 
     _lucene.indexMap("foo", "map", map);
 
+    applyChanges();
+
     List<LuceneEntry> result = _lucene.search("foo", "foo:lamb", 255);
     Assert.assertEquals(1, result.size());
 
@@ -83,22 +90,5 @@ public class TestLuceneFacade
 
     result = _lucene.search("foo", "count:[33 TO 34]", 255);
     Assert.assertEquals(0, result.size());
-  }
-
-  @Before
-  public final void baseBefore()
-  {
-    clear();
-  }
-
-  final protected void clear()
-  {
-    _lucene.clear("foo");
-  }
-
-  @After
-  public final void baseAfter()
-  {
-    clear();
   }
 }

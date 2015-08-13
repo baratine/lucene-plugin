@@ -1,5 +1,6 @@
 package tests;
 
+import com.caucho.junit.RunnerBaratine;
 import com.caucho.lucene.LuceneEntry;
 import com.caucho.lucene.LuceneFacadeSync;
 import com.caucho.vfs.ReadStream;
@@ -17,8 +18,9 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
-public abstract class BaseTest
+public abstract class Base
 {
   private static final String DEFAULT = "default";
   @Inject
@@ -28,6 +30,9 @@ public abstract class BaseTest
   @Lookup("public://lucene/service")
   private LuceneFacadeSync _index;
 
+  @Inject
+  RunnerBaratine _testContext;
+
   protected BfsFileSync lookup(String path)
   {
     return _serviceManager.lookup(path).as(BfsFileSync.class);
@@ -35,12 +40,20 @@ public abstract class BaseTest
 
   final protected boolean delete(String id)
   {
-    return _index.delete(DEFAULT, id);
+    boolean result = _index.delete(DEFAULT, id);
+
+    applyChanges();
+
+    return result;
   }
 
   final protected boolean deleteFile(String fileName)
   {
-    return _index.delete(DEFAULT, makeBfsPath(fileName));
+    boolean result = _index.delete(DEFAULT, makeBfsPath(fileName));
+
+    applyChanges();
+
+    return result;
   }
 
   final protected String makeBfsPath(String file)
@@ -56,6 +69,23 @@ public abstract class BaseTest
     LuceneEntry[] result = search(query);
 
     return result;
+  }
+
+  public void applyChanges()
+  {
+    try {
+      Thread.sleep(100);
+    } catch (InterruptedException e) {
+      e.printStackTrace();
+    }
+
+    _testContext.addTime(2, TimeUnit.SECONDS);
+
+    try {
+      Thread.sleep(500);
+    } catch (InterruptedException e) {
+      e.printStackTrace();
+    }
   }
 
   final protected LuceneEntry[] search(String query)
@@ -82,6 +112,8 @@ public abstract class BaseTest
       in.writeToStream(out);
     }
 
+    file.getStatus();
+
     update(file.getStatus().getPath());
 
     return file;
@@ -90,9 +122,14 @@ public abstract class BaseTest
   final protected boolean update(String fileName)
   {
     ResultFuture<Boolean> future = new ResultFuture<>();
+
     _index.indexFile(DEFAULT, fileName, future);
 
-    return future.get();
+    boolean result = future.get();
+
+    applyChanges();
+
+    return result;
   }
 
   final protected LuceneEntry[] updateAndSearchText(String id,
@@ -108,7 +145,11 @@ public abstract class BaseTest
 
   final protected boolean update(String id, String text)
   {
-    return _index.indexText(DEFAULT, id, text);
+    boolean result = _index.indexText(DEFAULT, id, text);
+
+    applyChanges();
+
+    return result;
   }
 
   final protected LuceneEntry[] updateAndSearchMap(String id,
@@ -124,12 +165,20 @@ public abstract class BaseTest
 
   final protected boolean update(String id, Map<String,Object> map)
   {
-    return _index.indexMap(DEFAULT, id, map);
+    boolean result = _index.indexMap(DEFAULT, id, map);
+
+    applyChanges();
+
+    return result;
   }
 
   final protected boolean update(String collection, String id, String text)
   {
-    return _index.indexText(collection, id, text);
+    boolean result = _index.indexText(collection, id, text);
+
+    applyChanges();
+
+    return result;
   }
 
   @Before
@@ -141,11 +190,14 @@ public abstract class BaseTest
   final protected void clear()
   {
     _index.clear(DEFAULT);
+    applyChanges();
   }
 
   final protected void clear(String collection)
   {
     _index.clear(collection);
+
+    applyChanges();
   }
 
   @After

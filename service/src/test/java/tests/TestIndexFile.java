@@ -7,10 +7,12 @@ import com.caucho.lucene.LuceneEntry;
 import com.caucho.lucene.LuceneFacadeImpl;
 import com.caucho.lucene.LuceneReaderImpl;
 import com.caucho.lucene.LuceneWriterImpl;
+import com.caucho.lucene.SearcherUpdateServiceImpl;
 import junit.framework.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import javax.inject.Inject;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
@@ -23,11 +25,11 @@ import java.util.stream.Stream;
 
 @RunWith(RunnerBaratine.class)
 @ConfigurationBaratine(
-  services = {LuceneWriterImpl.class, LuceneReaderImpl.class, LuceneFacadeImpl.class},
+  services = {LuceneWriterImpl.class, LuceneReaderImpl.class, LuceneFacadeImpl.class, SearcherUpdateServiceImpl.class},
   logs = {@Log(name = "com.caucho", level = "FINER")},
   logLevel = "FINER",
   testTime = 0, pod = "lucene")
-public class TestIndexFile extends BaseTest
+public class TestIndexFile extends Base
 {
   @Test
   public void test()

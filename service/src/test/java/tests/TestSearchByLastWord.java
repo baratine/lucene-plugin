@@ -7,6 +7,7 @@ import com.caucho.lucene.LuceneEntry;
 import com.caucho.lucene.LuceneFacadeImpl;
 import com.caucho.lucene.LuceneReaderImpl;
 import com.caucho.lucene.LuceneWriterImpl;
+import com.caucho.lucene.SearcherUpdateServiceImpl;
 import junit.framework.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -20,11 +21,11 @@ import java.util.concurrent.ExecutionException;
 
 @RunWith(RunnerBaratine.class)
 @ConfigurationBaratine(
-  services = {LuceneWriterImpl.class, LuceneReaderImpl.class, LuceneFacadeImpl.class},
+  services = {LuceneWriterImpl.class, LuceneReaderImpl.class, LuceneFacadeImpl.class,SearcherUpdateServiceImpl.class},
   logs = {@Log(name = "com.caucho", level = "FINER")},
   logLevel = "FINER",
   testTime = 0, pod = "lucene")
-public class TestSearchByLastWord extends BaseTest
+public class TestSearchByLastWord extends Base
 {
   @Test(timeout = 2000)
   public void testText()

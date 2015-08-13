@@ -122,8 +122,9 @@ public class LuceneIndexBean extends SearcherFactory
 
   private ServiceManager getManager()
   {
-    if (_manager == null)
+    if (_manager == null) {
       _manager = ServiceManager.getCurrent();
+    }
 
     return _manager;
   }

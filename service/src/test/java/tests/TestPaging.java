@@ -7,6 +7,7 @@ import com.caucho.lucene.LuceneEntry;
 import com.caucho.lucene.LuceneFacadeImpl;
 import com.caucho.lucene.LuceneReaderImpl;
 import com.caucho.lucene.LuceneWriterImpl;
+import com.caucho.lucene.SearcherUpdateServiceImpl;
 import io.baratine.files.BfsFileSync;
 import junit.framework.Assert;
 import org.junit.Before;
@@ -22,10 +23,10 @@ import java.util.concurrent.ExecutionException;
  */
 @RunWith(RunnerBaratine.class)
 @ConfigurationBaratine(testTime = 0,
-                       services = {LuceneWriterImpl.class, LuceneReaderImpl.class, LuceneFacadeImpl.class},
+                       services = {LuceneWriterImpl.class, LuceneReaderImpl.class, LuceneFacadeImpl.class,SearcherUpdateServiceImpl.class},
                        logs = {@Log(name = "com.caucho", level = "FINER")},
                        pod = "lucene")
-public class TestPaging extends BaseTest
+public class TestPaging extends Base
 {
   @Before
   public void setUp()
