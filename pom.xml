@@ -94,13 +94,8 @@
       <dependencies>
         <dependency>
           <groupId>io.baratine</groupId>
-          <artifactId>baratine-api</artifactId>
-          <version>[1.0,)</version>
-        </dependency>
-        <dependency>
-          <groupId>io.baratine</groupId>
           <artifactId>baratine</artifactId>
-          <version>[1.0,)</version>
+          <version>[0.10,)</version>
         </dependency>
       </dependencies>
     </profile>
