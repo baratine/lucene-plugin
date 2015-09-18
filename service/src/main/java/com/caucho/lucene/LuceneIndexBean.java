@@ -1,6 +1,7 @@
 package com.caucho.lucene;
 
 import com.caucho.env.system.RootDirectorySystem;
+import com.caucho.lucene.bfs.BfsDirectory;
 import com.caucho.util.LruCache;
 import io.baratine.core.ServiceManager;
 import io.baratine.files.BfsFileSync;
@@ -109,6 +110,7 @@ public class LuceneIndexBean extends SearcherFactory
 
   private long _softCommitMaxDocs = softCommitMaxDocs;
   private long _softCommitMaxAge = softCommitMaxAge;
+  private boolean _isUseBfs = true;
 
   public LuceneIndexBean()
   {
@@ -145,6 +147,16 @@ public class LuceneIndexBean extends SearcherFactory
     _searcherManager = new SearcherManager(getIndexWriter(), true, this);
 
     log.finer("creating new " + this);
+  }
+
+  public boolean isUseBfs()
+  {
+    return _isUseBfs;
+  }
+
+  public void setIsUseBfs(boolean isUseBfs)
+  {
+    _isUseBfs = isUseBfs;
   }
 
   @Override
@@ -656,11 +668,14 @@ public class LuceneIndexBean extends SearcherFactory
   {
     log.log(Level.FINER, "create new BfsDirectory");
 
-    //Directory directory = new BfsDirectory();
+    Directory directory;
 
-    //Directory directory = new RAMDirectory();
-
-    Directory directory = MMapDirectory.open(getPath());
+    if (_isUseBfs) {
+      directory = new BfsDirectory();
+    }
+    else {
+      directory = MMapDirectory.open(getPath());
+    }
 
     directory = new NRTCachingDirectory(directory,
                                         _maxMergeSizeMb,
