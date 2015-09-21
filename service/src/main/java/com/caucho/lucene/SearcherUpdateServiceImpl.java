@@ -36,7 +36,7 @@ public class SearcherUpdateServiceImpl implements SearcherUpdateService
   public void init()
   {
     _luceneIndexBean = LuceneIndexBean.getInstance();
-    _self = ServiceRef.getCurrent().as(SearcherUpdateService.class);
+    _self = ServiceRef.current().as(SearcherUpdateService.class);
   }
 
   @Override

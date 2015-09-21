@@ -75,7 +75,7 @@ public class LuceneIndexBean extends SearcherFactory
   private final static long softCommitMaxDocs = 16;
   private final static long softCommitMaxAge = TimeUnit.SECONDS.toMillis(1);
 
-  private final static LuceneIndexBean bean = new LuceneIndexBean();
+  private final static LuceneIndexBean _luceneIndexBean = new LuceneIndexBean();
 
   private Directory _directory;
 
@@ -119,13 +119,13 @@ public class LuceneIndexBean extends SearcherFactory
 
   public final static LuceneIndexBean getInstance()
   {
-    return bean;
+    return _luceneIndexBean;
   }
 
   private ServiceManager getManager()
   {
     if (_manager == null) {
-      _manager = ServiceManager.getCurrent();
+      _manager = ServiceManager.current();
     }
 
     return _manager;
@@ -271,8 +271,10 @@ public class LuceneIndexBean extends SearcherFactory
                            String id,
                            String text)
   {
+    int len = Integer.min(16, text.length());
+
     if (log.isLoggable(Level.FINER))
-      log.finer(String.format("indexText('%s')", id));
+      log.finer(String.format("%1$s indexText('%2$s', '%3$s', '%4$s...')", this, collection, id, text.substring(0, len)));
 
     collection = escape(collection);
 
@@ -347,7 +349,8 @@ public class LuceneIndexBean extends SearcherFactory
   {
     if (log.isLoggable(Level.FINER))
       log.finer(
-        String.format("search('%1$s', %2$s, %3$d)",
+        String.format("%1$s search('%2$s', %3$s, %4$d)",
+                      this,
                       collection,
                       query,
                       limit));
@@ -525,7 +528,7 @@ public class LuceneIndexBean extends SearcherFactory
   @Override
   public String toString()
   {
-    return this.getClass().getSimpleName() + '[' + _manager + ']';
+    return this.getClass().getSimpleName() + '[' + _directory + ']';
   }
 
   private String escape(String collection)

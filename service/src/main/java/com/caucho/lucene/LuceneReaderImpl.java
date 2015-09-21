@@ -43,6 +43,7 @@ public class LuceneReaderImpl implements LuceneReader
 
     try {
       _queryParser = _luceneBean.createQueryParser();
+      _luceneBean.init();
 
       result.complete(true);
     } catch (Throwable t) {

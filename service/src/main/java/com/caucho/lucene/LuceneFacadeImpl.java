@@ -49,6 +49,7 @@ public class LuceneFacadeImpl implements LuceneFacade
   {
     checkCollection(collection);
     checkId(id);
+    checkText(text);
 
     getLuceneWriter(id).indexText(collection, id, text, result);
   }

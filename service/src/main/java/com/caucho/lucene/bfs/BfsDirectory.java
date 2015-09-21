@@ -36,7 +36,7 @@ public class BfsDirectory extends BaseDirectory
   {
     super(new SingleInstanceLockFactory());
 
-    ServiceManager manager = ServiceManager.getCurrent();
+    ServiceManager manager = ServiceManager.current();
 
     int pod = manager.getPodNode().getNodeIndex();
 
