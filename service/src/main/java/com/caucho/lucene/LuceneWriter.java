@@ -1,10 +1,11 @@
 package com.caucho.lucene;
 
 import io.baratine.core.Result;
+import io.baratine.stream.ResultStreamBuilder;
 
 import java.util.Map;
 
-public interface LuceneIndexWriter
+public interface LuceneWriter
 {
   void indexFile(String collection, String path, Result<Boolean> result)
     throws LuceneException;
@@ -24,7 +25,7 @@ public interface LuceneIndexWriter
   void delete(String collection, String id, Result<Boolean> result)
     throws LuceneException;
 
-  void clear(String collection, Result<Void> result) throws LuceneException;
+  ResultStreamBuilder<Void> clear(String collection) throws LuceneException;
 
   void save(Result<Boolean> result);
 }

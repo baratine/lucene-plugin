@@ -16,7 +16,7 @@ public class LuceneFacadeImpl implements LuceneFacade
 {
   @Inject
   @Lookup("pod://lucene/lucene-writer")
-  private LuceneIndexWriter _indexWriter;
+  private LuceneWriter _indexWriter;
 
   @Inject
   @Lookup("pod://lucene/lucene-writer")
@@ -26,9 +26,9 @@ public class LuceneFacadeImpl implements LuceneFacade
   @Lookup("pod://lucene/lucene-reader")
   private LuceneReader _indexReader;
 
-  private LuceneIndexWriter getLuceneWriter(String id)
+  private LuceneWriter getLuceneWriter(String id)
   {
-    return _indexWriterRef.node(id.hashCode()).as(LuceneIndexWriter.class);
+    return _indexWriterRef.node(id.hashCode()).as(LuceneWriter.class);
   }
 
   @Override
@@ -130,6 +130,9 @@ public class LuceneFacadeImpl implements LuceneFacade
   public void clear(String collection, Result<Void> result)
     throws LuceneException
   {
-    _indexWriter.clear(collection, result);
+    ResultStreamBuilder<Void> builder = _indexWriter.clear(collection);
+
+    builder.collect(ArrayList<Void>::new, (a, b) -> {}, (a, b) -> {})
+           .result(a->result.complete(null));
   }
 }

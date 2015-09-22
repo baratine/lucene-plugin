@@ -5,7 +5,9 @@ import io.baratine.core.Modify;
 import io.baratine.core.OnInit;
 import io.baratine.core.OnSave;
 import io.baratine.core.Result;
+import io.baratine.core.ResultStream;
 import io.baratine.core.Service;
+import io.baratine.stream.ResultStreamBuilder;
 import org.apache.lucene.queryparser.classic.QueryParser;
 
 import javax.inject.Inject;
@@ -14,7 +16,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 @Service("/lucene-writer")
-public class LuceneWriterImpl implements LuceneIndexWriter
+public class LuceneWriterImpl implements LuceneWriter
 {
   private final static Logger log
     = Logger.getLogger(LuceneWriterImpl.class.getName());
@@ -98,11 +100,19 @@ public class LuceneWriterImpl implements LuceneIndexWriter
   }
 
   @Override
+  public ResultStreamBuilder<Void> clear(String collection)
+    throws LuceneException
+  {
+    throw new AbstractMethodError();
+  }
+
   @Modify
-  public void clear(String collection, Result<Void> result)
+  public void clear(String collection, ResultStream<Boolean> result)
     throws LuceneException
   {
     _luceneBean.clear(_queryParser, collection);
+
+    result.complete();
   }
 }
 
