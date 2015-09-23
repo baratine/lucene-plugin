@@ -133,6 +133,7 @@ public class LuceneFacadeImpl implements LuceneFacade
     ResultStreamBuilder<Void> builder = _indexWriter.clear(collection);
 
     builder.collect(ArrayList<Void>::new, (a, b) -> {}, (a, b) -> {})
-           .result(a->result.complete(null));
+           .result(result.from((c -> null)));
+
   }
 }
