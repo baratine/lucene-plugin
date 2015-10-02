@@ -146,7 +146,7 @@ public class LuceneIndexBean extends SearcherFactory
 
     _searcherManager = new SearcherManager(getIndexWriter(), true, this);
 
-    log.finer("creating new " + this);
+    log.finer(String.format("%1$s init()", this));
   }
 
   public boolean isUseBfs()
@@ -274,7 +274,11 @@ public class LuceneIndexBean extends SearcherFactory
     int len = Integer.min(16, text.length());
 
     if (log.isLoggable(Level.FINER))
-      log.finer(String.format("%1$s indexText('%2$s', '%3$s', '%4$s...')", this, collection, id, text.substring(0, len)));
+      log.finer(String.format("%1$s indexText('%2$s', '%3$s', '%4$s...')",
+                              this,
+                              collection,
+                              id,
+                              text.substring(0, len)));
 
     collection = escape(collection);
 
@@ -528,7 +532,12 @@ public class LuceneIndexBean extends SearcherFactory
   @Override
   public String toString()
   {
-    return this.getClass().getSimpleName() + '[' + _directory + ']';
+    return this.getClass().getSimpleName()
+           + '['
+           + _directory
+           + ']'
+           + "@"
+           + System.identityHashCode(this);
   }
 
   private String escape(String collection)
