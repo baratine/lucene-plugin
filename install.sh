@@ -1,3 +1,3 @@
 #!/bin/bash
 
-mvn -e -X clean install
+mvn -e -X -P release clean install
