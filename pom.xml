@@ -21,14 +21,6 @@
   <profiles>
     <profile>
       <id>local</id>
-
-      <activation>
-        <activeByDefault>false</activeByDefault>
-        <file>
-          <exists>${env.BARATINE_HOME}</exists>
-        </file>
-      </activation>
-
       <dependencies>
         <dependency>
           <groupId>io.baratine</groupId>

@@ -110,7 +110,7 @@ public class LuceneIndexBean extends SearcherFactory
 
   private long _softCommitMaxDocs = softCommitMaxDocs;
   private long _softCommitMaxAge = softCommitMaxAge;
-  private boolean _isUseBfs = true;
+  private boolean _isUseBfs = !true;
 
   public LuceneIndexBean()
   {

@@ -38,7 +38,7 @@ public class BfsDirectory extends BaseDirectory
 
     ServiceManager manager = ServiceManager.current();
 
-    int pod = manager.getNode().getNodeIndex();
+    int pod = manager.getPodNode().getNodeIndex();
 
     String path = String.format("bfs:///usr/lib/lucene/index/node-%1$s", pod);
 
