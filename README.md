@@ -1,11 +1,16 @@
 lucene-plugin
 =================
 
-Lucene plugin for indexing and searching files stored in Baratine distributed filesystem
+Lucene plugin for indexing and searching arbitrary text, json maps and files. 
 
-To run the plugin:
+(Note: files should reside in BFS)
 
-1. install maven baratine plugins https://github.com/baratine/maven-collection-baratine
-2. execute `mvn install`
-3. change to service directory and execute `mvn baratine:run`
-4. open lucene-plugin/client/src/web/index.html in latest browser
+To install the plugin in local maven repository execute `./install.sh`
+
+To run the plugin in embedded mode execute
+
+1. execute `./baratine-run.sh`
+2. open lucene-plugin/client/src/web/index.html in the latest browser
+
+
+
