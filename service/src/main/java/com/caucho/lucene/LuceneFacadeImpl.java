@@ -81,7 +81,7 @@ public class LuceneFacadeImpl implements LuceneFacade
                                                                   query);
     stream.collect(ArrayList<LuceneEntry>::new,
                    (l, e) -> l.add(e),
-                   (a, b) -> a.addAll(b)).result(result);
+                   (a, b) -> a.addAll(b)).result(result.from(l->l));
   }
 
   private void checkCollection(String collection)
