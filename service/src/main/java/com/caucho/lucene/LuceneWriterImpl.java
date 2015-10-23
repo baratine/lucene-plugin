@@ -21,8 +21,8 @@ public class LuceneWriterImpl implements LuceneWriter
   private final static Logger log
     = Logger.getLogger(LuceneWriterImpl.class.getName());
 
-  //@Inject
-  private LuceneIndexBean _luceneBean = LuceneIndexBean.getInstance();
+  @Inject
+  private LuceneIndexBean _luceneBean;// = LuceneIndexBean.getInstance();
   private QueryParser _queryParser;
 
   @Inject

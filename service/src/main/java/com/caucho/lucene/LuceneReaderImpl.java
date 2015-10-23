@@ -9,6 +9,7 @@ import io.baratine.core.Workers;
 import io.baratine.stream.ResultStreamBuilder;
 import org.apache.lucene.queryparser.classic.QueryParser;
 
+import javax.inject.Inject;
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Level;
@@ -23,8 +24,8 @@ public class LuceneReaderImpl implements LuceneReader
   private final static Logger log
     = Logger.getLogger(LuceneReaderImpl.class.getName());
 
-  //@Inject
-  private LuceneIndexBean _luceneBean = LuceneIndexBean.getInstance();
+  @Inject
+  private LuceneIndexBean _luceneBean;// = LuceneIndexBean.getInstance();
 
   private BaratineIndexSearcher _searcher;
 

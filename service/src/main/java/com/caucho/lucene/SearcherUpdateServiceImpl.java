@@ -22,6 +22,7 @@ public class SearcherUpdateServiceImpl implements SearcherUpdateService
   private static final Logger log
     = Logger.getLogger(SearcherUpdateServiceImpl.class.getName());
 
+  @Inject
   private LuceneIndexBean _luceneIndexBean;
   private AtomicLong _refreshSequence = new AtomicLong();
 
@@ -35,7 +36,6 @@ public class SearcherUpdateServiceImpl implements SearcherUpdateService
   @OnInit
   public void init()
   {
-    _luceneIndexBean = LuceneIndexBean.getInstance();
     _self = ServiceRef.current().as(SearcherUpdateService.class);
   }
 

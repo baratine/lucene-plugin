@@ -41,6 +41,7 @@ import org.apache.tika.parser.AutoDetectParser;
 import org.xml.sax.SAXException;
 
 import javax.annotation.PostConstruct;
+import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 import java.io.ByteArrayInputStream;
 import java.io.File;
@@ -60,8 +61,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-//@Startup
-//@ApplicationScoped
+@ApplicationScoped
 public class LuceneIndexBean extends SearcherFactory
 {
   private static final String externalKey = "__extKey__";
@@ -117,11 +117,6 @@ public class LuceneIndexBean extends SearcherFactory
     _parser = new AutoDetectParser();
   }
 
-  public final static LuceneIndexBean getInstance()
-  {
-    return _luceneIndexBean;
-  }
-
   private ServiceManager getManager()
   {
     if (_manager == null) {
@@ -140,7 +135,13 @@ public class LuceneIndexBean extends SearcherFactory
     String baratineData
       = RootDirectorySystem.getCurrentDataDirectory().getFullPath();
 
-    _indexDirectory = baratineData + File.separatorChar + "lucene";
+    int pod = getManager().getNode().getNodeIndex();
+
+    _indexDirectory = baratineData
+                      + File.separatorChar
+                      + "lucene"
+                      + File.separatorChar
+                      + "node-" + pod;
 
     initIndexWriter();
 
