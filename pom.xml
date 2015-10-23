@@ -16,6 +16,7 @@
 
   <properties>
     <maven.test.skip>true</maven.test.skip>
+    <baratine-home>/Users/alex/projects/caucho/5.0/baratine</baratine-home>
   </properties>
 
   <profiles>
@@ -27,35 +28,35 @@
           <artifactId>baratine-api</artifactId>
           <version>SNAPSHOT</version>
           <scope>system</scope>
-          <systemPath>${env.BARATINE_HOME}/lib/baratine-api.jar</systemPath>
+          <systemPath>${baratine-home}/lib/baratine-api.jar</systemPath>
         </dependency>
         <dependency>
           <groupId>io.baratine</groupId>
           <artifactId>baratine</artifactId>
           <version>SNAPSHOT</version>
           <scope>system</scope>
-          <systemPath>${env.BARATINE_HOME}/lib/baratine.jar</systemPath>
+          <systemPath>${baratine-home}/lib/baratine.jar</systemPath>
         </dependency>
         <dependency>
           <groupId>io.baratine</groupId>
           <artifactId>baratine-junit</artifactId>
           <version>SNAPSHOT</version>
           <scope>system</scope>
-          <systemPath>${env.BARATINE_HOME}/lib/baratine-junit.jar</systemPath>
+          <systemPath>${baratine-home}/lib/baratine-junit.jar</systemPath>
         </dependency>
         <dependency>
           <groupId>io.baratine</groupId>
           <artifactId>baratine-jee</artifactId>
           <version>SNAPSHOT</version>
           <scope>system</scope>
-          <systemPath>${env.BARATINE_HOME}/lib/javaee-7.jar</systemPath>
+          <systemPath>${baratine-home}/lib/javaee-7.jar</systemPath>
         </dependency>
         <dependency>
           <groupId>io.baratine</groupId>
           <artifactId>baratine-hessian</artifactId>
           <version>SNAPSHOT</version>
           <scope>system</scope>
-          <systemPath>${env.BARATINE_HOME}/lib/hessian.jar</systemPath>
+          <systemPath>${baratine-home}/lib/hessian.jar</systemPath>
         </dependency>
       </dependencies>
     </profile>

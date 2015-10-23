@@ -10,10 +10,14 @@ import javax.inject.Inject;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Logger;
 
 @Service("public://lucene/service")
 public class LuceneFacadeImpl implements LuceneFacade
 {
+  private static final Logger log
+    = Logger.getLogger(LuceneFacadeImpl.class.getName());
+
   @Inject
   @Lookup("pod://lucene/lucene-writer")
   private LuceneWriter _indexWriter;
@@ -77,11 +81,22 @@ public class LuceneFacadeImpl implements LuceneFacade
     checkCollection(collection);
     checkQuery(query);
 
-    ResultStreamBuilder<LuceneEntry> stream = _indexReader.search(collection,
-                                                                  query);
+    ResultStreamBuilder<LuceneEntry> stream
+      = _indexReader.search(collection, query);
+
     stream.collect(ArrayList<LuceneEntry>::new,
                    (l, e) -> l.add(e),
-                   (a, b) -> a.addAll(b)).result(result.from(l->l));
+                   (a, b) -> a.addAll(b)).result(result.from(l -> logResults(
+      String.format("search %1$s -> result", query),
+      l)));
+  }
+
+  private List<LuceneEntry> logResults(final String x,
+                                       final List<LuceneEntry> entries)
+  {
+    log.finer(x + ": " + entries);
+
+    return entries;
   }
 
   private void checkCollection(String collection)

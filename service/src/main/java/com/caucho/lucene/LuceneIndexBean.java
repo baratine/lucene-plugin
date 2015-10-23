@@ -41,8 +41,8 @@ import org.apache.tika.parser.AutoDetectParser;
 import org.xml.sax.SAXException;
 
 import javax.annotation.PostConstruct;
-import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
@@ -61,8 +61,8 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-@ApplicationScoped
-public class LuceneIndexBean extends SearcherFactory
+@Singleton
+public final class LuceneIndexBean extends SearcherFactory
 {
   private static final String externalKey = "__extKey__";
   private static final String collectionKey = "__collectionKey__";
@@ -129,6 +129,11 @@ public class LuceneIndexBean extends SearcherFactory
   @PostConstruct
   public void init() throws IOException
   {
+    log.finer(String.format("init("
+                            + System.identityHashCode(this)
+                            + ") "
+                            + _manager));
+
     if (!_isInitialized.compareAndSet(false, true))
       return;
 
@@ -578,7 +583,18 @@ public class LuceneIndexBean extends SearcherFactory
 
   void release(BaratineIndexSearcher searcher) throws IOException
   {
-    _searcherManager.release(searcher);
+    try {
+      _searcherManager.release(searcher);
+    } catch (NullPointerException e) {
+      e.printStackTrace();
+      log.warning(String.format("searcher manager is %1$s in %2$d %3$s" + System
+        .identityHashCode(this),
+                                _searcherManager,
+                                System.identityHashCode(this),
+                                this));
+
+      throw e;
+    }
   }
 
   private void updateSequence()
