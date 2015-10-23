@@ -85,18 +85,22 @@ public class LuceneFacadeImpl implements LuceneFacade
       = _indexReader.search(collection, query);
 
     stream.collect(ArrayList<LuceneEntry>::new,
-                   (l, e) -> l.add(e),
-                   (a, b) -> a.addAll(b)).result(result.from(l -> logResults(
-      String.format("search %1$s -> result", query),
-      l)));
-  }
+                   (l, e) -> {
+                     Logger logger = Logger.getLogger("com.caucho.lucene");
+                     logger.finer("collect item " + e + " into: " + l);
+                     l.add(e);
+                   },
+                   (a, b) -> {
+                     Logger logger = Logger.getLogger("com.caucho.lucene");
+                     logger.finer("accumulate " + b + " into: " + a);
+                     a.addAll(b);
+                   }).result(
+      result.from(l -> {
+        Logger logger = Logger.getLogger("com.caucho.lucene");
+        logger.finer("search " + query + " -> result " + l);
 
-  private List<LuceneEntry> logResults(final String x,
-                                       final List<LuceneEntry> entries)
-  {
-    log.finer(x + ": " + entries);
-
-    return entries;
+        return l;
+      }));
   }
 
   private void checkCollection(String collection)

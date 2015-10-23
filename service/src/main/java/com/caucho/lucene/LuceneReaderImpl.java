@@ -16,7 +16,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 @Service("/lucene-reader")
-@Workers(20)
+//`@Workers(20)
 public class LuceneReaderImpl implements LuceneReader
 {
   private final static AtomicLong sequence = new AtomicLong();
