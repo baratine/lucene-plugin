@@ -1,6 +1,5 @@
 package tests;
 
-import com.caucho.bartender.pod.PodBartender;
 import com.caucho.junit.ConfigurationBaratine;
 import com.caucho.junit.RunnerBaratine;
 import com.caucho.lucene.LuceneEntry;
@@ -8,6 +7,7 @@ import com.caucho.lucene.LuceneFacadeImpl;
 import com.caucho.lucene.LuceneReaderImpl;
 import com.caucho.lucene.LuceneWriterImpl;
 import com.caucho.lucene.SearcherUpdateServiceImpl;
+import com.caucho.v5.bartender.pod.PodBartender;
 import junit.framework.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;

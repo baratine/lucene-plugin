@@ -11,6 +11,7 @@ import org.apache.lucene.queryparser.classic.QueryParser;
 
 import javax.inject.Inject;
 import java.io.IOException;
+import java.util.Date;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -70,7 +71,7 @@ public class LuceneReaderImpl implements LuceneReader
                      ResultStream<LuceneEntry> results) throws IOException
   {
     if (log.isLoggable(Level.FINER))
-      log.finer(String.format("search('%1$s', %2$s)", collection, query));
+      log.finer(String.format("search('%1$s', %2$s, %3$tH:%3$tM:%3$tS,:%3$tL)", collection, query, new Date()));
 
     LuceneEntry[] entries = searchImpl(collection, query);
 

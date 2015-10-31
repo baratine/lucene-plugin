@@ -1,8 +1,8 @@
 package com.caucho.lucene;
 
-import com.caucho.env.system.RootDirectorySystem;
 import com.caucho.lucene.bfs.BfsDirectory;
-import com.caucho.util.LruCache;
+import com.caucho.v5.env.system.RootDirectorySystem;
+import com.caucho.v5.util.LruCache;
 import io.baratine.core.ServiceManager;
 import io.baratine.files.BfsFileSync;
 import org.apache.lucene.analysis.Analyzer;
