@@ -587,8 +587,7 @@ public final class LuceneIndexBean extends SearcherFactory
       _searcherManager.release(searcher);
     } catch (NullPointerException e) {
       e.printStackTrace();
-      log.warning(String.format("searcher manager is %1$s in %2$d %3$s" + System
-        .identityHashCode(this),
+      log.warning(String.format("searcher manager is %1$s in %2$d %3$s",
                                 _searcherManager,
                                 System.identityHashCode(this),
                                 this));
