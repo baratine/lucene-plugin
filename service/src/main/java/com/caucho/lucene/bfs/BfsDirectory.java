@@ -1,17 +1,6 @@
 package com.caucho.lucene.bfs;
 
-import io.baratine.core.ServiceManager;
-import io.baratine.db.BlobReader;
-import io.baratine.files.BfsFileSync;
-import io.baratine.files.Status;
-import io.baratine.files.WriteOption;
-import org.apache.lucene.store.BaseDirectory;
-import org.apache.lucene.store.BufferedIndexInput;
-import org.apache.lucene.store.IOContext;
-import org.apache.lucene.store.IndexInput;
-import org.apache.lucene.store.IndexOutput;
-import org.apache.lucene.store.OutputStreamIndexOutput;
-import org.apache.lucene.store.SingleInstanceLockFactory;
+import static io.baratine.files.WriteOption.Standard.OVERWRITE;
 
 import java.io.EOFException;
 import java.io.IOException;
@@ -21,7 +10,18 @@ import java.util.Collection;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import static io.baratine.files.WriteOption.Standard.OVERWRITE;
+import io.baratine.db.BlobReader;
+import io.baratine.files.BfsFileSync;
+import io.baratine.files.Status;
+import io.baratine.files.WriteOption;
+import io.baratine.service.Services;
+import org.apache.lucene.store.BaseDirectory;
+import org.apache.lucene.store.BufferedIndexInput;
+import org.apache.lucene.store.IOContext;
+import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.store.IndexOutput;
+import org.apache.lucene.store.OutputStreamIndexOutput;
+import org.apache.lucene.store.SingleInstanceLockFactory;
 
 public class BfsDirectory extends BaseDirectory
 {
@@ -36,13 +36,13 @@ public class BfsDirectory extends BaseDirectory
   {
     super(new SingleInstanceLockFactory());
 
-    ServiceManager manager = ServiceManager.current();
+    Services manager = Services.current();
 
-    int pod = manager.getNode().getNodeIndex();
+    int pod = 0;//manager.getNode().getNodeIndex();
 
     String path = String.format("bfs:///usr/lib/lucene/index/node-%1$s", pod);
 
-    _root = manager.lookup(path).as(BfsFileSync.class);
+    _root = manager.service(path).as(BfsFileSync.class);
   }
 
   @Override
@@ -182,13 +182,11 @@ class BfsIndexInput extends BufferedIndexInput
 {
   private final static Logger log
     = Logger.getLogger(BfsIndexInput.class.getName());
-
+  private final long _offset;
+  private final long _length;
   private BlobReader _in;
   private BfsFileSync _file;
   private IOContext _context;
-
-  private final long _offset;
-  private final long _length;
   private long _pos = 0;
   private String _toString;
 

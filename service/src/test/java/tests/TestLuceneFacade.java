@@ -8,7 +8,7 @@ import com.caucho.lucene.LuceneFacadeSync;
 import com.caucho.lucene.LuceneReaderImpl;
 import com.caucho.lucene.LuceneWriterImpl;
 import com.caucho.lucene.SearcherUpdateServiceImpl;
-import io.baratine.core.Lookup;
+import io.baratine.service.Lookup;
 import junit.framework.Assert;
 import org.junit.After;
 import org.junit.Before;

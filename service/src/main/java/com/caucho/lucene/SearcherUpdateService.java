@@ -1,6 +1,6 @@
 package com.caucho.lucene;
 
-import io.baratine.core.Result;
+import io.baratine.service.Result;
 
 public interface SearcherUpdateService
 {

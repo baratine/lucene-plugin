@@ -1,19 +1,20 @@
 package com.caucho.lucene;
 
-import io.baratine.core.Lookup;
-import io.baratine.core.Modify;
-import io.baratine.core.OnInit;
-import io.baratine.core.OnSave;
-import io.baratine.core.Result;
-import io.baratine.core.ResultStream;
-import io.baratine.core.Service;
-import io.baratine.stream.ResultStreamBuilder;
-import org.apache.lucene.queryparser.classic.QueryParser;
-
-import javax.inject.Inject;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import javax.inject.Inject;
+
+import io.baratine.service.Lookup;
+import io.baratine.service.Modify;
+import io.baratine.service.OnInit;
+import io.baratine.service.OnSave;
+import io.baratine.service.Result;
+import io.baratine.service.Service;
+import io.baratine.stream.ResultStream;
+import io.baratine.stream.ResultStreamBuilder;
+import org.apache.lucene.queryparser.classic.QueryParser;
 
 @Service("/lucene-writer")
 public class LuceneWriterImpl implements LuceneWriter
@@ -39,7 +40,7 @@ public class LuceneWriterImpl implements LuceneWriter
 
       _queryParser = _luceneBean.createQueryParser();
 
-      result.complete(true);
+      result.ok(true);
     } catch (Throwable t) {
       log.log(Level.WARNING, "error creating query parser", t);
 
@@ -52,7 +53,7 @@ public class LuceneWriterImpl implements LuceneWriter
   public void indexFile(String collection, String path, Result<Boolean> result)
     throws LuceneException
   {
-    result.complete(_luceneBean.indexFile(collection, path));
+    result.ok(_luceneBean.indexFile(collection, path));
   }
 
   @Override
@@ -64,7 +65,7 @@ public class LuceneWriterImpl implements LuceneWriter
   {
     boolean isSuccess = _luceneBean.indexText(collection, id, text);
 
-    result.complete(isSuccess);
+    result.ok(isSuccess);
   }
 
   @Override
@@ -74,7 +75,7 @@ public class LuceneWriterImpl implements LuceneWriter
                        Map<String,Object> map,
                        Result<Boolean> result) throws LuceneException
   {
-    result.complete(_luceneBean.indexMap(collection, id, map));
+    result.ok(_luceneBean.indexMap(collection, id, map));
   }
 
   @Override
@@ -83,7 +84,7 @@ public class LuceneWriterImpl implements LuceneWriter
   {
     sync();
 
-    result.complete(true);
+    result.ok(true);
   }
 
   private void sync()
@@ -96,7 +97,7 @@ public class LuceneWriterImpl implements LuceneWriter
   public void delete(String collection, String id, Result<Boolean> result)
     throws LuceneException
   {
-    result.complete(_luceneBean.delete(collection, id));
+    result.ok(_luceneBean.delete(collection, id));
   }
 
   @Override
@@ -112,7 +113,7 @@ public class LuceneWriterImpl implements LuceneWriter
   {
     _luceneBean.clear(_queryParser, collection);
 
-    result.complete();
+    result.ok();
   }
 }
 

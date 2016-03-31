@@ -1,5 +1,8 @@
 package tests;
 
+import java.io.IOException;
+import java.util.concurrent.ExecutionException;
+
 import com.caucho.junit.ConfigurationBaratine;
 import com.caucho.junit.RunnerBaratine;
 import com.caucho.lucene.LuceneEntry;
@@ -11,15 +14,12 @@ import junit.framework.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import java.io.IOException;
-import java.util.concurrent.ExecutionException;
-
 /**
  * title: tests collection
  */
 @RunWith(RunnerBaratine.class)
 @ConfigurationBaratine(
-  services = {LuceneWriterImpl.class, LuceneReaderImpl.class, LuceneFacadeImpl.class,SearcherUpdateServiceImpl.class},
+  services = {LuceneWriterImpl.class, LuceneReaderImpl.class, LuceneFacadeImpl.class, SearcherUpdateServiceImpl.class},
   logs = {@ConfigurationBaratine.Log(name = "com.caucho", level = "FINER")},
   testTime = 0, pod = "lucene")
 public class TestSearchCollection extends Base

@@ -1,9 +1,9 @@
 package com.caucho.lucene;
 
-import io.baratine.core.Result;
-
 import java.util.List;
 import java.util.Map;
+
+import io.baratine.service.Result;
 
 public interface LuceneFacade
 {

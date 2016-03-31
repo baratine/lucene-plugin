@@ -1,23 +1,25 @@
 package com.caucho.lucene;
 
-import io.baratine.core.OnDestroy;
-import io.baratine.core.OnInit;
-import io.baratine.core.Result;
-import io.baratine.core.ResultStream;
-import io.baratine.core.Service;
-import io.baratine.core.Workers;
-import io.baratine.stream.ResultStreamBuilder;
-import org.apache.lucene.queryparser.classic.QueryParser;
-
-import javax.inject.Inject;
 import java.io.IOException;
 import java.util.Date;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import javax.inject.Inject;
+
+import io.baratine.service.AfterBatch;
+import io.baratine.service.OnDestroy;
+import io.baratine.service.OnInit;
+import io.baratine.service.Result;
+import io.baratine.service.Service;
+import io.baratine.service.Workers;
+import io.baratine.stream.ResultStream;
+import io.baratine.stream.ResultStreamBuilder;
+import org.apache.lucene.queryparser.classic.QueryParser;
+
 @Service("/lucene-reader")
-//`@Workers(20)
+@Workers(20)
 public class LuceneReaderImpl implements LuceneReader
 {
   private final static AtomicLong sequence = new AtomicLong();
@@ -47,7 +49,7 @@ public class LuceneReaderImpl implements LuceneReader
       _queryParser = _luceneBean.createQueryParser();
       _luceneBean.init();
 
-      result.complete(true);
+      result.ok(true);
     } catch (Throwable t) {
       log.log(Level.WARNING, "error creating query parser", t);
 
@@ -71,7 +73,10 @@ public class LuceneReaderImpl implements LuceneReader
                      ResultStream<LuceneEntry> results) throws IOException
   {
     if (log.isLoggable(Level.FINER))
-      log.finer(String.format("search('%1$s', %2$s, %3$tH:%3$tM:%3$tS,:%3$tL)", collection, query, new Date()));
+      log.finer(String.format("search('%1$s', %2$s, %3$tH:%3$tM:%3$tS,:%3$tL)",
+                              collection,
+                              query,
+                              new Date()));
 
     LuceneEntry[] entries = searchImpl(collection, query);
 
@@ -84,7 +89,7 @@ public class LuceneReaderImpl implements LuceneReader
       results.accept(entry);
     }
 
-    results.complete();
+    results.ok();
   }
 
   public LuceneEntry[] searchImpl(String collection,
@@ -117,7 +122,7 @@ public class LuceneReaderImpl implements LuceneReader
     }
   }
 
-  //@AfterBatch
+  @AfterBatch
   public void afterBatch(Result<Boolean> result) throws IOException
   {
     try {
@@ -128,7 +133,7 @@ public class LuceneReaderImpl implements LuceneReader
       log.log(Level.WARNING, e.getMessage(), e);
     } finally {
       _searcher = null;
-      result.complete(true);
+      result.ok(true);
     }
   }
 

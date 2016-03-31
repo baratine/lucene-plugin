@@ -1,10 +1,32 @@
 package com.caucho.lucene;
 
+import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+import javax.annotation.PostConstruct;
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
 import com.caucho.lucene.bfs.BfsDirectory;
-import com.caucho.v5.env.system.RootDirectorySystem;
+import com.caucho.v5.subsystem.RootDirectorySystem;
 import com.caucho.v5.util.LruCache;
-import io.baratine.core.ServiceManager;
 import io.baratine.files.BfsFileSync;
+import io.baratine.service.Services;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
@@ -40,27 +62,6 @@ import org.apache.tika.metadata.Metadata;
 import org.apache.tika.parser.AutoDetectParser;
 import org.xml.sax.SAXException;
 
-import javax.annotation.PostConstruct;
-import javax.inject.Inject;
-import javax.inject.Singleton;
-import java.io.ByteArrayInputStream;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.FileSystems;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
 @Singleton
 public final class LuceneIndexBean extends SearcherFactory
 {
@@ -86,7 +87,7 @@ public final class LuceneIndexBean extends SearcherFactory
   private String _indexDirectory;
 
   @Inject
-  ServiceManager _manager;
+  Services _manager;
 
   private StandardAnalyzer _analyzer;
 
@@ -117,10 +118,10 @@ public final class LuceneIndexBean extends SearcherFactory
     _parser = new AutoDetectParser();
   }
 
-  private ServiceManager getManager()
+  private Services getManager()
   {
     if (_manager == null) {
-      _manager = ServiceManager.current();
+      _manager = Services.current();
     }
 
     return _manager;
@@ -138,9 +139,11 @@ public final class LuceneIndexBean extends SearcherFactory
       return;
 
     String baratineData
-      = RootDirectorySystem.getCurrentDataDirectory().getFullPath();
+      = RootDirectorySystem.getCurrentDataDirectory()
+                           .toAbsolutePath()
+                           .toString();
 
-    int pod = getManager().getNode().getNodeIndex();
+    int pod = 0;//getManager().getNode().getNodeIndex();
 
     _indexDirectory = baratineData
                       + File.separatorChar
@@ -202,7 +205,7 @@ public final class LuceneIndexBean extends SearcherFactory
 
     collection = escape(collection);
 
-    BfsFileSync file = getManager().lookup(path).as(BfsFileSync.class);
+    BfsFileSync file = getManager().service(path).as(BfsFileSync.class);
 
     Field extId = new StringField(externalKey, path, Field.Store.YES);
 

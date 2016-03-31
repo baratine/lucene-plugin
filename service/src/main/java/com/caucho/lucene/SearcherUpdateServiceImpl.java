@@ -1,20 +1,21 @@
 package com.caucho.lucene;
 
-import io.baratine.core.AfterBatch;
-import io.baratine.core.CancelHandle;
-import io.baratine.core.Lookup;
-import io.baratine.core.OnInit;
-import io.baratine.core.Result;
-import io.baratine.core.Service;
-import io.baratine.core.ServiceRef;
-import io.baratine.timer.TimerService;
-
-import javax.inject.Inject;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import javax.inject.Inject;
+
+import io.baratine.service.AfterBatch;
+import io.baratine.service.Cancel;
+import io.baratine.service.Lookup;
+import io.baratine.service.OnInit;
+import io.baratine.service.Result;
+import io.baratine.service.Service;
+import io.baratine.service.ServiceRef;
+import io.baratine.timer.Timers;
 
 @Service("/searcher-update-service")
 public class SearcherUpdateServiceImpl implements SearcherUpdateService
@@ -28,8 +29,8 @@ public class SearcherUpdateServiceImpl implements SearcherUpdateService
 
   @Inject
   @Lookup("timer:///")
-  private TimerService _timer;
-  private Consumer<CancelHandle> _alarm;
+  private Timers _timer;
+  private Consumer<Cancel> _alarm;
 
   private SearcherUpdateService _self;
 
@@ -42,7 +43,7 @@ public class SearcherUpdateServiceImpl implements SearcherUpdateService
   @Override
   public void sync(Result<Boolean> result)
   {
-    result.complete(true);
+    result.ok(true);
   }
 
   @AfterBatch
@@ -68,7 +69,7 @@ public class SearcherUpdateServiceImpl implements SearcherUpdateService
       _timer.runAfter(_alarm = h -> onTimer(_refreshSequence.get()),
                       _luceneIndexBean.getSoftCommitMaxAge(),
                       TimeUnit.MILLISECONDS,
-                      Result.<CancelHandle>ignore());
+                      Result.<Cancel>ignore());
     } catch (RuntimeException e) {
       log.log(Level.WARNING, e.getMessage(), e);
 

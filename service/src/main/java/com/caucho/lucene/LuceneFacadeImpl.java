@@ -1,16 +1,17 @@
 package com.caucho.lucene;
 
-import io.baratine.core.Lookup;
-import io.baratine.core.Result;
-import io.baratine.core.Service;
-import io.baratine.core.ServiceRef;
-import io.baratine.stream.ResultStreamBuilder;
-
-import javax.inject.Inject;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
+
+import javax.inject.Inject;
+
+import io.baratine.service.Lookup;
+import io.baratine.service.Result;
+import io.baratine.service.Service;
+import io.baratine.service.ServiceRef;
+import io.baratine.stream.ResultStreamBuilder;
 
 @Service("public://lucene/service")
 public class LuceneFacadeImpl implements LuceneFacade
@@ -32,7 +33,8 @@ public class LuceneFacadeImpl implements LuceneFacade
 
   private LuceneWriter getLuceneWriter(String id)
   {
-    return _indexWriterRef.node(id.hashCode()).as(LuceneWriter.class);
+    return _indexWriterRef.as(LuceneWriter.class);
+    //return _indexWriterRef.node(id.hashCode()).as(LuceneWriter.class);
   }
 
   @Override
@@ -95,7 +97,7 @@ public class LuceneFacadeImpl implements LuceneFacade
                      logger.finer("accumulate " + b + " into: " + a);
                      a.addAll(b);
                    }).result(
-      result.from(l -> {
+      result.of(l -> {
         Logger logger = Logger.getLogger("com.caucho.lucene");
         logger.finer("search " + query + " -> result " + l);
 
@@ -152,7 +154,7 @@ public class LuceneFacadeImpl implements LuceneFacade
     ResultStreamBuilder<Void> builder = _indexWriter.clear(collection);
 
     builder.collect(ArrayList<Void>::new, (a, b) -> {}, (a, b) -> {})
-           .result(result.from((c -> null)));
+           .result(result.of((c -> null)));
 
   }
 }
