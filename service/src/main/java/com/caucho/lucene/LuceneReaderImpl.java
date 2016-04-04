@@ -13,13 +13,12 @@ import io.baratine.service.OnDestroy;
 import io.baratine.service.OnInit;
 import io.baratine.service.Result;
 import io.baratine.service.Service;
-import io.baratine.service.Workers;
 import io.baratine.stream.ResultStream;
 import io.baratine.stream.ResultStreamBuilder;
 import org.apache.lucene.queryparser.classic.QueryParser;
 
 @Service("/lucene-reader")
-@Workers(20)
+//@Workers(20)
 public class LuceneReaderImpl implements LuceneReader
 {
   private final static AtomicLong sequence = new AtomicLong();
@@ -123,7 +122,7 @@ public class LuceneReaderImpl implements LuceneReader
   }
 
   @AfterBatch
-  public void afterBatch(Result<Boolean> result) throws IOException
+  public void afterBatch() throws IOException
   {
     try {
       if (_searcher != null) {
@@ -133,7 +132,6 @@ public class LuceneReaderImpl implements LuceneReader
       log.log(Level.WARNING, e.getMessage(), e);
     } finally {
       _searcher = null;
-      result.ok(true);
     }
   }
 

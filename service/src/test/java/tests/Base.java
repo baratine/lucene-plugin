@@ -16,8 +16,8 @@ import com.caucho.v5.io.Vfs;
 import com.google.common.io.Files;
 import io.baratine.files.BfsFile;
 import io.baratine.files.BfsFileSync;
-import io.baratine.service.Lookup;
 import io.baratine.service.ResultFuture;
+import io.baratine.service.Service;
 import io.baratine.service.Services;
 import org.junit.After;
 import org.junit.Before;
@@ -25,11 +25,12 @@ import org.junit.Before;
 public abstract class Base
 {
   private static final String DEFAULT = "default";
-  @Inject
-  private Services _ervices;
 
   @Inject
-  @Lookup("public://lucene/service")
+  private Services _services;
+
+  @Inject
+  @Service("service")
   private LuceneFacadeSync _index;
 
   @Inject
@@ -37,7 +38,7 @@ public abstract class Base
 
   protected BfsFileSync lookup(String path)
   {
-    return _ervices.service(path).as(BfsFileSync.class);
+    return _services.service(path).as(BfsFileSync.class);
   }
 
   final protected boolean delete(String id)
@@ -105,7 +106,7 @@ public abstract class Base
   final protected BfsFile upload(String fileName) throws IOException
   {
     BfsFileSync file =
-      _ervices.service(makeBfsPath(fileName)).as(BfsFileSync.class);
+      _services.service(makeBfsPath(fileName)).as(BfsFileSync.class);
 
     String localFile = "src/test/resources/" + fileName;
 
