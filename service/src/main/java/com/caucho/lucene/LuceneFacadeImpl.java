@@ -1,16 +1,17 @@
 package com.caucho.lucene;
 
-import io.baratine.service.Api;
-import io.baratine.service.Result;
-import io.baratine.service.Service;
-import io.baratine.service.ServiceRef;
-import io.baratine.stream.ResultStreamBuilder;
-
-import javax.inject.Inject;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
+
+import javax.inject.Inject;
+
+import io.baratine.service.Api;
+import io.baratine.service.Result;
+import io.baratine.service.Service;
+import io.baratine.stream.ResultStreamBuilder;
 
 @Service("service")
 @Api(LuceneFacade.class)
@@ -84,26 +85,7 @@ public class LuceneFacadeImpl implements LuceneFacade
     checkCollection(collection);
     checkQuery(query);
 
-    ResultStreamBuilder<LuceneEntry> stream
-      = _indexReader.search(collection, query);
-
-    stream.collect(ArrayList<LuceneEntry>::new,
-                   (l, e) -> {
-                     Logger logger = Logger.getLogger("com.caucho.lucene");
-                     logger.finer("collect item " + e + " into: " + l);
-                     l.add(e);
-                   },
-                   (a, b) -> {
-                     Logger logger = Logger.getLogger("com.caucho.lucene");
-                     logger.finer("accumulate " + b + " into: " + a);
-                     a.addAll(b);
-                   }).result(
-      result.of(l -> {
-        Logger logger = Logger.getLogger("com.caucho.lucene");
-        logger.finer("search " + query + " -> result " + l);
-
-        return l;
-      }));
+    _indexReader.search(collection, query, result.of(x -> Arrays.asList(x)));
   }
 
   private void checkCollection(String collection)

@@ -1,5 +1,11 @@
 package tests;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import javax.inject.Inject;
+
 import com.caucho.junit.ConfigurationBaratine;
 import com.caucho.junit.RunnerBaratine;
 import com.caucho.lucene.LuceneEntry;
@@ -9,25 +15,18 @@ import com.caucho.lucene.LuceneReaderImpl;
 import com.caucho.lucene.LuceneWriterImpl;
 import com.caucho.lucene.SearcherUpdateServiceImpl;
 import io.baratine.service.Lookup;
-import junit.framework.Assert;
-import org.junit.After;
-import org.junit.Before;
+import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-
-import javax.inject.Inject;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 /**
  * title: tests LuceneFacade methods
  */
 @RunWith(RunnerBaratine.class)
 @ConfigurationBaratine(
-  services = {LuceneWriterImpl.class, LuceneReaderImpl.class, LuceneFacadeImpl.class, SearcherUpdateServiceImpl.class},
-  logs = {@ConfigurationBaratine.Log(name = "com.caucho", level = "FINER")},
-  testTime = 0, pod = "lucene")
+  services = {LuceneWriterImpl.class, LuceneReaderImpl.class,
+              LuceneFacadeImpl.class, SearcherUpdateServiceImpl.class}
+)
 public class TestLuceneFacade extends Base
 {
   @Inject

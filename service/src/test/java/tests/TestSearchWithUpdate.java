@@ -1,5 +1,8 @@
 package tests;
 
+import java.io.IOException;
+import java.util.concurrent.ExecutionException;
+
 import com.caucho.junit.ConfigurationBaratine;
 import com.caucho.junit.RunnerBaratine;
 import com.caucho.lucene.LuceneEntry;
@@ -7,21 +10,17 @@ import com.caucho.lucene.LuceneFacadeImpl;
 import com.caucho.lucene.LuceneReaderImpl;
 import com.caucho.lucene.LuceneWriterImpl;
 import com.caucho.lucene.SearcherUpdateServiceImpl;
-import junit.framework.Assert;
+import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-
-import java.io.IOException;
-import java.util.concurrent.ExecutionException;
 
 /**
  * title: tests text update
  */
 @RunWith(RunnerBaratine.class)
 @ConfigurationBaratine(
-  services = {LuceneWriterImpl.class, LuceneReaderImpl.class, LuceneFacadeImpl.class, SearcherUpdateServiceImpl.class},
-  logs = {@ConfigurationBaratine.Log(name = "com.caucho", level = "FINER")},
-  testTime = 0, pod = "lucene")
+  services = {LuceneWriterImpl.class, LuceneReaderImpl.class,
+              LuceneFacadeImpl.class, SearcherUpdateServiceImpl.class})
 public class TestSearchWithUpdate extends Base
 {
   @Test

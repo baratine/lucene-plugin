@@ -1,5 +1,9 @@
 package tests;
 
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.concurrent.ExecutionException;
+
 import com.caucho.junit.ConfigurationBaratine;
 import com.caucho.junit.RunnerBaratine;
 import com.caucho.lucene.LuceneEntry;
@@ -7,23 +11,18 @@ import com.caucho.lucene.LuceneFacadeImpl;
 import com.caucho.lucene.LuceneReaderImpl;
 import com.caucho.lucene.LuceneWriterImpl;
 import com.caucho.lucene.SearcherUpdateServiceImpl;
-import com.caucho.v5.bartender.pod.PodBartender;
-import junit.framework.Assert;
+import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.concurrent.ExecutionException;
 
 /**
  * title: tests text
  */
 @RunWith(RunnerBaratine.class)
 @ConfigurationBaratine(
-  services = {LuceneWriterImpl.class, LuceneReaderImpl.class, LuceneFacadeImpl.class,SearcherUpdateServiceImpl.class},
-  logs = {@ConfigurationBaratine.Log(name = "com.caucho", level = "FINER")},
-  testTime = 0, pod = "lucene", podType = PodBartender.PodType.triad)
+  services = {LuceneWriterImpl.class, LuceneReaderImpl.class,
+              LuceneFacadeImpl.class, SearcherUpdateServiceImpl.class}
+)
 public class TestSearchShards extends Base
 {
   @Test

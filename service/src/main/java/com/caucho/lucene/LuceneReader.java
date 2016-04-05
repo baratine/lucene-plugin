@@ -1,8 +1,8 @@
 package com.caucho.lucene;
 
-import io.baratine.stream.ResultStreamBuilder;
+import io.baratine.service.Result;
 
 public interface LuceneReader
 {
-  ResultStreamBuilder search(String collection, String query);
+  void search(String collection, String query, Result<LuceneEntry[]> result);
 }

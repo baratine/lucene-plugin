@@ -3,22 +3,22 @@ package tests;
 import java.io.IOException;
 import java.util.concurrent.ExecutionException;
 
-import com.caucho.junit.ConfigurationBaratine2;
-import com.caucho.junit.RunnerBaratine2;
+import com.caucho.junit.ConfigurationBaratine;
+import com.caucho.junit.RunnerBaratine;
 import com.caucho.lucene.LuceneEntry;
 import com.caucho.lucene.LuceneFacadeImpl;
 import com.caucho.lucene.LuceneReaderImpl;
 import com.caucho.lucene.LuceneWriterImpl;
 import com.caucho.lucene.SearcherUpdateServiceImpl;
-import junit.framework.Assert;
+import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 /**
  * title: tests text
  */
-@RunWith(RunnerBaratine2.class)
-@ConfigurationBaratine2(
+@RunWith(RunnerBaratine.class)
+@ConfigurationBaratine(
   services = {LuceneWriterImpl.class, LuceneReaderImpl.class,
               LuceneFacadeImpl.class, SearcherUpdateServiceImpl.class})
 public class TestSearchText extends Base

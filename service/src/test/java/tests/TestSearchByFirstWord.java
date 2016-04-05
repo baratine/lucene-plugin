@@ -1,19 +1,18 @@
 package tests;
 
+import java.io.IOException;
+import java.util.concurrent.ExecutionException;
+
 import com.caucho.junit.ConfigurationBaratine;
-import com.caucho.junit.ConfigurationBaratine.Log;
 import com.caucho.junit.RunnerBaratine;
 import com.caucho.lucene.LuceneEntry;
 import com.caucho.lucene.LuceneFacadeImpl;
 import com.caucho.lucene.LuceneReaderImpl;
 import com.caucho.lucene.LuceneWriterImpl;
 import com.caucho.lucene.SearcherUpdateServiceImpl;
-import junit.framework.Assert;
+import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-
-import java.io.IOException;
-import java.util.concurrent.ExecutionException;
 
 /**
  * title: test pdf, ms-word, txt, xml, json with first word
@@ -21,10 +20,9 @@ import java.util.concurrent.ExecutionException;
 
 @RunWith(RunnerBaratine.class)
 @ConfigurationBaratine(
-  services = {LuceneWriterImpl.class, LuceneReaderImpl.class, LuceneFacadeImpl.class,SearcherUpdateServiceImpl.class},
-  logs = {@Log(name = "com.caucho", level = "FINER")},
-  logLevel = "FINER",
-  testTime = 0, pod = "lucene")
+  services = {LuceneWriterImpl.class, LuceneReaderImpl.class,
+              LuceneFacadeImpl.class, SearcherUpdateServiceImpl.class}
+)
 public class TestSearchByFirstWord extends Base
 {
   @Test(timeout = 2000)

@@ -116,6 +116,8 @@ public final class LuceneIndexBean extends SearcherFactory
   public LuceneIndexBean()
   {
     _parser = new AutoDetectParser();
+
+    System.out.println("LuceneIndexBean.LuceneIndexBean");
   }
 
   private Services getManager()
@@ -138,10 +140,12 @@ public final class LuceneIndexBean extends SearcherFactory
     if (!_isInitialized.compareAndSet(false, true))
       return;
 
-    String baratineData
+    String baratineData;/*
       = RootDirectorySystem.getCurrentDataDirectory()
                            .toAbsolutePath()
-                           .toString();
+                           .toString();*/
+
+    baratineData = "/tmp/crap";
 
     int pod = 0;//getManager().getNode().getNodeIndex();
 
@@ -620,6 +624,8 @@ public final class LuceneIndexBean extends SearcherFactory
   {
     if (_searcherSequence.get() % 100 == 0)
       log.log(Level.INFO, "acquireSearcher: " + _searcherSequence.get());
+
+    updateSearcher();
 
     return (BaratineIndexSearcher) _searcherManager.acquire();
   }

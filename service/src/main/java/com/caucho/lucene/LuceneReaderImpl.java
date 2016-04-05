@@ -1,21 +1,20 @@
 package com.caucho.lucene;
 
+import java.io.IOException;
+import java.util.Date;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+import javax.inject.Inject;
+
 import io.baratine.service.AfterBatch;
 import io.baratine.service.Api;
 import io.baratine.service.OnDestroy;
 import io.baratine.service.OnInit;
 import io.baratine.service.Result;
 import io.baratine.service.Service;
-import io.baratine.stream.ResultStream;
-import io.baratine.stream.ResultStreamBuilder;
 import org.apache.lucene.queryparser.classic.QueryParser;
-
-import javax.inject.Inject;
-import java.io.IOException;
-import java.util.Date;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 @Service("/lucene-reader")
 @Api(LuceneReader.class)
@@ -62,15 +61,9 @@ public class LuceneReaderImpl implements LuceneReader
     return _queryParser;
   }
 
-  @Override
-  public ResultStreamBuilder search(String collection, String query)
-  {
-    throw new AbstractMethodError();
-  }
-
   public void search(String collection,
                      String query,
-                     ResultStream<LuceneEntry> results) throws IOException
+                     Result<LuceneEntry[]> results)
   {
     if (log.isLoggable(Level.FINER))
       log.finer(String.format("search('%1$s', %2$s, %3$tH:%3$tM:%3$tS,:%3$tL)",
@@ -85,15 +78,11 @@ public class LuceneReaderImpl implements LuceneReader
                                          results,
                                          entries.length));
 
-    for (LuceneEntry entry : entries) {
-      results.accept(entry);
-    }
-
-    results.ok();
+    results.ok(entries);
   }
 
   public LuceneEntry[] searchImpl(String collection,
-                                  String query) throws IOException
+                                  String query)
   {
     QueryParser queryParser = getQueryParser();
 
@@ -118,7 +107,10 @@ public class LuceneReaderImpl implements LuceneReader
     } catch (Throwable e) {
       log.log(Level.WARNING, e.getMessage(), e);
 
-      throw e;
+      if (e instanceof RuntimeException)
+        throw (RuntimeException) e;
+      else
+        throw new RuntimeException(e);
     }
   }
 
