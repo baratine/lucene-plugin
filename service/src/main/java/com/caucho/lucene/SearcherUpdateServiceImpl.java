@@ -1,23 +1,24 @@
 package com.caucho.lucene;
 
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.Consumer;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
-import javax.inject.Inject;
-
 import io.baratine.service.AfterBatch;
+import io.baratine.service.Api;
 import io.baratine.service.Cancel;
-import io.baratine.service.Lookup;
+import io.baratine.service.Service;
 import io.baratine.service.OnInit;
 import io.baratine.service.Result;
 import io.baratine.service.Service;
 import io.baratine.service.ServiceRef;
 import io.baratine.timer.Timers;
 
+import javax.inject.Inject;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Consumer;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 @Service("/searcher-update-service")
+@Api(SearcherUpdateService.class)
 public class SearcherUpdateServiceImpl implements SearcherUpdateService
 {
   private static final Logger log
@@ -28,7 +29,7 @@ public class SearcherUpdateServiceImpl implements SearcherUpdateService
   private AtomicLong _refreshSequence = new AtomicLong();
 
   @Inject
-  @Lookup("timer:///")
+  @Service("timer:///")
   private Timers _timer;
   private Consumer<Cancel> _alarm;
 

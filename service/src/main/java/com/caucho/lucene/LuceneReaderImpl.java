@@ -1,14 +1,7 @@
 package com.caucho.lucene;
 
-import java.io.IOException;
-import java.util.Date;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
-import javax.inject.Inject;
-
 import io.baratine.service.AfterBatch;
+import io.baratine.service.Api;
 import io.baratine.service.OnDestroy;
 import io.baratine.service.OnInit;
 import io.baratine.service.Result;
@@ -17,7 +10,15 @@ import io.baratine.stream.ResultStream;
 import io.baratine.stream.ResultStreamBuilder;
 import org.apache.lucene.queryparser.classic.QueryParser;
 
+import javax.inject.Inject;
+import java.io.IOException;
+import java.util.Date;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 @Service("/lucene-reader")
+@Api(LuceneReader.class)
 //@Workers(20)
 public class LuceneReaderImpl implements LuceneReader
 {

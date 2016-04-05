@@ -1,15 +1,5 @@
 package com.caucho.lucene.bfs;
 
-import static io.baratine.files.WriteOption.Standard.OVERWRITE;
-
-import java.io.EOFException;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
 import io.baratine.db.BlobReader;
 import io.baratine.files.BfsFileSync;
 import io.baratine.files.Status;
@@ -22,6 +12,16 @@ import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.OutputStreamIndexOutput;
 import org.apache.lucene.store.SingleInstanceLockFactory;
+
+import java.io.EOFException;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+import static io.baratine.files.WriteOption.Standard.OVERWRITE;
 
 public class BfsDirectory extends BaseDirectory
 {

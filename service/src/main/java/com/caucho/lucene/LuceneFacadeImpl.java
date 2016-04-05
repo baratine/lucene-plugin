@@ -1,34 +1,34 @@
 package com.caucho.lucene;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.logging.Logger;
-
-import javax.inject.Inject;
-
-import io.baratine.service.Lookup;
+import io.baratine.service.Api;
 import io.baratine.service.Result;
 import io.baratine.service.Service;
 import io.baratine.service.ServiceRef;
 import io.baratine.stream.ResultStreamBuilder;
 
-@Service("public://lucene/service")
+import javax.inject.Inject;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.logging.Logger;
+
+@Service("service")
+@Api(LuceneFacade.class)
 public class LuceneFacadeImpl implements LuceneFacade
 {
   private static final Logger log
     = Logger.getLogger(LuceneFacadeImpl.class.getName());
 
   @Inject
-  @Lookup("pod://lucene/lucene-writer")
+  @Service("lucene-writer")
   private LuceneWriter _indexWriter;
 
   @Inject
-  @Lookup("pod://lucene/lucene-writer")
+  @Service("lucene-writer")
   private ServiceRef _indexWriterRef;
 
   @Inject
-  @Lookup("pod://lucene/lucene-reader")
+  @Service("lucene-reader")
   private LuceneReader _indexReader;
 
   private LuceneWriter getLuceneWriter(String id)
@@ -153,7 +153,9 @@ public class LuceneFacadeImpl implements LuceneFacade
   {
     ResultStreamBuilder<Void> builder = _indexWriter.clear(collection);
 
-    builder.collect(ArrayList<Void>::new, (a, b) -> {}, (a, b) -> {})
+    builder.collect(ArrayList<Void>::new, (a, b) -> {
+    }, (a, b) -> {
+    })
            .result(result.of((c -> null)));
 
   }

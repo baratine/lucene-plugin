@@ -1,12 +1,7 @@
 package com.caucho.lucene;
 
-import java.util.Map;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
-import javax.inject.Inject;
-
-import io.baratine.service.Lookup;
+import io.baratine.service.Api;
+import io.baratine.service.Service;
 import io.baratine.service.Modify;
 import io.baratine.service.OnInit;
 import io.baratine.service.OnSave;
@@ -16,7 +11,13 @@ import io.baratine.stream.ResultStream;
 import io.baratine.stream.ResultStreamBuilder;
 import org.apache.lucene.queryparser.classic.QueryParser;
 
-@Service("/lucene-writer")
+import javax.inject.Inject;
+import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+@Service("lucene-writer")
+@Api(LuceneWriter.class)
 public class LuceneWriterImpl implements LuceneWriter
 {
   private final static Logger log
@@ -27,7 +28,7 @@ public class LuceneWriterImpl implements LuceneWriter
   private QueryParser _queryParser;
 
   @Inject
-  @Lookup("/searcher-update-service")
+  @Service("/searcher-update-service")
   private SearcherUpdateService _searcherUpdateService;
 
   @OnInit
