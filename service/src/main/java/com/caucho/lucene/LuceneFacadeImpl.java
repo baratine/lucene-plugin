@@ -20,20 +20,21 @@ public class LuceneFacadeImpl implements LuceneFacade
     = Logger.getLogger(LuceneFacadeImpl.class.getName());
 
   @Inject
-  @Service("lucene-writer")
+  @Service("/lucene-writer")
   private LuceneWriter _indexWriter;
 
-  @Inject
-  @Service("lucene-writer")
+  /*@Inject
+  @Service("/lucene-writer")
   private ServiceRef _indexWriterRef;
-
+*/
   @Inject
-  @Service("lucene-reader")
+  @Service("/lucene-reader")
   private LuceneReader _indexReader;
 
   private LuceneWriter getLuceneWriter(String id)
   {
-    return _indexWriterRef.as(LuceneWriter.class);
+    //return _indexWriterRef.as(LuceneWriter.class);
+    return _indexWriter;
     //return _indexWriterRef.node(id.hashCode()).as(LuceneWriter.class);
   }
 

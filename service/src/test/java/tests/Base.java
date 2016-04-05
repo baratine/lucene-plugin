@@ -1,14 +1,5 @@
 package tests;
 
-import java.io.IOException;
-import java.io.OutputStream;
-import java.nio.file.Path;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
-
-import javax.inject.Inject;
-
 import com.caucho.junit.RunnerBaratine;
 import com.caucho.lucene.LuceneEntry;
 import com.caucho.lucene.LuceneFacadeSync;
@@ -22,6 +13,14 @@ import io.baratine.service.Services;
 import org.junit.After;
 import org.junit.Before;
 
+import javax.inject.Inject;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.nio.file.Path;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
+
 public abstract class Base
 {
   private static final String DEFAULT = "default";
@@ -33,8 +32,10 @@ public abstract class Base
   @Service("service")
   private LuceneFacadeSync _index;
 
+/*
   @Inject
   RunnerBaratine _testContext;
+*/
 
   protected BfsFileSync lookup(String path)
   {
@@ -82,7 +83,7 @@ public abstract class Base
       e.printStackTrace();
     }
 
-    _testContext.addTime(2, TimeUnit.SECONDS);
+    //_testContext.addTime(2, TimeUnit.SECONDS);
 
     try {
       Thread.sleep(500);
