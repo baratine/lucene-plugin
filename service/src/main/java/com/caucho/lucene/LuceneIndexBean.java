@@ -140,12 +140,10 @@ public final class LuceneIndexBean extends SearcherFactory
     if (!_isInitialized.compareAndSet(false, true))
       return;
 
-    String baratineData;/*
-      = RootDirectorySystem.getCurrentDataDirectory()
+    String baratineData
+      = RootDirectorySystem.currentDataDirectory()
                            .toAbsolutePath()
-                           .toString();*/
-
-    baratineData = "/tmp/crap";
+                           .toString();
 
     int pod = 0;//getManager().getNode().getNodeIndex();
 

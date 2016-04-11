@@ -62,7 +62,7 @@ public abstract class Base
 
   final protected String makeBfsPath(String file)
   {
-    return "bfs://cluster_hub/tmp/" + file;
+    return "bfs:///tmp/" + file;
   }
 
   final protected LuceneEntry[] uploadAndSearch(String fileName, String query)

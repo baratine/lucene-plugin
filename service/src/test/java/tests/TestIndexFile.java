@@ -8,6 +8,7 @@ import java.util.stream.Stream;
 
 import com.caucho.junit.ConfigurationBaratine;
 import com.caucho.junit.RunnerBaratine;
+import com.caucho.junit.ServiceTest;
 import com.caucho.lucene.LuceneEntry;
 import com.caucho.lucene.LuceneFacadeImpl;
 import com.caucho.lucene.LuceneReaderImpl;
@@ -22,10 +23,10 @@ import org.junit.runner.RunWith;
  */
 
 @RunWith(RunnerBaratine.class)
-@ConfigurationBaratine(
-  services = {LuceneWriterImpl.class, LuceneReaderImpl.class,
-              LuceneFacadeImpl.class, SearcherUpdateServiceImpl.class}
-)
+@ServiceTest(LuceneWriterImpl.class)
+@ServiceTest(LuceneReaderImpl.class)
+@ServiceTest(LuceneFacadeImpl.class)
+@ServiceTest(SearcherUpdateServiceImpl.class)
 public class TestIndexFile extends Base
 {
   @Test
