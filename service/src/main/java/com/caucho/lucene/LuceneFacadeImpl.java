@@ -3,7 +3,6 @@ package com.caucho.lucene;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import java.util.logging.Logger;
 
 import javax.inject.Inject;
@@ -68,7 +67,7 @@ public class LuceneFacadeImpl implements LuceneFacade
   }
 
   @Override
-  //@Post("/index-map")
+  @Post("/index-map")
   public void indexMap(@Body("collection") String collection,
                        @Body("id") String id,
                        @Body Form form,

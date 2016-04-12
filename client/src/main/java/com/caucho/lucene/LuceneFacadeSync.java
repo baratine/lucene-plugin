@@ -1,7 +1,8 @@
 package com.caucho.lucene;
 
 import java.util.List;
-import java.util.Map;
+
+import io.baratine.web.Form;
 
 public interface LuceneFacadeSync extends LuceneFacade
 {
@@ -11,7 +12,7 @@ public interface LuceneFacadeSync extends LuceneFacade
   boolean indexText(String collection, String id, String text)
     throws LuceneException;
 
-  boolean indexMap(String collection, String id, Map<String,Object> map)
+  boolean indexMap(String collection, String id, Form form)
     throws LuceneException;
 
   boolean delete(String collection, String id)

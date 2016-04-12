@@ -26,7 +26,12 @@ LuceneClient.prototype.indexText = function (collection, extId, text)
   var request = new XMLHttpRequest();
   request.open("POST", this.url + "/index-text");
   request.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
-  var data = "collection=" + collection + "&id=" + extId + "&text=" + text;
+  var data = "collection="
+             + collection
+             + "&id="
+             + extId
+             + "&text="
+             + encodeURIComponent(text);
   request.send(data);
 };
 
@@ -48,8 +53,20 @@ LuceneClient.prototype.indexText = function (collection, extId, text)
  */
 LuceneClient.prototype.indexMap = function (collection, extId, map)
 {
-  this.client.send("/service", "indexMap", [collection, extId, map]);
-};
+  var request = new XMLHttpRequest();
+  request.open("POST", this.url + "/index-map");
+  request.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+  var data = "collection=" + collection + "&id=" + extId;
+  for (var property in map) {
+    if (map.hasOwnProperty(property)) {
+      data = data + "&" + property + "=" + encodeURIComponent(map[property]);
+    }
+  }
+
+  console.log(data);
+
+  request.send(data);
+}
 
 /**
  * search lucene index inside the collection using specified query
