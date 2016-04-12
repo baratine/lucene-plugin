@@ -12,9 +12,15 @@ import io.baratine.service.Api;
 import io.baratine.service.Result;
 import io.baratine.service.Service;
 import io.baratine.stream.ResultStreamBuilder;
+import io.baratine.web.Body;
+import io.baratine.web.Get;
+import io.baratine.web.Path;
+import io.baratine.web.Post;
+import io.baratine.web.Query;
 
 @Service("service")
 @Api(LuceneFacade.class)
+@Path("/lucene")
 public class LuceneFacadeImpl implements LuceneFacade
 {
   private static final Logger log
@@ -24,23 +30,20 @@ public class LuceneFacadeImpl implements LuceneFacade
   @Service("/lucene-writer")
   private LuceneWriter _indexWriter;
 
-  /*@Inject
-  @Service("/lucene-writer")
-  private ServiceRef _indexWriterRef;
-*/
   @Inject
   @Service("/lucene-reader")
   private LuceneReader _indexReader;
 
   private LuceneWriter getLuceneWriter(String id)
   {
-    //return _indexWriterRef.as(LuceneWriter.class);
     return _indexWriter;
-    //return _indexWriterRef.node(id.hashCode()).as(LuceneWriter.class);
   }
 
   @Override
-  public void indexFile(String collection, String path, Result<Boolean> result)
+  @Post("/index-file")
+  public void indexFile(@Body("collection") String collection,
+                        @Body("path") String path,
+                        Result<Boolean> result)
     throws LuceneException
   {
     checkCollection(collection);
@@ -50,9 +53,10 @@ public class LuceneFacadeImpl implements LuceneFacade
   }
 
   @Override
-  public void indexText(String collection,
-                        String id,
-                        String text,
+  @Post("/index-text")
+  public void indexText(@Body("collection") String collection,
+                        @Body("id") String id,
+                        @Body("text") String text,
                         Result<Boolean> result) throws LuceneException
   {
     checkCollection(collection);
@@ -63,9 +67,10 @@ public class LuceneFacadeImpl implements LuceneFacade
   }
 
   @Override
-  public void indexMap(String collection,
-                       String id,
-                       Map<String,Object> map,
+  @Post("/index-map")
+  public void indexMap(@Body("collection") String collection,
+                       @Body("id") String id,
+                       @Body("map") Map<String,Object> map,
                        Result<Boolean> result) throws LuceneException
   {
     checkCollection(collection);
@@ -76,9 +81,10 @@ public class LuceneFacadeImpl implements LuceneFacade
   }
 
   @Override
-  public void search(String collection,
-                     String query,
-                     int limit,
+  @Get("/search")
+  public void search(@Query("collection") String collection,
+                     @Query("query") String query,
+                     @Query("limit") int limit,
                      Result<List<LuceneEntry>> result)
     throws LuceneException
   {
@@ -124,22 +130,23 @@ public class LuceneFacadeImpl implements LuceneFacade
   }
 
   @Override
-  public void delete(String collection, String id, Result<Boolean> result)
+  @Post("/delete")
+  public void delete(@Body("collection") String collection,
+                     @Body("id") String id,
+                     Result<Boolean> result)
     throws LuceneException
   {
     getLuceneWriter(id).delete(collection, id, result);
   }
 
   @Override
-  public void clear(String collection, Result<Void> result)
+  @Post
+  public void clear(@Body("collection") String collection, Result<Void> result)
     throws LuceneException
   {
     ResultStreamBuilder<Void> builder = _indexWriter.clear(collection);
 
-    builder.collect(ArrayList<Void>::new, (a, b) -> {
-    }, (a, b) -> {
-    })
-           .result(result.of((c -> null)));
-
+    builder.collect(ArrayList<Void>::new, (a, b) -> {}, (a, b) -> {
+    }).result(result.of((c -> null)));
   }
 }
