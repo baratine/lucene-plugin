@@ -76,8 +76,6 @@ public final class LuceneIndexBean extends SearcherFactory
   private final static long softCommitMaxDocs = 16;
   private final static long softCommitMaxAge = TimeUnit.SECONDS.toMillis(1);
 
-  private final static LuceneIndexBean _luceneIndexBean = new LuceneIndexBean();
-
   private Directory _directory;
 
   private IndexWriter _writer;
@@ -116,8 +114,6 @@ public final class LuceneIndexBean extends SearcherFactory
   public LuceneIndexBean()
   {
     _parser = new AutoDetectParser();
-
-    System.out.println("LuceneIndexBean.LuceneIndexBean");
   }
 
   private Services getManager()

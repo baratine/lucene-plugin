@@ -1,3 +1,7 @@
+apply plugin: 'application'
+
+mainClassName = 'com.caucho.lucene.Main'
+
 configurations {
   provided
   compile.extendsFrom provided
@@ -11,14 +15,11 @@ dependencies {
   compile 'org.apache.tika:tika-parsers:1.11'
   compile 'javax.cache:cache-api:1.0.0'
 
-  testCompile 'junit.junit:4.12'
+  testCompile 'junit:junit:4.12'
 }
 
 jar {
   dependsOn configurations.compile
-
-  manifest {
-  }
 }
 
 task wrapper(type: Wrapper) {
