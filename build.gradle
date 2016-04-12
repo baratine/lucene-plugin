@@ -1,0 +1,29 @@
+allprojects {
+}
+
+subprojects {
+  apply plugin: 'java'
+
+  group = 'com.caucho'
+
+  repositories {
+    mavenLocal();
+    mavenCentral();
+
+    sourceCompatibility = 1.8
+    targetCompatibility = 1.8
+  }
+
+  dependencies {
+    compile 'io.baratine:baratine:0.11.3'
+  }
+}
+
+configurations {
+  provided
+  compile.extendsFrom provided
+}
+
+task wrapper(type: Wrapper) {
+  gradleVersion = '2.11'
+}

@@ -141,7 +141,7 @@ public final class LuceneIndexBean extends SearcherFactory
       return;
 
     String baratineData
-      = RootDirectorySystem.currentDataDirectory()
+      = RootDirectorySystem.getCurrentDataDirectory()
                            .toAbsolutePath()
                            .toString();
 

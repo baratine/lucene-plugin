@@ -1,0 +1,15 @@
+configurations {
+  provided
+  compile.extendsFrom provided
+}
+
+jar {
+  dependsOn configurations.compile
+
+  manifest {
+  }
+}
+
+task wrapper(type: Wrapper) {
+  gradleVersion = '2.11'
+}
