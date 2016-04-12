@@ -1,9 +1,9 @@
 package com.caucho.lucene;
 
 import java.util.List;
-import java.util.Map;
 
 import io.baratine.service.Result;
+import io.baratine.web.Form;
 
 public interface LuceneFacade
 {
@@ -43,7 +43,7 @@ public interface LuceneFacade
    */
   void indexMap(String collection,
                 String id,
-                Map<String,Object> map,
+                Form map,
                 Result<Boolean> result)
     throws LuceneException;
 

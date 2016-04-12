@@ -1,11 +1,11 @@
 /**
- * construct LuceneClient using url of the deployed lucene service: e.g. 'ws://localhost:8085/s/lucene'
+ * construct LuceneClient using url of the deployed lucene service: e.g. 'ws://localhost:8080/lucene'
  * @param url
  * @constructor
  */
 LuceneClient = function (url)
 {
-  this.client = new Jamp.BaratineClient(url);
+  this.url = url;
 };
 
 /**
@@ -23,7 +23,11 @@ LuceneClient = function (url)
  */
 LuceneClient.prototype.indexText = function (collection, extId, text)
 {
-  this.client.send("/service", "indexText", [collection, extId, text]);
+  var request = new XMLHttpRequest();
+  request.open("POST", this.url + "/index-text");
+  request.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+  var data = "collection=" + collection + "&id=" + extId + "&text=" + text;
+  request.send(data);
 };
 
 /**
@@ -63,30 +67,35 @@ LuceneClient.prototype.indexMap = function (collection, extId, map)
  */
 LuceneClient.prototype.search = function (collection, query, limit, callback)
 {
-  var onSearch = function (results)
+  request = new XMLHttpRequest();
+
+  data = "collection=" + collection + "&query=" + query + "&limit=" + limit;
+
+  request.onreadystatechange = function ()
   {
-    var ids = new Array();
-    for (var i = 0; i < results.length; i++) {
-      var result = results[i];
+    if (this.readyState === XMLHttpRequest.DONE
+        && this.status === 200) {
+      console.log(this.responseText);
 
-      ids.push(result._externalId);
-    }
+      var results = JSON.parse(this.responseText);
 
-    if (callback) {
+      var ids = new Array();
+
+      console.log(results);
+      console.log(results.length);
+
+      for (var i = 0; i < results.length; i++) {
+        ids.push(results[i]._externalId);
+      }
+
       callback(ids);
     }
   };
 
-  onSearch.onfail = function (error)
-  {
-    console.log(error);
-  };
+  request.open("GET", this.url + "/search?" + data);
 
-  this.client.query("/service",
-                    "search",
-    [collection, query, limit],
-                    onSearch);
-};
+  request.send();
+}
 
 /**
  * clears collection
@@ -101,6 +110,7 @@ LuceneClient.prototype.clear = function (collection, callback)
 /**
  * close underlying connections
  */
-LuceneClient.prototype.close = function() {
+LuceneClient.prototype.close = function ()
+{
   this.client.close();
 };

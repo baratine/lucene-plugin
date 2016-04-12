@@ -9,6 +9,7 @@ import io.baratine.service.Result;
 import io.baratine.service.Service;
 import io.baratine.stream.ResultStream;
 import io.baratine.stream.ResultStreamBuilder;
+import io.baratine.web.Form;
 import org.apache.lucene.queryparser.classic.QueryParser;
 
 import javax.inject.Inject;
@@ -73,7 +74,7 @@ public class LuceneWriterImpl implements LuceneWriter
   @Modify
   public void indexMap(String collection,
                        String id,
-                       Map<String,Object> map,
+                       Form map,
                        Result<Boolean> result) throws LuceneException
   {
     result.ok(_luceneBean.indexMap(collection, id, map));

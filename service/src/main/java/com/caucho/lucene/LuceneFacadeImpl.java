@@ -13,6 +13,7 @@ import io.baratine.service.Result;
 import io.baratine.service.Service;
 import io.baratine.stream.ResultStreamBuilder;
 import io.baratine.web.Body;
+import io.baratine.web.Form;
 import io.baratine.web.Get;
 import io.baratine.web.Path;
 import io.baratine.web.Post;
@@ -67,17 +68,17 @@ public class LuceneFacadeImpl implements LuceneFacade
   }
 
   @Override
-  @Post("/index-map")
+  //@Post("/index-map")
   public void indexMap(@Body("collection") String collection,
                        @Body("id") String id,
-                       @Body("map") Map<String,Object> map,
+                       @Body Form form,
                        Result<Boolean> result) throws LuceneException
   {
     checkCollection(collection);
     checkId(id);
-    checkMap(map);
+    checkMap(form);
 
-    getLuceneWriter(id).indexMap(collection, id, map, result);
+    getLuceneWriter(id).indexMap(collection, id, form, result);
   }
 
   @Override
@@ -122,7 +123,7 @@ public class LuceneFacadeImpl implements LuceneFacade
     }
   }
 
-  private void checkMap(Map<String,Object> map)
+  private void checkMap(Form map)
   {
     if (map == null) {
       throw new LuceneException("map should not be null");

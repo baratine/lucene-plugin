@@ -9,6 +9,7 @@ configurations {
 
 dependencies {
   compile project(':client')
+  compile project(':web')
   compile 'org.apache.lucene:lucene-core:5.2.1'
   compile 'org.apache.lucene:lucene-analyzers-common:5.2.1'
   compile 'org.apache.lucene:lucene-queryparser:5.2.1'

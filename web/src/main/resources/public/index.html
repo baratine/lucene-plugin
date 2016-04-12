@@ -3,12 +3,11 @@
 <head>
   <meta charset="UTF-8">
 
-  <script src="../../../../../client/src/web/baratine-js.js"></script>
   <script src="lucene-client.js"></script>
 
   <script type="text/javascript">
 
-    var lucene = new LuceneClient("ws://localhost:8085/s/lucene")
+    var lucene = new LuceneClient("http://localhost:8080/lucene")
 
     function index_text(collection, extId, value)
     {

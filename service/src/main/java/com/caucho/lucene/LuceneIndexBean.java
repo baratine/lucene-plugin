@@ -10,6 +10,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -27,6 +28,7 @@ import com.caucho.v5.subsystem.RootDirectorySystem;
 import com.caucho.v5.util.LruCache;
 import io.baratine.files.BfsFileSync;
 import io.baratine.service.Services;
+import io.baratine.web.Form;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
@@ -305,7 +307,7 @@ public final class LuceneIndexBean extends SearcherFactory
 
   public boolean indexMap(String collection,
                           String id,
-                          Map<String,Object> map) throws LuceneException
+                          Form map) throws LuceneException
   {
     if (map.isEmpty()) {
       log.fine(String.format("indexMap('%s') empty map", id));
@@ -333,8 +335,9 @@ public final class LuceneIndexBean extends SearcherFactory
       document.add(pkField);
       document.add(new StringField(collectionKey, collection, Field.Store.YES));
 
-      for (Map.Entry<String,Object> entry : map.entrySet()) {
-        document.add(makeIndexableField(entry.getKey(), entry.getValue()));
+      for (Map.Entry<String,List<String>> entry : map.entrySet()) {
+        document.add(makeIndexableField(entry.getKey(),
+                                        entry.getValue().get(0)));
       }
 
       writer.updateDocument(pkTerm, document);

@@ -2,6 +2,7 @@ package com.caucho.lucene;
 
 import io.baratine.service.Result;
 import io.baratine.stream.ResultStreamBuilder;
+import io.baratine.web.Form;
 
 import java.util.Map;
 
@@ -18,7 +19,7 @@ public interface LuceneWriter
 
   void indexMap(String collection,
                 String id,
-                Map<String,Object> map,
+                Form map,
                 Result<Boolean> result)
     throws LuceneException;
 
